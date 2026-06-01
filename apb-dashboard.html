@@ -6,21 +6,21 @@
 <title>APB Operations Hub — Executive Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --bg: #0a0c0f;
-    --surface: #111418;
-    --surface2: #181c22;
-    --border: #232830;
-    --accent: #e8a020;
-    --accent2: #1a9fff;
-    --danger: #e84040;
-    --success: #20c060;
-    --text: #e8eaf0;
-    --muted: #6b7485;
-    --font-display: 'Bebas Neue', sans-serif;
+    --bg: #f5f5f0;
+    --surface: #ffffff;
+    --surface2: #eeede8;
+    --border: #d8d6ce;
+    --accent: #b8860b;
+    --accent2: #2a6496;
+    --danger: #b83232;
+    --success: #2a7a4a;
+    --text: #1a1a18;
+    --muted: #7a7870;
+    --font-display: 'Instrument Serif', serif;
     --font-mono: 'DM Mono', monospace;
     --font-body: 'DM Sans', sans-serif;
   }
@@ -129,11 +129,11 @@
     font-family: var(--font-mono); font-size: 10px; padding: 2px 7px; border-radius: 3px;
     white-space: nowrap;
   }
-  .badge-rtbb { background: rgba(232,160,32,.15); color: #e8a020; border: 1px solid rgba(232,160,32,.3); }
-  .badge-ip { background: rgba(26,159,255,.15); color: #1a9fff; border: 1px solid rgba(26,159,255,.3); }
-  .badge-nir { background: rgba(232,64,64,.15); color: #e84040; border: 1px solid rgba(232,64,64,.3); }
-  .badge-is { background: rgba(32,192,160,.15); color: #20c0a0; border: 1px solid rgba(32,192,160,.3); }
-  .badge-app { background: rgba(107,64,232,.15); color: #a080ff; border: 1px solid rgba(107,64,232,.3); }
+  .badge-rtbb { background: rgba(184,134,11,.12); color: #8a6200; border: 1px solid rgba(232,160,32,.3); }
+  .badge-ip { background: rgba(42,100,150,.12); color: #1a4f78; border: 1px solid rgba(26,159,255,.3); }
+  .badge-nir { background: rgba(184,50,50,.12); color: #8a1a1a; border: 1px solid rgba(232,64,64,.3); }
+  .badge-is { background: rgba(32,140,100,.12); color: #1a6650; border: 1px solid rgba(32,192,160,.3); }
+  .badge-app { background: rgba(80,50,180,.12); color: #3a1a8a; border: 1px solid rgba(107,64,232,.3); }
 
   /* Needs review section */
   .review-alert { background: rgba(232,64,64,.08); border: 1px solid rgba(232,64,64,.2); border-radius: 8px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
@@ -346,26 +346,26 @@ const _gate = document.createElement('div');
 _gate.id = 'apb-auth-gate';
 _gate.style.cssText =
   'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;' +
-  'justify-content:center;background:#0a0e1a;font-family:inherit;';
+  'justify-content:center;background:#f5f5f0;font-family:inherit;';
 _gate.innerHTML =
   '<div style="width:340px;max-width:90vw;border:1px solid #1e2a44;border-radius:14px;' +
   'padding:32px 28px;background:#0f1829;box-shadow:0 20px 60px rgba(0,0,0,.5);">' +
     '<div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#4a9eff;' +
     'margin-bottom:6px;">APB Ops Hub</div>' +
-    '<div style="font-size:20px;font-weight:700;color:#f5f5f0;margin-bottom:18px;">Sign in</div>' +
-    '<label style="display:block;font-size:12px;color:#8aa;margin-bottom:4px;">Name / ID or email</label>' +
+    '<div style="font-size:20px;font-weight:700;color:#1a1a18;margin-bottom:18px;">Sign in</div>' +
+    '<label style="display:block;font-size:12px;color:#7a7870;margin-bottom:4px;">Name / ID or email</label>' +
     '<input id="apb-id" type="text" autocapitalize="none" autocomplete="username" spellcheck="false" ' +
     'placeholder="e.g. bw or your email" ' +
     'style="width:100%;box-sizing:border-box;padding:11px 12px;margin-bottom:12px;border-radius:8px;' +
-    'border:1px solid #2a3a5a;background:#0a0e1a;color:#e8f0fe;font-size:14px;outline:none;"/>' +
-    '<label style="display:block;font-size:12px;color:#8aa;margin-bottom:4px;">PIN</label>' +
+    'border:1px solid #d8d6ce;background:#f5f5f0;color:#1a1a18;font-size:14px;outline:none;"/>' +
+    '<label style="display:block;font-size:12px;color:#7a7870;margin-bottom:4px;">PIN</label>' +
     '<input id="apb-pin" type="password" inputmode="numeric" autocomplete="current-password" ' +
     'placeholder="••••" ' +
     'style="width:100%;box-sizing:border-box;padding:11px 12px;margin-bottom:16px;border-radius:8px;' +
-    'border:1px solid #2a3a5a;background:#0a0e1a;color:#e8f0fe;font-size:18px;letter-spacing:.25em;outline:none;"/>' +
+    'border:1px solid #d8d6ce;background:#f5f5f0;color:#1a1a18;font-size:18px;letter-spacing:.25em;outline:none;"/>' +
     '<button id="apb-go" style="width:100%;padding:11px;border:none;border-radius:8px;cursor:pointer;' +
-    'background:#4a9eff;color:#0a0e1a;font-size:14px;font-weight:700;">Continue</button>' +
-    '<div id="apb-msg" style="margin-top:12px;font-size:12.5px;color:#ff8a8a;line-height:1.4;min-height:16px;"></div>' +
+    'background:#2a6496;color:#ffffff;font-size:14px;font-weight:700;">Continue</button>' +
+    '<div id="apb-msg" style="margin-top:12px;font-size:12.5px;color:#b83232;line-height:1.4;min-height:16px;"></div>' +
   '</div>';
 document.body.appendChild(_gate);
 
@@ -402,7 +402,7 @@ function _apbUnlock() {
   so.textContent = 'Sign out';
   so.style.cssText =
     'position:fixed;top:10px;right:12px;z-index:9000;padding:6px 12px;border-radius:8px;' +
-    'border:1px solid #2a3a5a;background:#0f1829;color:#e8f0fe;font:inherit;font-size:12px;cursor:pointer;';
+    'border:1px solid #d8d6ce;background:#ffffff;color:#1a1a18;font:inherit;font-size:12px;cursor:pointer;';
   so.addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
   document.body.appendChild(so);
   // Idle auto-logout
