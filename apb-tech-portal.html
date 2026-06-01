@@ -23,131 +23,102 @@
     --input-bg: #1a1f28;
   }
   html { height: 100%; background: var(--bg); }
-  body { min-height: 100%; color: var(--text); font-family: 'DM Sans', sans-serif; max-width: 480px; margin: 0 auto; }
+  body { min-height: 100%; color: var(--text); font-family: 'DM Sans', sans-serif; max-width: 520px; margin: 0 auto; }
 
-  /* SCREENS */
   .screen { display: none; min-height: 100vh; flex-direction: column; }
   .screen.active { display: flex; }
 
-  /* === LOGIN SCREEN === */
-  #loginScreen {
-    align-items: center; justify-content: center; padding: 32px 24px;
-    background: radial-gradient(ellipse at 50% 0%, rgba(255,140,0,.08) 0%, transparent 60%), var(--bg);
-  }
+  /* LOGIN */
+  #loginScreen { align-items: center; justify-content: center; padding: 32px 24px; background: radial-gradient(ellipse at 50% 0%, rgba(255,140,0,.08) 0%, transparent 60%), var(--bg); }
   .login-logo { text-align: center; margin-bottom: 40px; }
   .login-logo .anchor { width: 4px; height: 40px; background: var(--accent); border-radius: 2px; display: inline-block; margin-bottom: 12px; }
   .login-logo h1 { font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 500; letter-spacing: 4px; }
   .login-logo p { font-size: 13px; color: var(--muted); margin-top: 4px; }
   .login-card { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 28px 24px; }
   .login-card h2 { font-size: 17px; font-weight: 600; margin-bottom: 20px; }
-  
-  /* PIN pad */
   .pin-display { display: flex; gap: 10px; justify-content: center; margin-bottom: 28px; }
   .pin-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--border); transition: all 0.15s; }
   .pin-dot.filled { background: var(--accent); border-color: var(--accent); }
   .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-  .pin-btn {
-    background: var(--input-bg); border: 1px solid var(--border); border-radius: 12px;
-    height: 64px; font-size: 22px; font-weight: 600; color: var(--text);
-    cursor: pointer; transition: all 0.1s; user-select: none;
-    display: flex; align-items: center; justify-content: center;
-  }
+  .pin-btn { background: var(--input-bg); border: 1px solid var(--border); border-radius: 12px; height: 64px; font-size: 22px; font-weight: 600; color: var(--text); cursor: pointer; transition: all 0.1s; user-select: none; display: flex; align-items: center; justify-content: center; }
   .pin-btn:active { transform: scale(0.93); background: var(--border); }
   .pin-btn.del { font-size: 18px; color: var(--muted); }
-  .pin-btn.clear-btn { font-size: 13px; color: var(--muted); }
-  
   .tech-selector { margin-bottom: 20px; }
   .tech-selector label { font-size: 12px; color: var(--muted); letter-spacing: 1px; display: block; margin-bottom: 8px; font-family: 'DM Mono', monospace; }
   .tech-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .tech-btn {
-    background: var(--input-bg); border: 2px solid var(--border); border-radius: 10px;
-    padding: 12px 8px; text-align: center; font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500;
-    cursor: pointer; transition: all 0.15s; color: var(--text);
-  }
+  .tech-btn { background: var(--input-bg); border: 2px solid var(--border); border-radius: 10px; padding: 12px 8px; text-align: center; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; color: var(--text); }
   .tech-btn.selected { border-color: var(--accent); color: var(--accent); background: rgba(255,140,0,.08); }
-  .tech-btn:active { transform: scale(0.95); }
-  
   .login-error { color: var(--red); font-size: 13px; text-align: center; margin-top: 12px; min-height: 20px; }
 
-  /* === MAIN APP SCREEN === */
+  /* APP */
   #appScreen { background: var(--bg); }
-  
-  .app-header {
-    background: var(--card); border-bottom: 1px solid var(--border);
-    padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;
-    position: sticky; top: 0; z-index: 50;
-  }
-  .app-header .tech-name { font-family: 'DM Mono', monospace; font-size: 15px; font-weight: 500; }
-  .app-header .date { font-size: 12px; color: var(--muted); }
-  .logout-btn { background: none; border: 1px solid var(--border); color: var(--muted); padding: 6px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; }
-  .logout-btn:active { background: var(--border); }
+  .app-header { background: var(--card); border-bottom: 1px solid var(--border); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+  .app-header .tech-name { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; }
+  .app-header .tech-role { font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; }
+  .signout-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); padding: 6px 12px; font-size: 12px; cursor: pointer; }
 
-  /* Tabs */
-  .tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--card); }
-  .tab { flex: 1; padding: 14px; text-align: center; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+  .tabs { display: flex; background: var(--card); border-bottom: 1px solid var(--border); }
+  .tab { flex: 1; padding: 14px; text-align: center; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
   .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-  .tab-content { display: none; padding: 20px; flex: 1; }
+  .tab-content { display: none; padding: 20px; }
   .tab-content.active { display: block; }
 
-  /* Form */
-  .form-group { margin-bottom: 18px; }
-  .form-label { font-size: 12px; color: var(--muted); letter-spacing: 1px; display: block; margin-bottom: 8px; font-family: 'DM Mono', monospace; text-transform: uppercase; }
-  .form-select, .form-input, .form-textarea {
-    width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 10px;
-    padding: 14px 16px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px;
-    transition: border-color 0.15s; -webkit-appearance: none; appearance: none;
-  }
-  .form-select:focus, .form-input:focus, .form-textarea:focus { outline: none; border-color: var(--accent); }
-  .form-textarea { min-height: 90px; resize: vertical; }
-  .form-select option { background: var(--card); }
-  
-  .hours-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-  .hours-btn {
-    background: var(--input-bg); border: 2px solid var(--border); border-radius: 10px;
-    padding: 14px 8px; text-align: center; font-size: 15px; font-weight: 600; font-family: 'DM Mono', monospace;
-    cursor: pointer; transition: all 0.15s; color: var(--text);
-  }
-  .hours-btn.selected { border-color: var(--accent); color: var(--accent); background: rgba(255,140,0,.08); }
-  .hours-btn:active { transform: scale(0.95); }
-  
-  .custom-hours { margin-top: 10px; }
+  /* FORM */
+  .form-section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 14px; }
+  .form-section-title { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 2px; color: var(--accent); text-transform: uppercase; margin-bottom: 14px; }
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; font-family: 'DM Mono', monospace; letter-spacing: 0.5px; }
+  .field label .req { color: var(--red); margin-left: 2px; }
+  .form-input, .form-select, .form-textarea { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 11px 12px; font-size: 14px; font-family: 'DM Sans', sans-serif; transition: border-color 0.2s; -webkit-appearance: none; }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--accent); }
+  .form-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7485' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+  .form-textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+  .form-textarea.tall { min-height: 60px; }
 
-  .submit-btn {
-    width: 100%; background: var(--accent); color: #000; border: none; border-radius: 12px;
-    padding: 18px; font-size: 16px; font-weight: 700; cursor: pointer; letter-spacing: 0.5px;
-    transition: all 0.15s; margin-top: 8px;
-  }
-  .submit-btn:active { transform: scale(0.97); opacity: 0.9; }
-  .submit-btn:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+  .time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .lunch-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 4px; }
+  .lunch-btn { background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 9px 4px; text-align: center; font-size: 13px; cursor: pointer; color: var(--muted); transition: all 0.15s; }
+  .lunch-btn.selected { border-color: var(--accent); color: var(--accent); background: rgba(255,140,0,.08); }
 
-  .success-msg { background: rgba(32,192,96,.12); border: 1px solid rgba(32,192,96,.3); border-radius: 10px; padding: 14px; text-align: center; color: var(--green); font-size: 14px; margin-bottom: 16px; }
-  .error-msg { background: rgba(232,48,48,.12); border: 1px solid rgba(232,48,48,.3); border-radius: 10px; padding: 14px; color: var(--red); font-size: 14px; margin-bottom: 16px; }
+  .hours-display { background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 11px 12px; font-family: 'DM Mono', monospace; font-size: 18px; color: var(--accent); text-align: center; }
 
-  /* History tab */
-  .history-item { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
-  .history-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .job-item-check { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .job-item-check:last-child { border-bottom: none; }
+  .job-item-check input[type=checkbox] { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; accent-color: var(--accent); cursor: pointer; }
+  .job-item-info { flex: 1; }
+  .job-item-no { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--accent); }
+  .job-item-desc { font-size: 13px; color: var(--text); margin-top: 2px; }
+
+  .no-jobs { font-size: 13px; color: var(--muted); text-align: center; padding: 20px 0; }
+
+  .submit-btn { width: 100%; background: var(--accent); color: #000; border: none; border-radius: 12px; padding: 16px; font-size: 16px; font-weight: 700; cursor: pointer; letter-spacing: 1px; margin-top: 6px; transition: opacity 0.2s; }
+  .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .submit-btn:active { opacity: 0.85; }
+
+  .msg-box { margin-top: 12px; border-radius: 8px; padding: 12px 16px; font-size: 13px; display: none; }
+  .msg-box.success { background: rgba(32,192,96,.12); border: 1px solid rgba(32,192,96,.3); color: #20c060; display: block; }
+  .msg-box.error { background: rgba(232,48,48,.12); border: 1px solid rgba(232,48,48,.3); color: var(--red); display: block; }
+
+  /* HISTORY */
+  .history-entry { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; }
+  .history-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
   .history-vessel { font-weight: 600; font-size: 14px; }
   .history-hours { font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 500; color: var(--accent); }
-  .history-date { font-size: 12px; color: var(--muted); }
-  .history-desc { font-size: 13px; color: var(--muted); }
-  .history-total { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
-  .history-total-label { font-size: 13px; color: var(--muted); }
-  .history-total-val { font-family: 'DM Mono', monospace; font-size: 24px; color: var(--accent); font-weight: 500; }
-  .empty-state { text-align: center; color: var(--muted); font-size: 14px; padding: 40px 20px; }
-  
-  .loading { text-align: center; padding: 32px; }
-  .dot-loader { display: inline-flex; gap: 6px; }
-  .dot-loader span { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; animation: bounce 0.8s infinite; }
-  .dot-loader span:nth-child(2) { animation-delay: .15s; }
-  .dot-loader span:nth-child(3) { animation-delay: .3s; }
-  @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+  .history-meta { font-size: 12px; color: var(--muted); }
+  .history-detail { font-size: 12px; color: var(--text); margin-top: 6px; line-height: 1.5; }
+  .history-tag { display: inline-block; font-family: 'DM Mono', monospace; font-size: 10px; background: var(--input-bg); border: 1px solid var(--border); padding: 2px 6px; border-radius: 4px; color: var(--muted); margin-right: 4px; margin-top: 4px; }
+  .empty-state { text-align: center; color: var(--muted); padding: 40px 20px; font-size: 13px; line-height: 1.7; }
+  .week-summary { background: rgba(255,140,0,.08); border: 1px solid rgba(255,140,0,.2); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+  .week-label { font-size: 12px; color: var(--muted); }
+  .week-hours { font-family: 'DM Mono', monospace; font-size: 22px; color: var(--accent); }
 </style>
 </head>
 <body>
 
 <!-- LOGIN SCREEN -->
-<div id="loginScreen" class="screen active">
+<div class="screen active" id="loginScreen">
   <div class="login-logo">
     <div class="anchor"></div>
     <h1>APB TECH</h1>
@@ -155,21 +126,16 @@
   </div>
   <div class="login-card">
     <h2>Select your name & enter PIN</h2>
-    
     <div class="tech-selector">
       <label>WHO ARE YOU?</label>
-      <div class="tech-grid" id="techGrid">
-        <!-- populated by JS -->
-      </div>
+      <div class="tech-grid" id="techGrid"></div>
     </div>
-
     <div class="pin-display" id="pinDisplay">
-      <div class="pin-dot"></div>
-      <div class="pin-dot"></div>
-      <div class="pin-dot"></div>
-      <div class="pin-dot"></div>
+      <div class="pin-dot" id="d0"></div>
+      <div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div>
+      <div class="pin-dot" id="d3"></div>
     </div>
-
     <div class="pin-pad">
       <button class="pin-btn" onclick="pinPress('1')">1</button>
       <button class="pin-btn" onclick="pinPress('2')">2</button>
@@ -180,7 +146,7 @@
       <button class="pin-btn" onclick="pinPress('7')">7</button>
       <button class="pin-btn" onclick="pinPress('8')">8</button>
       <button class="pin-btn" onclick="pinPress('9')">9</button>
-      <button class="pin-btn clear-btn" onclick="pinClear()">CLR</button>
+      <button class="pin-btn del" onclick="pinClear()">CLR</button>
       <button class="pin-btn" onclick="pinPress('0')">0</button>
       <button class="pin-btn del" onclick="pinDel()">⌫</button>
     </div>
@@ -189,68 +155,99 @@
 </div>
 
 <!-- APP SCREEN -->
-<div id="appScreen" class="screen">
+<div class="screen" id="appScreen">
   <div class="app-header">
     <div>
-      <div class="tech-name" id="headerName">Tech</div>
-      <div class="date" id="headerDate"></div>
+      <div class="tech-name" id="headerName">—</div>
+      <div class="tech-role" id="headerRole">Tech</div>
     </div>
-    <button class="logout-btn" onclick="logout()">Sign Out</button>
+    <button class="signout-btn" onclick="logout()">Sign Out</button>
   </div>
+
   <div class="tabs">
     <div class="tab active" onclick="switchTab('log')">Log Time</div>
     <div class="tab" onclick="switchTab('history')">My Hours</div>
   </div>
-  
+
   <!-- LOG TIME TAB -->
   <div class="tab-content active" id="tabLog">
-    <div id="logMsg"></div>
-    
-    <div class="form-group">
-      <label class="form-label">Vessel / Project</label>
-      <select class="form-select" id="jobVessel">
-        <option value="">Select job...</option>
-      </select>
-    </div>
 
-    <div class="form-group" id="jobDescGroup" style="display:none">
-      <label class="form-label">Job Description</label>
-      <select class="form-select" id="jobDesc">
-        <option value="">Select task...</option>
-      </select>
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">Date</label>
-      <input type="date" class="form-input" id="workDate">
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">Hours Worked</label>
-      <div class="hours-grid">
-        <button class="hours-btn" onclick="setHours(2)">2</button>
-        <button class="hours-btn" onclick="setHours(4)">4</button>
-        <button class="hours-btn" onclick="setHours(6)">6</button>
-        <button class="hours-btn" onclick="setHours(8)">8</button>
+    <!-- Vessel & Date -->
+    <div class="form-section">
+      <div class="form-section-title">Job Info</div>
+      <div class="field">
+        <label>Vessel / Project <span class="req">*</span></label>
+        <select class="form-select" id="vesselSelect" onchange="onVesselChange()">
+          <option value="">Select vessel...</option>
+        </select>
       </div>
-      <div class="custom-hours">
-        <input type="number" class="form-input" id="hoursInput" placeholder="Or enter custom hours..." min="0.5" max="16" step="0.5">
+      <div class="field" id="jobListField" style="display:none">
+        <label>Job Number(s) Worked On <span class="req">*</span></label>
+        <div id="jobList"></div>
+      </div>
+      <div class="field">
+        <label>Date <span class="req">*</span></label>
+        <input type="date" class="form-input" id="dateInput">
       </div>
     </div>
 
-    <div class="form-group">
-      <label class="form-label">What did you work on? (optional)</label>
-      <textarea class="form-textarea" id="workDesc" placeholder="Brief description of work completed..."></textarea>
+    <!-- Time -->
+    <div class="form-section">
+      <div class="form-section-title">Time</div>
+      <div class="field">
+        <div class="time-row">
+          <div>
+            <label>Clock In <span class="req">*</span></label>
+            <input type="time" class="form-input" id="clockIn" onchange="calcHours()">
+          </div>
+          <div>
+            <label>Clock Out <span class="req">*</span></label>
+            <input type="time" class="form-input" id="clockOut" onchange="calcHours()">
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Lunch Break</label>
+        <div class="lunch-row">
+          <div class="lunch-btn selected" onclick="setLunch(0, this)">None</div>
+          <div class="lunch-btn" onclick="setLunch(0.5, this)">30 min</div>
+          <div class="lunch-btn" onclick="setLunch(1, this)">1 hr</div>
+          <div class="lunch-btn" onclick="setLunch(1.5, this)">1.5 hr</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Hours Worked</label>
+        <div class="hours-display" id="hoursDisplay">—</div>
+      </div>
     </div>
 
-    <button class="submit-btn" id="submitBtn" onclick="submitTimesheet()">LOG HOURS</button>
+    <!-- Work Detail -->
+    <div class="form-section">
+      <div class="form-section-title">Work Detail</div>
+      <div class="field">
+        <label>Description of Work <span class="req">*</span></label>
+        <textarea class="form-textarea tall" id="workDesc" placeholder="What did you do today? Be specific — welds completed, panels fit, systems tested, etc."></textarea>
+      </div>
+      <div class="field">
+        <label>Materials Used</label>
+        <textarea class="form-textarea tall" id="materialsUsed" placeholder="List any materials, parts, or consumables used (optional)"></textarea>
+      </div>
+      <div class="field">
+        <label>Problems / Notes for Team</label>
+        <textarea class="form-textarea tall" id="problemNotes" placeholder="Anything the team needs to know — issues found, blockers, safety concerns (optional)"></textarea>
+      </div>
+    </div>
+
+    <button class="submit-btn" id="submitBtn" onclick="submitTimesheet()">LOG TIMESHEET</button>
+    <div class="msg-box" id="logMsg"></div>
+    <div style="height: 32px;"></div>
   </div>
 
   <!-- HISTORY TAB -->
   <div class="tab-content" id="tabHistory">
-    <div id="historyContent">
-      <div class="loading"><div class="dot-loader"><span></span><span></span><span></span></div></div>
-    </div>
+    <div id="weekSummary"></div>
+    <div id="historyContent"><div class="empty-state">Loading your hours...</div></div>
+    <div style="height: 32px;"></div>
   </div>
 </div>
 
@@ -259,36 +256,32 @@ const SUPABASE_URL = 'https://aanrxyiocxxndkvkeocv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let currentTech = null;
-let allTechs = [];
-let allJobs = [];
-let selectedPin = '';
-let selectedHours = null;
+let allTechs = [], allJobs = [], currentTech = null, selectedPin = '', lunchHours = 0;
 
-// Init
 (async function init() {
-  // Load techs
-  const {data} = await sb.from('apb_techs').select('*').eq('active', true);
-  allTechs = data || [];
+  // Set today's date
+  document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
+
+  const { data: techs } = await sb.from('apb_techs').select('*').eq('active', true).order('name');
+  allTechs = techs || [];
   const grid = document.getElementById('techGrid');
-  grid.innerHTML = allTechs.map(t => `
-    <div class="tech-btn" onclick="selectTech('${t.id}', this)">${t.name}</div>
-  `).join('');
-  
-  // Load jobs
-  const {data: jobs} = await sb.from('APB').select('"Vessel/Project", "Job No", "Job Description", "Status"').not('Status', 'in', '("Paid","Closed","Cancelled")').order('"Vessel/Project"');
+  grid.innerHTML = allTechs.map(t =>
+    `<button class="tech-btn" onclick="selectTech('${t.id}', this)">${t.name}</button>`
+  ).join('');
+
+  const { data: jobs } = await sb.from('APB').select('"Vessel/Project", "Job No", "Job Description", "Status"')
+    .not('Status', 'in', '("Paid","Closed","Cancelled")')
+    .order('"Vessel/Project"');
   allJobs = jobs || [];
 
-  // Set date
-  document.getElementById('workDate').value = new Date().toISOString().split('T')[0];
-  document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US', {weekday:'long', month:'short', day:'numeric'});
-  
-  // Check session
-  const saved = sessionStorage.getItem('apb_tech');
-  if (saved) {
-    currentTech = JSON.parse(saved);
-    showApp();
-  }
+  // Populate vessel dropdown — unique vessels
+  const vessels = [...new Set(allJobs.map(j => j['Vessel/Project']))].sort();
+  const sel = document.getElementById('vesselSelect');
+  vessels.forEach(v => {
+    const o = document.createElement('option');
+    o.value = v; o.textContent = v;
+    sel.appendChild(o);
+  });
 })();
 
 function selectTech(id, el) {
@@ -307,17 +300,16 @@ function pinPress(d) {
   updatePinDots();
   if (selectedPin.length === 4) checkPin();
 }
-function pinDel() { selectedPin = selectedPin.slice(0,-1); updatePinDots(); }
+function pinDel() { selectedPin = selectedPin.slice(0, -1); updatePinDots(); }
 function pinClear() { selectedPin = ''; updatePinDots(); }
 function updatePinDots() {
-  document.querySelectorAll('.pin-dot').forEach((d,i) => d.classList.toggle('filled', i < selectedPin.length));
+  for (let i = 0; i < 4; i++)
+    document.getElementById('d' + i).classList.toggle('filled', i < selectedPin.length);
 }
 function checkPin() {
-  if (selectedPin === currentTech.pin) {
-    sessionStorage.setItem('apb_tech', JSON.stringify(currentTech));
-    showApp();
-  } else {
-    document.getElementById('loginError').textContent = 'Incorrect PIN. Try again.';
+  if (selectedPin === currentTech.pin) { showApp(); }
+  else {
+    document.getElementById('loginError').textContent = 'Wrong PIN. Try again.';
     setTimeout(() => { selectedPin = ''; updatePinDots(); }, 800);
   }
 }
@@ -325,127 +317,207 @@ function checkPin() {
 function showApp() {
   document.getElementById('loginScreen').classList.remove('active');
   document.getElementById('appScreen').classList.add('active');
-  document.getElementById('headerName').textContent = currentTech.name + ' · ' + (currentTech.role||'Tech');
-  populateJobs();
-  loadHistory();
+  document.getElementById('headerName').textContent = currentTech.name;
+  document.getElementById('headerRole').textContent = currentTech.role || 'Tech';
 }
 
 function logout() {
-  sessionStorage.removeItem('apb_tech');
   currentTech = null; selectedPin = '';
-  document.getElementById('loginScreen').classList.add('active');
   document.getElementById('appScreen').classList.remove('active');
-  document.querySelectorAll('.tech-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('loginScreen').classList.add('active');
+  document.querySelectorAll('.tech-btn').forEach(b => b.classList.remove('selected'));
   updatePinDots();
-}
-
-function populateJobs() {
-  const vessels = [...new Set(allJobs.map(j=>j['Vessel/Project']))].sort();
-  const sel = document.getElementById('jobVessel');
-  sel.innerHTML = '<option value="">Select vessel...</option>' + vessels.map(v=>`<option value="${v}">${v}</option>`).join('');
-  sel.addEventListener('change', function() {
-    const v = this.value;
-    const tasks = allJobs.filter(j=>j['Vessel/Project']===v);
-    if (tasks.length > 1) {
-      document.getElementById('jobDescGroup').style.display = 'block';
-      document.getElementById('jobDesc').innerHTML = '<option value="">All work on vessel</option>' + tasks.map(t=>`<option value="${t['Job Description']||''}">${t['Job No']||''} ${t['Job Description']||''}</option>`).join('');
-    } else {
-      document.getElementById('jobDescGroup').style.display = 'none';
-    }
-  });
-}
-
-function setHours(h) {
-  selectedHours = h;
-  document.querySelectorAll('.hours-btn').forEach(b=>b.classList.remove('selected'));
-  event.target.classList.add('selected');
-  document.getElementById('hoursInput').value = h;
-}
-
-async function submitTimesheet() {
-  const vessel = document.getElementById('jobVessel').value;
-  const desc = document.getElementById('jobDesc').value;
-  const date = document.getElementById('workDate').value;
-  const hours = parseFloat(document.getElementById('hoursInput').value);
-  const workDesc = document.getElementById('workDesc').value;
-
-  if (!vessel) { showMsg('error', 'Please select a vessel/project.'); return; }
-  if (!hours || hours <= 0) { showMsg('error', 'Please enter hours worked.'); return; }
-  if (!date) { showMsg('error', 'Please select a date.'); return; }
-
-  const btn = document.getElementById('submitBtn');
-  btn.disabled = true; btn.textContent = 'Submitting...';
-
-  // Find job for job_no
-  const job = allJobs.find(j => j['Vessel/Project'] === vessel && (!desc || j['Job Description'] === desc));
-
-  const {error} = await sb.from('apb_timesheets').insert({
-    tech_id: currentTech.id,
-    tech_name: currentTech.name,
-    job_vessel: vessel,
-    job_no: job?.['Job No'] || '',
-    job_description: desc || (job?.['Job Description']||''),
-    date: date,
-    hours_worked: hours,
-    work_description: workDesc
-  });
-
-  btn.disabled = false; btn.textContent = 'LOG HOURS';
-
-  if (error) { showMsg('error', 'Error saving. Try again.'); console.error(error); return; }
-  
-  showMsg('success', `✓ ${hours} hours logged on ${vessel}`);
-  document.getElementById('jobVessel').value = '';
-  document.getElementById('hoursInput').value = '';
-  document.getElementById('workDesc').value = '';
-  document.getElementById('jobDescGroup').style.display = 'none';
-  document.querySelectorAll('.hours-btn').forEach(b=>b.classList.remove('selected'));
-  selectedHours = null;
-  loadHistory();
-}
-
-function showMsg(type, msg) {
-  const el = document.getElementById('logMsg');
-  el.innerHTML = `<div class="${type}-msg">${msg}</div>`;
-  setTimeout(()=>{ el.innerHTML=''; }, 4000);
-}
-
-async function loadHistory() {
-  const {data} = await sb.from('apb_timesheets').select('*').eq('tech_name', currentTech.name).order('date', {ascending:false}).limit(30);
-  const el = document.getElementById('historyContent');
-  if (!data || !data.length) { el.innerHTML = '<div class="empty-state">No hours logged yet.<br>Start by logging time on the Log Time tab.</div>'; return; }
-  
-  const totalHours = data.reduce((s,t)=>s+parseFloat(t.hours_worked),0);
-  // This week
-  const today = new Date(); const monday = new Date(today); monday.setDate(today.getDate() - today.getDay() + 1);
-  const weekHours = data.filter(t=>new Date(t.date+'T12:00:00')>=monday).reduce((s,t)=>s+parseFloat(t.hours_worked),0);
-
-  el.innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
-      <div class="history-total">
-        <div><div class="history-total-label">This Week</div><div class="history-total-val">${weekHours}h</div></div>
-      </div>
-      <div class="history-total">
-        <div><div class="history-total-label">Total (30d)</div><div class="history-total-val">${totalHours}h</div></div>
-      </div>
-    </div>
-    ${data.map(t=>`
-    <div class="history-item">
-      <div class="history-header">
-        <div class="history-vessel">${t.job_vessel}</div>
-        <div class="history-hours">${t.hours_worked}h</div>
-      </div>
-      ${t.job_description?`<div class="history-desc">${t.job_description}</div>`:''}
-      ${t.work_description?`<div class="history-desc" style="margin-top:4px">${t.work_description}</div>`:''}
-      <div class="history-date" style="margin-top:8px">${new Date(t.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</div>
-    </div>`).join('')}`;
+  document.getElementById('loginError').textContent = '';
+  resetForm();
 }
 
 function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['log','history'][i]===tab));
-  document.getElementById('tabLog').classList.toggle('active', tab==='log');
-  document.getElementById('tabHistory').classList.toggle('active', tab==='history');
-  if (tab==='history') loadHistory();
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');
+  document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+  if (tab === 'history') loadHistory();
+}
+
+function onVesselChange() {
+  const vessel = document.getElementById('vesselSelect').value;
+  const field = document.getElementById('jobListField');
+  const list = document.getElementById('jobList');
+  if (!vessel) { field.style.display = 'none'; list.innerHTML = ''; return; }
+  const jobs = allJobs.filter(j => j['Vessel/Project'] === vessel);
+  if (!jobs.length) { field.style.display = 'none'; return; }
+  field.style.display = 'block';
+  list.innerHTML = jobs.map(j => `
+    <div class="job-item-check">
+      <input type="checkbox" id="job_${j['Job No']}" value="${j['Job No']}">
+      <div class="job-item-info">
+        <div class="job-item-no">${j['Job No'] || '—'}</div>
+        <div class="job-item-desc">${j['Job Description'] || ''}</div>
+      </div>
+    </div>`).join('');
+}
+
+function setLunch(hrs, el) {
+  lunchHours = hrs;
+  document.querySelectorAll('.lunch-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  calcHours();
+}
+
+function calcHours() {
+  const cin = document.getElementById('clockIn').value;
+  const cout = document.getElementById('clockOut').value;
+  const disp = document.getElementById('hoursDisplay');
+  if (!cin || !cout) { disp.textContent = '—'; return; }
+  const [ih, im] = cin.split(':').map(Number);
+  const [oh, om] = cout.split(':').map(Number);
+  let total = (oh * 60 + om) - (ih * 60 + im);
+  if (total <= 0) { disp.textContent = 'Check times'; return; }
+  const net = (total / 60) - lunchHours;
+  disp.textContent = net > 0 ? net.toFixed(1) + ' hrs' : 'Check times';
+}
+
+function getNetHours() {
+  const cin = document.getElementById('clockIn').value;
+  const cout = document.getElementById('clockOut').value;
+  if (!cin || !cout) return null;
+  const [ih, im] = cin.split(':').map(Number);
+  const [oh, om] = cout.split(':').map(Number);
+  const total = (oh * 60 + om) - (ih * 60 + im);
+  if (total <= 0) return null;
+  const net = (total / 60) - lunchHours;
+  return net > 0 ? parseFloat(net.toFixed(1)) : null;
+}
+
+function getCheckedJobs() {
+  return [...document.querySelectorAll('#jobList input[type=checkbox]:checked')]
+    .map(cb => cb.value).join(', ');
+}
+
+async function submitTimesheet() {
+  const vessel = document.getElementById('vesselSelect').value;
+  const date = document.getElementById('dateInput').value;
+  const cin = document.getElementById('clockIn').value;
+  const cout = document.getElementById('clockOut').value;
+  const workDesc = document.getElementById('workDesc').value.trim();
+  const materials = document.getElementById('materialsUsed').value.trim();
+  const problems = document.getElementById('problemNotes').value.trim();
+  const checkedJobs = getCheckedJobs();
+  const hours = getNetHours();
+  const msg = document.getElementById('logMsg');
+
+  // Validation
+  if (!vessel) return showMsg('error', 'Select a vessel.');
+  if (!checkedJobs) return showMsg('error', 'Select at least one job number.');
+  if (!date) return showMsg('error', 'Enter a date.');
+  if (!cin || !cout) return showMsg('error', 'Enter clock in and clock out times.');
+  if (!hours) return showMsg('error', 'Check your times — clock out must be after clock in.');
+  if (!workDesc) return showMsg('error', 'Description of work is required.');
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+
+  const { error } = await sb.from('apb_timesheets').insert({
+    tech_id: currentTech.id,
+    tech_name: currentTech.name,
+    job_vessel: vessel,
+    job_no: checkedJobs,
+    date: date,
+    clock_in: cin,
+    clock_out: cout,
+    lunch_hours: lunchHours,
+    hours_worked: hours,
+    work_description: workDesc,
+    materials_used: materials || null,
+    problem_notes: problems || null,
+  });
+
+  btn.disabled = false; btn.textContent = 'LOG TIMESHEET';
+
+  if (error) {
+    // If new columns don't exist yet, fall back to existing schema
+    const { error: e2 } = await sb.from('apb_timesheets').insert({
+      tech_id: currentTech.id,
+      tech_name: currentTech.name,
+      job_vessel: vessel,
+      job_no: checkedJobs,
+      date: date,
+      hours_worked: hours,
+      work_description: workDesc,
+      job_description: `Clock in: ${cin} | Clock out: ${cout} | Lunch: ${lunchHours}h | Materials: ${materials} | Problems: ${problems}`,
+    });
+    if (e2) { showMsg('error', 'Error saving. Try again.'); console.error(e2); return; }
+  }
+
+  showMsg('success', `✓ ${hours} hrs logged on ${vessel} — Job(s): ${checkedJobs}`);
+  resetForm();
+}
+
+function resetForm() {
+  document.getElementById('vesselSelect').value = '';
+  document.getElementById('jobListField').style.display = 'none';
+  document.getElementById('jobList').innerHTML = '';
+  document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
+  document.getElementById('clockIn').value = '';
+  document.getElementById('clockOut').value = '';
+  document.getElementById('hoursDisplay').textContent = '—';
+  document.getElementById('workDesc').value = '';
+  document.getElementById('materialsUsed').value = '';
+  document.getElementById('problemNotes').value = '';
+  lunchHours = 0;
+  document.querySelectorAll('.lunch-btn').forEach((b, i) => b.classList.toggle('selected', i === 0));
+}
+
+function showMsg(type, text) {
+  const el = document.getElementById('logMsg');
+  el.textContent = text;
+  el.className = 'msg-box ' + type;
+  if (type === 'success') setTimeout(() => { el.className = 'msg-box'; }, 5000);
+}
+
+async function loadHistory() {
+  const { data } = await sb.from('apb_timesheets')
+    .select('*').eq('tech_name', currentTech.name)
+    .order('date', { ascending: false }).limit(30);
+  const el = document.getElementById('historyContent');
+  if (!data || !data.length) {
+    el.innerHTML = '<div class="empty-state">No timesheets logged yet.</div>';
+    document.getElementById('weekSummary').innerHTML = '';
+    return;
+  }
+
+  // Week summary
+  const today = new Date();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+  monday.setHours(0,0,0,0);
+  const weekHours = data
+    .filter(t => new Date(t.date + 'T12:00:00') >= monday)
+    .reduce((s, t) => s + parseFloat(t.hours_worked || 0), 0);
+  document.getElementById('weekSummary').innerHTML = `
+    <div class="week-summary">
+      <div><div class="week-label">This week</div><div style="font-size:12px;color:var(--muted);margin-top:2px;">${monday.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – today</div></div>
+      <div class="week-hours">${weekHours.toFixed(1)} hrs</div>
+    </div>`;
+
+  el.innerHTML = data.map(t => {
+    const d = new Date(t.date + 'T12:00:00');
+    const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    const timeStr = t.clock_in ? `${t.clock_in} – ${t.clock_out}` : '';
+    return `<div class="history-entry">
+      <div class="history-header">
+        <div>
+          <div class="history-vessel">${t.job_vessel}</div>
+          <div class="history-meta">${dateStr}${timeStr ? ' · ' + timeStr : ''}</div>
+        </div>
+        <div class="history-hours">${parseFloat(t.hours_worked).toFixed(1)}h</div>
+      </div>
+      ${t.job_no ? `<span class="history-tag">${t.job_no}</span>` : ''}
+      ${t.work_description ? `<div class="history-detail">${t.work_description}</div>` : ''}
+      ${t.materials_used ? `<div class="history-detail" style="color:var(--muted);margin-top:4px;">Materials: ${t.materials_used}</div>` : ''}
+      ${t.problem_notes ? `<div class="history-detail" style="color:#e8a020;margin-top:4px;">⚠ ${t.problem_notes}</div>` : ''}
+    </div>`;
+  }).join('');
 }
 </script>
 </body>
