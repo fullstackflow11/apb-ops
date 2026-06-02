@@ -366,7 +366,7 @@ async function loadMarineForecast(){
     if(!periods.length) throw new Error('no periods');
     document.getElementById('marineForecast').innerHTML = periods.map(p=>`
       <div style="padding:9px 0;border-bottom:1px solid var(--border);">
-        <div style="font-family:var(--font-mono);font-size:11px;color:var(--silver);letter-spacing:1px;margin-bottom:3px;">${p.name} · ${p.temperature}°${p.temperatureUnit}</div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--silver);letter-spacing:1px;margin-bottom:3px;">${p.name}${p.temperature && p.temperatureUnit ? ' · '+p.temperature+'°'+p.temperatureUnit : ''}</div>
         <div style="font-size:13px;color:var(--text);line-height:1.5;">${p.detailedForecast}</div>
       </div>`).join('');
   }catch(e){
@@ -378,7 +378,7 @@ async function loadMarineForecast(){
       if(!periods.length) throw new Error('no periods');
       document.getElementById('marineForecast').innerHTML = periods.map(p=>`
         <div style="padding:9px 0;border-bottom:1px solid var(--border);">
-          <div style="font-family:var(--font-mono);font-size:11px;color:var(--silver);letter-spacing:1px;margin-bottom:3px;">${p.name} · ${p.temperature}°${p.temperatureUnit}</div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--silver);letter-spacing:1px;margin-bottom:3px;">${p.name}${p.temperature && p.temperatureUnit ? ' · '+p.temperature+'°'+p.temperatureUnit : ''}</div>
           <div style="font-size:13px;color:var(--text);line-height:1.5;">${p.detailedForecast}</div>
         </div>`).join('');
     }catch(e2){
