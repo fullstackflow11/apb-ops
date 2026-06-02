@@ -10,28 +10,15 @@
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   :root {
-    --bg: #000000;
-    --card: #0c0c0e;
-    --card2: #141417;
-    --border: #2a2a2e;
-    --border-bright: #3a3a40;
-    --silver: #c8ccd2;
-    --silver-bright: #e8ebef;
-    --silver-dim: #8a8e96;
+    --bg: #000000; --card: #0c0c0e; --card2: #141417; --border: #2a2a2e; --border-bright: #3a3a40;
+    --silver: #c8ccd2; --silver-bright: #e8ebef; --silver-dim: #8a8e96;
     --metal: linear-gradient(135deg, #d8dce2 0%, #9a9ea6 45%, #c0c4ca 55%, #7a7e86 100%);
-    --text: #f4f5f7;
-    --muted: #72767e;
-    --input-bg: #111114;
-    --danger: #d84848;
-    --ok: #4ac078;
+    --text: #f4f5f7; --muted: #72767e; --input-bg: #111114; --danger: #d84848; --ok: #4ac078; --warn: #d8a048;
   }
   html { height: 100%; background: var(--bg); }
   body { min-height: 100%; color: var(--text); font-family: 'DM Sans', sans-serif; max-width: 520px; margin: 0 auto; background: var(--bg); }
-
   .screen { display: none; min-height: 100vh; flex-direction: column; }
   .screen.active { display: flex; }
-
-  /* LOGIN */
   #loginScreen { align-items: center; justify-content: center; padding: 32px 24px;
     background: radial-gradient(ellipse at 50% -10%, rgba(200,204,210,.10) 0%, transparent 55%), #000; }
   .login-logo { text-align: center; margin-bottom: 38px; }
@@ -39,8 +26,7 @@
   .login-logo h1 { font-family: 'DM Mono', monospace; font-size: 23px; font-weight: 500; letter-spacing: 6px;
     background: var(--metal); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
   .login-logo p { font-size: 12px; color: var(--muted); margin-top: 6px; letter-spacing: 3px; text-transform: uppercase; }
-  .login-card { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 28px 24px;
-    box-shadow: 0 1px 0 rgba(255,255,255,.04) inset; }
+  .login-card { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 28px 24px; }
   .login-card h2 { font-size: 16px; font-weight: 600; margin-bottom: 20px; color: var(--silver-bright); }
   .pin-display { display: flex; gap: 12px; justify-content: center; margin-bottom: 26px; }
   .pin-dot { width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--border-bright); transition: all 0.15s; }
@@ -55,115 +41,87 @@
   .tech-btn { background: var(--input-bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px 6px; text-align: center; font-size: 12.5px; font-weight: 500; cursor: pointer; transition: all 0.15s; color: var(--silver); }
   .tech-btn.selected { border-color: var(--silver); color: #000; background: var(--metal); font-weight: 600; }
   .login-error { color: var(--danger); font-size: 13px; text-align: center; margin-top: 14px; min-height: 20px; }
-
-  /* APP */
   #appScreen { background: var(--bg); }
   .app-header { background: var(--card); border-bottom: 1px solid var(--border); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
   .app-header .tech-name { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; color: var(--silver-bright); }
   .app-header .tech-role { font-size: 10px; color: var(--silver-dim); text-transform: uppercase; letter-spacing: 2px; margin-top: 2px; }
   .signout-btn { background: none; border: 1px solid var(--border-bright); border-radius: 8px; color: var(--silver-dim); padding: 7px 13px; font-size: 12px; cursor: pointer; }
-  .signout-btn:active { background: var(--card2); }
-
   .tabs { display: flex; background: var(--card); border-bottom: 1px solid var(--border); }
-  .tab { flex: 1; padding: 14px; text-align: center; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; letter-spacing: 0.5px; }
+  .tab { flex: 1; padding: 14px; text-align: center; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
   .tab.active { color: var(--silver-bright); border-bottom-color: var(--silver); }
-
   .tab-content { display: none; padding: 20px; }
   .tab-content.active { display: block; }
-
   .form-section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 14px; }
-  .form-section-title { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 2px; color: var(--silver-dim); text-transform: uppercase; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+  .form-section-title { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 2px; color: var(--silver-dim); text-transform: uppercase; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
   .field { margin-bottom: 14px; }
   .field:last-child { margin-bottom: 0; }
   .field label { display: block; font-size: 12px; color: var(--silver-dim); margin-bottom: 7px; font-family: 'DM Mono', monospace; letter-spacing: 0.5px; }
   .field label .req { color: var(--danger); margin-left: 3px; }
-  .form-input, .form-select, .form-textarea { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 12px; font-size: 14px; font-family: 'DM Sans', sans-serif; transition: border-color 0.2s; -webkit-appearance: none; }
+  .form-input, .form-select, .form-textarea { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 12px; font-size: 14px; font-family: 'DM Sans', sans-serif; -webkit-appearance: none; }
   .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--silver); }
   .form-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a8e96' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
-  .form-textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
-
+  .form-textarea { resize: vertical; min-height: 60px; line-height: 1.5; }
   .time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .lunch-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
   .lunch-btn { background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 4px; text-align: center; font-size: 13px; cursor: pointer; color: var(--silver-dim); transition: all 0.15s; }
   .lunch-btn.selected { border-color: var(--silver); color: #000; background: var(--metal); font-weight: 600; }
-
-  .hours-display { background: var(--input-bg); border: 1px solid var(--border-bright); border-radius: 8px; padding: 12px; font-family: 'DM Mono', monospace; font-size: 19px; text-align: center;
-    background: var(--metal); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; border: 1px solid var(--border-bright); }
-
-  .job-item-check { display: flex; align-items: flex-start; gap: 11px; padding: 11px 0; border-bottom: 1px solid var(--border); }
-  .job-item-check:last-child { border-bottom: none; }
-  .job-item-check input[type=checkbox] { width: 19px; height: 19px; flex-shrink: 0; margin-top: 1px; accent-color: var(--silver); cursor: pointer; }
-  .job-item-no { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--silver); }
-  .job-item-desc { font-size: 13px; color: var(--text); margin-top: 2px; }
-
-  /* PHOTOS */
+  .hours-display { background: var(--input-bg); border: 1px solid var(--border-bright); border-radius: 8px; padding: 12px; font-family: 'DM Mono', monospace; font-size: 17px; text-align: center; color: var(--silver-bright); }
+  /* JOB LINES */
+  .job-line { background: var(--card2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 12px; position: relative; }
+  .job-line-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .job-line-num { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--silver-dim); letter-spacing: 1px; }
+  .job-line-remove { background: none; border: 1px solid var(--border-bright); color: var(--danger); border-radius: 6px; width: 26px; height: 26px; font-size: 16px; cursor: pointer; line-height: 1; }
+  .line-row { display: grid; grid-template-columns: 1fr 90px; gap: 10px; }
+  .add-line-btn { width: 100%; background: var(--input-bg); border: 1px dashed var(--border-bright); border-radius: 10px; padding: 14px; color: var(--silver); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+  .add-line-btn:active { border-color: var(--silver); }
+  .totals-bar { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; background: var(--input-bg); border: 1px solid var(--border-bright); border-radius: 8px; margin-top: 4px; font-size: 13px; }
+  .totals-bar .label { color: var(--silver-dim); }
+  .totals-bar .vals { font-family: 'DM Mono', monospace; }
+  .totals-bar .match { color: var(--ok); }
+  .totals-bar .mismatch { color: var(--warn); }
   .photo-add { display: flex; gap: 10px; }
-  .photo-btn { flex: 1; background: var(--input-bg); border: 1px dashed var(--border-bright); border-radius: 10px; padding: 16px 8px; text-align: center; cursor: pointer; color: var(--silver-dim); font-size: 13px; transition: all 0.15s; }
-  .photo-btn:active { border-color: var(--silver); color: var(--silver-bright); }
+  .photo-btn { flex: 1; background: var(--input-bg); border: 1px dashed var(--border-bright); border-radius: 10px; padding: 16px 8px; text-align: center; cursor: pointer; color: var(--silver-dim); font-size: 13px; }
   .photo-btn .icon { font-size: 22px; display: block; margin-bottom: 4px; }
   .photo-previews { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
   .photo-thumb { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
   .photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
-  .photo-thumb .remove { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; background: rgba(0,0,0,.75); border: 1px solid var(--border-bright); border-radius: 50%; color: #fff; font-size: 14px; line-height: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .photo-thumb .remove { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; background: rgba(0,0,0,.75); border: 1px solid var(--border-bright); border-radius: 50%; color: #fff; font-size: 14px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
   .photo-uploading { font-size: 11px; color: var(--silver-dim); margin-top: 8px; font-family: 'DM Mono', monospace; }
-
-  .submit-btn { width: 100%; background: var(--metal); color: #000; border: none; border-radius: 12px; padding: 17px; font-size: 15px; font-weight: 700; cursor: pointer; letter-spacing: 1.5px; margin-top: 6px; transition: opacity 0.2s; }
-  .submit-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-  .submit-btn:active { opacity: 0.85; }
-
+  .submit-btn { width: 100%; background: var(--metal); color: #000; border: none; border-radius: 12px; padding: 17px; font-size: 15px; font-weight: 700; cursor: pointer; letter-spacing: 1.5px; margin-top: 6px; }
+  .submit-btn:disabled { opacity: 0.35; }
   .msg-box { margin-top: 12px; border-radius: 8px; padding: 13px 16px; font-size: 13px; display: none; line-height: 1.4; }
   .msg-box.success { background: rgba(74,192,120,.1); border: 1px solid rgba(74,192,120,.3); color: var(--ok); display: block; }
   .msg-box.error { background: rgba(216,72,72,.1); border: 1px solid rgba(216,72,72,.3); color: var(--danger); display: block; }
-
-  /* HISTORY */
   .history-entry { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; }
   .history-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
   .history-vessel { font-weight: 600; font-size: 14px; color: var(--silver-bright); }
-  .history-hours { font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 500;
-    background: var(--metal); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .history-hours { font-family: 'DM Mono', monospace; font-size: 18px; color: var(--silver-bright); }
   .history-meta { font-size: 12px; color: var(--muted); }
-  .history-detail { font-size: 12.5px; color: var(--text); margin-top: 6px; line-height: 1.5; }
-  .history-tag { display: inline-block; font-family: 'DM Mono', monospace; font-size: 10px; background: var(--input-bg); border: 1px solid var(--border); padding: 2px 7px; border-radius: 4px; color: var(--silver); margin-right: 4px; margin-top: 4px; }
+  .history-line { font-size: 12.5px; color: var(--text); margin-top: 6px; padding-left: 10px; border-left: 2px solid var(--border-bright); line-height: 1.5; }
+  .history-line .ln-job { font-family: 'DM Mono', monospace; color: var(--silver); }
+  .history-line .ln-hrs { color: var(--silver-dim); }
+  .history-tag { display: inline-block; font-family: 'DM Mono', monospace; font-size: 10px; background: var(--input-bg); border: 1px solid var(--border); padding: 2px 7px; border-radius: 4px; color: var(--silver); margin-top: 6px; }
   .history-photos { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
   .history-photos img { width: 56px; height: 56px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
   .empty-state { text-align: center; color: var(--muted); padding: 40px 20px; font-size: 13px; line-height: 1.7; }
   .week-summary { background: linear-gradient(135deg, rgba(200,204,210,.08), rgba(122,126,134,.04)); border: 1px solid var(--border-bright); border-radius: 10px; padding: 15px 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
   .week-label { font-size: 12px; color: var(--silver-dim); }
-  .week-hours { font-family: 'DM Mono', monospace; font-size: 23px;
-    background: var(--metal); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .week-hours { font-family: 'DM Mono', monospace; font-size: 23px; color: var(--silver-bright); }
 </style>
 </head>
 <body>
 
 <div class="screen active" id="loginScreen">
-  <div class="login-logo">
-    <div class="bar"></div>
-    <h1>APB TECH</h1>
-    <p>Timesheet Portal</p>
-  </div>
+  <div class="login-logo"><div class="bar"></div><h1>APB TECH</h1><p>Timesheet Portal</p></div>
   <div class="login-card">
     <h2>Select your name & enter PIN</h2>
-    <div class="tech-selector">
-      <label>WHO ARE YOU?</label>
-      <div class="tech-grid" id="techGrid"></div>
-    </div>
-    <div class="pin-display">
-      <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
-      <div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div>
-    </div>
+    <div class="tech-selector"><label>WHO ARE YOU?</label><div class="tech-grid" id="techGrid"></div></div>
+    <div class="pin-display"><div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div><div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div></div>
     <div class="pin-pad">
-      <button class="pin-btn" onclick="pinPress('1')">1</button>
-      <button class="pin-btn" onclick="pinPress('2')">2</button>
-      <button class="pin-btn" onclick="pinPress('3')">3</button>
-      <button class="pin-btn" onclick="pinPress('4')">4</button>
-      <button class="pin-btn" onclick="pinPress('5')">5</button>
-      <button class="pin-btn" onclick="pinPress('6')">6</button>
-      <button class="pin-btn" onclick="pinPress('7')">7</button>
-      <button class="pin-btn" onclick="pinPress('8')">8</button>
-      <button class="pin-btn" onclick="pinPress('9')">9</button>
-      <button class="pin-btn del" onclick="pinClear()">CLR</button>
-      <button class="pin-btn" onclick="pinPress('0')">0</button>
-      <button class="pin-btn del" onclick="pinDel()">DEL</button>
+      <button class="pin-btn" onclick="pinPress('1')">1</button><button class="pin-btn" onclick="pinPress('2')">2</button><button class="pin-btn" onclick="pinPress('3')">3</button>
+      <button class="pin-btn" onclick="pinPress('4')">4</button><button class="pin-btn" onclick="pinPress('5')">5</button><button class="pin-btn" onclick="pinPress('6')">6</button>
+      <button class="pin-btn" onclick="pinPress('7')">7</button><button class="pin-btn" onclick="pinPress('8')">8</button><button class="pin-btn" onclick="pinPress('9')">9</button>
+      <button class="pin-btn del" onclick="pinClear()">CLR</button><button class="pin-btn" onclick="pinPress('0')">0</button><button class="pin-btn del" onclick="pinDel()">DEL</button>
     </div>
     <div class="login-error" id="loginError"></div>
   </div>
@@ -171,10 +129,7 @@
 
 <div class="screen" id="appScreen">
   <div class="app-header">
-    <div>
-      <div class="tech-name" id="headerName">—</div>
-      <div class="tech-role" id="headerRole">Tech</div>
-    </div>
+    <div><div class="tech-name" id="headerName">—</div><div class="tech-role" id="headerRole">Tech</div></div>
     <button class="signout-btn" onclick="logout()">Sign Out</button>
   </div>
   <div class="tabs">
@@ -184,79 +139,46 @@
 
   <div class="tab-content active" id="tabLog">
     <div class="form-section">
-      <div class="form-section-title">Job Info</div>
+      <div class="form-section-title">Visit</div>
       <div class="field">
         <label>Vessel / Project <span class="req">*</span></label>
-        <select class="form-select" id="vesselSelect" onchange="onVesselChange()">
-          <option value="">Select vessel...</option>
-        </select>
+        <select class="form-select" id="vesselSelect" onchange="onVesselChange()"><option value="">Select vessel...</option></select>
       </div>
-      <div class="field" id="jobListField" style="display:none">
-        <label>Job Number(s) Worked On <span class="req">*</span></label>
-        <div id="jobList"></div>
-      </div>
-      <div class="field">
-        <label>Date <span class="req">*</span></label>
-        <input type="date" class="form-input" id="dateInput">
+      <div class="field"><label>Date <span class="req">*</span></label><input type="date" class="form-input" id="dateInput"></div>
+      <div class="field"><div class="time-row">
+        <div><label>Clock In <span class="req">*</span></label><input type="time" class="form-input" id="clockIn" onchange="calcHours()"></div>
+        <div><label>Clock Out <span class="req">*</span></label><input type="time" class="form-input" id="clockOut" onchange="calcHours()"></div>
+      </div></div>
+      <div class="field"><label>Lunch Break</label><div class="lunch-row">
+        <div class="lunch-btn selected" onclick="setLunch(0, this)">None</div>
+        <div class="lunch-btn" onclick="setLunch(0.5, this)">30 min</div>
+        <div class="lunch-btn" onclick="setLunch(1, this)">1 hr</div>
+        <div class="lunch-btn" onclick="setLunch(1.5, this)">1.5 hr</div>
+      </div></div>
+      <div class="field"><label>Clock Hours</label><div class="hours-display" id="hoursDisplay">—</div></div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title"><span>Jobs Worked</span></div>
+      <div id="jobLines"></div>
+      <button class="add-line-btn" onclick="addJobLine()" id="addLineBtn">+ Add Job Line</button>
+      <div class="totals-bar">
+        <span class="label">Logged across jobs</span>
+        <span class="vals" id="totalsVals">0.0 / 0.0 hrs</span>
       </div>
     </div>
 
     <div class="form-section">
-      <div class="form-section-title">Time</div>
-      <div class="field">
-        <div class="time-row">
-          <div>
-            <label>Clock In <span class="req">*</span></label>
-            <input type="time" class="form-input" id="clockIn" onchange="calcHours()">
-          </div>
-          <div>
-            <label>Clock Out <span class="req">*</span></label>
-            <input type="time" class="form-input" id="clockOut" onchange="calcHours()">
-          </div>
-        </div>
-      </div>
-      <div class="field">
-        <label>Lunch Break</label>
-        <div class="lunch-row">
-          <div class="lunch-btn selected" onclick="setLunch(0, this)">None</div>
-          <div class="lunch-btn" onclick="setLunch(0.5, this)">30 min</div>
-          <div class="lunch-btn" onclick="setLunch(1, this)">1 hr</div>
-          <div class="lunch-btn" onclick="setLunch(1.5, this)">1.5 hr</div>
-        </div>
-      </div>
-      <div class="field">
-        <label>Hours Worked</label>
-        <div class="hours-display" id="hoursDisplay">—</div>
-      </div>
-    </div>
-
-    <div class="form-section">
-      <div class="form-section-title">Work Detail</div>
-      <div class="field">
-        <label>Description of Work <span class="req">*</span></label>
-        <textarea class="form-textarea" id="workDesc" placeholder="What did you do? Be specific."></textarea>
-      </div>
-      <div class="field">
-        <label>Materials Used</label>
-        <textarea class="form-textarea" id="materialsUsed" placeholder="Parts, consumables, materials (optional)"></textarea>
-      </div>
-      <div class="field">
-        <label>Problems / Notes for Team</label>
-        <textarea class="form-textarea" id="problemNotes" placeholder="Issues, blockers, safety concerns (optional)"></textarea>
-      </div>
+      <div class="form-section-title">Visit Notes</div>
+      <div class="field"><label>Materials Used</label><textarea class="form-textarea" id="materialsUsed" placeholder="Parts, consumables, materials (optional)"></textarea></div>
+      <div class="field"><label>Problems / Notes for Team</label><textarea class="form-textarea" id="problemNotes" placeholder="Issues, blockers, safety concerns (optional)"></textarea></div>
     </div>
 
     <div class="form-section">
       <div class="form-section-title">Photos</div>
       <div class="photo-add">
-        <label class="photo-btn">
-          <span class="icon">📷</span>Take Photo
-          <input type="file" accept="image/*" capture="environment" style="display:none" onchange="handlePhotos(this.files)">
-        </label>
-        <label class="photo-btn">
-          <span class="icon">🖼️</span>Choose Photos
-          <input type="file" accept="image/*" multiple style="display:none" onchange="handlePhotos(this.files)">
-        </label>
+        <label class="photo-btn"><span class="icon">📷</span>Take Photo<input type="file" accept="image/*" capture="environment" style="display:none" onchange="handlePhotos(this.files)"></label>
+        <label class="photo-btn"><span class="icon">🖼️</span>Choose Photos<input type="file" accept="image/*" multiple style="display:none" onchange="handlePhotos(this.files)"></label>
       </div>
       <div class="photo-uploading" id="photoStatus"></div>
       <div class="photo-previews" id="photoPreviews"></div>
@@ -279,98 +201,89 @@ const SUPABASE_URL = 'https://aanrxyiocxxndkvkeocv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw';
 const PHOTO_BUCKET = 'timesheet-photos';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-let allTechs = [], allJobs = [], currentTech = null, selectedPin = '', lunchHours = 0, uploadedPhotos = [];
+let allTechs = [], allJobs = [], currentTech = null, selectedPin = '', lunchHours = 0, uploadedPhotos = [], lineCounter = 0;
 
 (async function init() {
   document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
   const { data: techs } = await sb.from('apb_techs').select('*').eq('active', true).order('name');
   allTechs = techs || [];
-  document.getElementById('techGrid').innerHTML = allTechs.map(t =>
-    `<button class="tech-btn" onclick="selectTech('${t.id}', this)">${t.name}</button>`).join('');
-  const { data: jobs } = await sb.from('APB').select('"Vessel/Project", "Job No", "Job Description", "Status"')
-    .not('Status', 'in', '("Paid","Closed","Cancelled")').order('"Vessel/Project"');
+  document.getElementById('techGrid').innerHTML = allTechs.map(t => `<button class="tech-btn" onclick="selectTech('${t.id}', this)">${t.name}</button>`).join('');
+  const { data: jobs } = await sb.from('APB').select('"Vessel/Project", "Job No", "Job Description", "Status"').not('Status', 'in', '("Paid","Closed","Cancelled")').order('"Vessel/Project"');
   allJobs = jobs || [];
   const vessels = [...new Set(allJobs.map(j => j['Vessel/Project']))].sort();
   const sel = document.getElementById('vesselSelect');
   vessels.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o); });
 })();
 
-function selectTech(id, el) {
-  document.querySelectorAll('.tech-btn').forEach(b => b.classList.remove('selected'));
-  el.classList.add('selected');
-  currentTech = allTechs.find(t => t.id === id);
-  selectedPin = ''; updatePinDots();
-  document.getElementById('loginError').textContent = '';
-}
-function pinPress(d) {
-  if (!currentTech) { document.getElementById('loginError').textContent = 'Select your name first.'; return; }
-  if (selectedPin.length >= 4) return;
-  selectedPin += d; updatePinDots();
-  if (selectedPin.length === 4) checkPin();
-}
+function selectTech(id, el) { document.querySelectorAll('.tech-btn').forEach(b => b.classList.remove('selected')); el.classList.add('selected'); currentTech = allTechs.find(t => t.id === id); selectedPin = ''; updatePinDots(); document.getElementById('loginError').textContent = ''; }
+function pinPress(d) { if (!currentTech) { document.getElementById('loginError').textContent = 'Select your name first.'; return; } if (selectedPin.length >= 4) return; selectedPin += d; updatePinDots(); if (selectedPin.length === 4) checkPin(); }
 function pinDel() { selectedPin = selectedPin.slice(0, -1); updatePinDots(); }
 function pinClear() { selectedPin = ''; updatePinDots(); }
 function updatePinDots() { for (let i = 0; i < 4; i++) document.getElementById('d'+i).classList.toggle('filled', i < selectedPin.length); }
-function checkPin() {
-  if (selectedPin === currentTech.pin) showApp();
-  else { document.getElementById('loginError').textContent = 'Wrong PIN. Try again.'; setTimeout(() => { selectedPin=''; updatePinDots(); }, 800); }
-}
-function showApp() {
-  document.getElementById('loginScreen').classList.remove('active');
-  document.getElementById('appScreen').classList.add('active');
-  document.getElementById('headerName').textContent = currentTech.name;
-  document.getElementById('headerRole').textContent = currentTech.role || 'Tech';
-}
-function logout() {
-  currentTech = null; selectedPin = '';
-  document.getElementById('appScreen').classList.remove('active');
-  document.getElementById('loginScreen').classList.add('active');
-  document.querySelectorAll('.tech-btn').forEach(b => b.classList.remove('selected'));
-  updatePinDots(); document.getElementById('loginError').textContent = ''; resetForm();
-}
-function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');
-  document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
-  if (tab === 'history') loadHistory();
+function checkPin() { if (selectedPin === currentTech.pin) showApp(); else { document.getElementById('loginError').textContent = 'Wrong PIN. Try again.'; setTimeout(() => { selectedPin=''; updatePinDots(); }, 800); } }
+function showApp() { document.getElementById('loginScreen').classList.remove('active'); document.getElementById('appScreen').classList.add('active'); document.getElementById('headerName').textContent = currentTech.name; document.getElementById('headerRole').textContent = currentTech.role || 'Tech'; }
+function logout() { currentTech = null; selectedPin = ''; document.getElementById('appScreen').classList.remove('active'); document.getElementById('loginScreen').classList.add('active'); document.querySelectorAll('.tech-btn').forEach(b => b.classList.remove('selected')); updatePinDots(); document.getElementById('loginError').textContent = ''; resetForm(); }
+function switchTab(tab) { document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active'); document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active'); if (tab === 'history') loadHistory(); }
+
+function jobOptionsHtml() {
+  const vessel = document.getElementById('vesselSelect').value;
+  const jobs = allJobs.filter(j => j['Vessel/Project'] === vessel);
+  return '<option value="">Select job...</option>' + jobs.map(j => `<option value="${j['Job No']}" data-desc="${(j['Job Description']||'').replace(/"/g,'&quot;')}">${j['Job No']} — ${j['Job Description']||''}</option>`).join('');
 }
 function onVesselChange() {
+  // reset job lines when vessel changes
+  document.getElementById('jobLines').innerHTML = '';
+  lineCounter = 0;
   const vessel = document.getElementById('vesselSelect').value;
-  const field = document.getElementById('jobListField');
-  const list = document.getElementById('jobList');
-  if (!vessel) { field.style.display = 'none'; list.innerHTML = ''; return; }
-  const jobs = allJobs.filter(j => j['Vessel/Project'] === vessel);
-  if (!jobs.length) { field.style.display = 'none'; return; }
-  field.style.display = 'block';
-  list.innerHTML = jobs.map(j => `
-    <div class="job-item-check">
-      <input type="checkbox" value="${j['Job No']}">
-      <div><div class="job-item-no">${j['Job No'] || '—'}</div><div class="job-item-desc">${j['Job Description'] || ''}</div></div>
-    </div>`).join('');
+  if (vessel) addJobLine();
+  updateTotals();
 }
+function addJobLine() {
+  const vessel = document.getElementById('vesselSelect').value;
+  if (!vessel) { showMsg('error', 'Select a vessel first.'); return; }
+  lineCounter++;
+  const id = 'line_' + lineCounter;
+  const div = document.createElement('div');
+  div.className = 'job-line'; div.id = id;
+  div.innerHTML = `
+    <div class="job-line-head">
+      <span class="job-line-num">JOB LINE ${lineCounter}</span>
+      <button class="job-line-remove" onclick="removeJobLine('${id}')">×</button>
+    </div>
+    <div class="field">
+      <label>Job Number <span class="req">*</span></label>
+      <select class="form-select line-job">${jobOptionsHtml()}</select>
+    </div>
+    <div class="field">
+      <label>Description of Work <span class="req">*</span></label>
+      <textarea class="form-textarea line-desc" placeholder="What did you do on this job?"></textarea>
+    </div>
+    <div class="field">
+      <label>Hours on This Job <span class="req">*</span></label>
+      <input type="number" step="0.5" min="0" class="form-input line-hours" placeholder="0.0" oninput="updateTotals()">
+    </div>`;
+  document.getElementById('jobLines').appendChild(div);
+  updateTotals();
+}
+function removeJobLine(id) { const el = document.getElementById(id); if (el) el.remove(); updateTotals(); }
 function setLunch(hrs, el) { lunchHours = hrs; document.querySelectorAll('.lunch-btn').forEach(b => b.classList.remove('selected')); el.classList.add('selected'); calcHours(); }
-function calcHours() {
-  const cin = document.getElementById('clockIn').value, cout = document.getElementById('clockOut').value;
-  const disp = document.getElementById('hoursDisplay');
-  if (!cin || !cout) { disp.textContent = '—'; return; }
-  const [ih,im] = cin.split(':').map(Number), [oh,om] = cout.split(':').map(Number);
-  let total = (oh*60+om) - (ih*60+im);
-  if (total <= 0) { disp.textContent = 'Check times'; return; }
-  const net = (total/60) - lunchHours;
-  disp.textContent = net > 0 ? net.toFixed(1) + ' hrs' : 'Check times';
-}
-function getNetHours() {
+function clockHours() {
   const cin = document.getElementById('clockIn').value, cout = document.getElementById('clockOut').value;
   if (!cin || !cout) return null;
   const [ih,im] = cin.split(':').map(Number), [oh,om] = cout.split(':').map(Number);
-  const total = (oh*60+om) - (ih*60+im);
-  if (total <= 0) return null;
-  const net = (total/60) - lunchHours;
-  return net > 0 ? parseFloat(net.toFixed(1)) : null;
+  const total = (oh*60+om) - (ih*60+im); if (total <= 0) return null;
+  const net = (total/60) - lunchHours; return net > 0 ? parseFloat(net.toFixed(2)) : null;
 }
-function getCheckedJobs() { return [...document.querySelectorAll('#jobList input:checked')].map(cb => cb.value).join(', '); }
+function calcHours() { const h = clockHours(); document.getElementById('hoursDisplay').textContent = h !== null ? h.toFixed(1) + ' hrs' : (document.getElementById('clockIn').value && document.getElementById('clockOut').value ? 'Check times' : '—'); updateTotals(); }
+function lineHoursTotal() { return [...document.querySelectorAll('.line-hours')].reduce((s, el) => s + (parseFloat(el.value) || 0), 0); }
+function updateTotals() {
+  const lineTotal = lineHoursTotal(); const clock = clockHours();
+  const el = document.getElementById('totalsVals');
+  const clockStr = clock !== null ? clock.toFixed(1) : '0.0';
+  el.textContent = `${lineTotal.toFixed(1)} / ${clockStr} hrs`;
+  el.className = 'vals';
+  if (clock !== null && lineTotal > 0) el.classList.add(Math.abs(lineTotal - clock) < 0.05 ? 'match' : 'mismatch');
+}
 
 async function handlePhotos(files) {
   if (!files || !files.length) return;
@@ -380,89 +293,99 @@ async function handlePhotos(files) {
     const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
     const path = `${currentTech.name.replace(/[^a-z0-9]/gi,'_')}/${Date.now()}_${Math.random().toString(36).slice(2,7)}.${ext}`;
     const { error } = await sb.storage.from(PHOTO_BUCKET).upload(path, file, { contentType: file.type });
-    if (error) { status.textContent = 'Photo upload failed: ' + error.message; console.error(error); continue; }
+    if (error) { status.textContent = 'Photo upload failed: ' + error.message; continue; }
     const { data } = sb.storage.from(PHOTO_BUCKET).getPublicUrl(path);
     uploadedPhotos.push(data.publicUrl);
   }
-  status.textContent = uploadedPhotos.length + ' photo(s) attached';
-  renderPhotos();
+  status.textContent = uploadedPhotos.length + ' photo(s) attached'; renderPhotos();
 }
-function renderPhotos() {
-  document.getElementById('photoPreviews').innerHTML = uploadedPhotos.map((url, i) => `
-    <div class="photo-thumb"><img src="${url}"><div class="remove" onclick="removePhoto(${i})">×</div></div>`).join('');
-}
+function renderPhotos() { document.getElementById('photoPreviews').innerHTML = uploadedPhotos.map((url, i) => `<div class="photo-thumb"><img src="${url}"><div class="remove" onclick="removePhoto(${i})">×</div></div>`).join(''); }
 function removePhoto(i) { uploadedPhotos.splice(i, 1); renderPhotos(); document.getElementById('photoStatus').textContent = uploadedPhotos.length + ' photo(s) attached'; }
 
 async function submitTimesheet() {
   const vessel = document.getElementById('vesselSelect').value;
   const date = document.getElementById('dateInput').value;
   const cin = document.getElementById('clockIn').value, cout = document.getElementById('clockOut').value;
-  const workDesc = document.getElementById('workDesc').value.trim();
   const materials = document.getElementById('materialsUsed').value.trim();
   const problems = document.getElementById('problemNotes').value.trim();
-  const checkedJobs = getCheckedJobs();
-  const hours = getNetHours();
+  const clock = clockHours();
   if (!vessel) return showMsg('error', 'Select a vessel.');
-  if (!checkedJobs) return showMsg('error', 'Select at least one job number.');
   if (!date) return showMsg('error', 'Enter a date.');
   if (!cin || !cout) return showMsg('error', 'Enter clock in and clock out times.');
-  if (!hours) return showMsg('error', 'Check your times — clock out must be after clock in.');
-  if (!workDesc) return showMsg('error', 'Description of work is required.');
+  if (clock === null) return showMsg('error', 'Check your times — clock out must be after clock in.');
+  // Gather lines
+  const lineEls = [...document.querySelectorAll('.job-line')];
+  if (!lineEls.length) return showMsg('error', 'Add at least one job line.');
+  const lines = [];
+  for (const le of lineEls) {
+    const jobSel = le.querySelector('.line-job');
+    const jobNo = jobSel.value;
+    const jobDesc = jobSel.options[jobSel.selectedIndex]?.dataset.desc || '';
+    const workDesc = le.querySelector('.line-desc').value.trim();
+    const hrs = parseFloat(le.querySelector('.line-hours').value);
+    if (!jobNo) return showMsg('error', 'Each job line needs a job number selected.');
+    if (!workDesc) return showMsg('error', 'Each job line needs a description of work.');
+    if (!hrs || hrs <= 0) return showMsg('error', 'Each job line needs hours greater than 0.');
+    lines.push({ job_no: jobNo, job_description: jobDesc, work_description: workDesc, hours: hrs });
+  }
+  const totalLineHours = lines.reduce((s, l) => s + l.hours, 0);
 
-  const btn = document.getElementById('submitBtn');
-  btn.disabled = true; btn.textContent = 'Saving...';
-  const { error } = await sb.from('apb_timesheets').insert({
-    tech_id: currentTech.id, tech_name: currentTech.name, job_vessel: vessel, job_no: checkedJobs,
-    date, clock_in: cin, clock_out: cout, lunch_hours: lunchHours, hours_worked: hours,
-    work_description: workDesc, materials_used: materials || null, problem_notes: problems || null,
+  const btn = document.getElementById('submitBtn'); btn.disabled = true; btn.textContent = 'Saving...';
+  // Insert parent visit
+  const { data: visit, error: vErr } = await sb.from('apb_timesheets').insert({
+    tech_id: currentTech.id, tech_name: currentTech.name, job_vessel: vessel,
+    job_no: lines.map(l => l.job_no).join(', '),
+    date, clock_in: cin, clock_out: cout, lunch_hours: lunchHours, hours_worked: totalLineHours,
+    work_description: lines.map(l => `${l.job_no}: ${l.work_description}`).join(' | '),
+    materials_used: materials || null, problem_notes: problems || null,
     photo_urls: uploadedPhotos.length ? uploadedPhotos.join(',') : null
-  });
+  }).select().single();
+  if (vErr) { btn.disabled = false; btn.textContent = 'LOG TIMESHEET'; showMsg('error', 'Error saving visit: ' + vErr.message); return; }
+  // Insert child lines
+  const lineRows = lines.map(l => ({ timesheet_id: visit.id, job_no: l.job_no, job_description: l.job_description, work_description: l.work_description, hours: l.hours }));
+  const { error: lErr } = await sb.from('apb_timesheet_lines').insert(lineRows);
   btn.disabled = false; btn.textContent = 'LOG TIMESHEET';
-  if (error) { showMsg('error', 'Error saving: ' + error.message); console.error(error); return; }
-  showMsg('success', `✓ ${hours} hrs logged on ${vessel} — Job(s): ${checkedJobs}`);
+  if (lErr) { showMsg('error', 'Visit saved but job lines failed: ' + lErr.message); return; }
+  showMsg('success', `✓ Logged ${lines.length} job line(s), ${totalLineHours.toFixed(1)} hrs total on ${vessel}`);
   resetForm();
 }
 function resetForm() {
   document.getElementById('vesselSelect').value = '';
-  document.getElementById('jobListField').style.display = 'none';
-  document.getElementById('jobList').innerHTML = '';
+  document.getElementById('jobLines').innerHTML = ''; lineCounter = 0;
   document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
   document.getElementById('clockIn').value = ''; document.getElementById('clockOut').value = '';
   document.getElementById('hoursDisplay').textContent = '—';
-  document.getElementById('workDesc').value = ''; document.getElementById('materialsUsed').value = ''; document.getElementById('problemNotes').value = '';
+  document.getElementById('materialsUsed').value = ''; document.getElementById('problemNotes').value = '';
   lunchHours = 0; uploadedPhotos = [];
   document.querySelectorAll('.lunch-btn').forEach((b,i) => b.classList.toggle('selected', i===0));
   document.getElementById('photoPreviews').innerHTML = ''; document.getElementById('photoStatus').textContent = '';
+  updateTotals();
 }
-function showMsg(type, text) {
-  const el = document.getElementById('logMsg'); el.textContent = text; el.className = 'msg-box ' + type;
-  if (type === 'success') setTimeout(() => { el.className = 'msg-box'; }, 5000);
-}
+function showMsg(type, text) { const el = document.getElementById('logMsg'); el.textContent = text; el.className = 'msg-box ' + type; if (type === 'success') setTimeout(() => { el.className = 'msg-box'; }, 6000); }
 
 async function loadHistory() {
-  const { data } = await sb.from('apb_timesheets').select('*').eq('tech_name', currentTech.name).order('date', {ascending:false}).limit(30);
+  const { data: visits } = await sb.from('apb_timesheets').select('*').eq('tech_name', currentTech.name).order('date', {ascending:false}).limit(30);
   const el = document.getElementById('historyContent');
-  if (!data || !data.length) { el.innerHTML = '<div class="empty-state">No timesheets logged yet.</div>'; document.getElementById('weekSummary').innerHTML = ''; return; }
-  const today = new Date(); const monday = new Date(today);
-  monday.setDate(today.getDate() - ((today.getDay()+6)%7)); monday.setHours(0,0,0,0);
-  const weekHours = data.filter(t => new Date(t.date+'T12:00:00') >= monday).reduce((s,t) => s + parseFloat(t.hours_worked||0), 0);
-  document.getElementById('weekSummary').innerHTML = `
-    <div class="week-summary"><div><div class="week-label">This week</div>
-    <div style="font-size:12px;color:var(--muted);margin-top:2px;">${monday.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – today</div></div>
-    <div class="week-hours">${weekHours.toFixed(1)} hrs</div></div>`;
-  el.innerHTML = data.map(t => {
-    const d = new Date(t.date+'T12:00:00');
+  if (!visits || !visits.length) { el.innerHTML = '<div class="empty-state">No timesheets logged yet.</div>'; document.getElementById('weekSummary').innerHTML = ''; return; }
+  // fetch lines for these visits
+  const ids = visits.map(v => v.id);
+  const { data: allLines } = await sb.from('apb_timesheet_lines').select('*').in('timesheet_id', ids);
+  const linesByVisit = {};
+  (allLines || []).forEach(l => { (linesByVisit[l.timesheet_id] = linesByVisit[l.timesheet_id] || []).push(l); });
+  const today = new Date(); const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay()+6)%7)); monday.setHours(0,0,0,0);
+  const weekHours = visits.filter(t => new Date(t.date+'T12:00:00') >= monday).reduce((s,t) => s + parseFloat(t.hours_worked||0), 0);
+  document.getElementById('weekSummary').innerHTML = `<div class="week-summary"><div><div class="week-label">This week</div><div style="font-size:12px;color:var(--muted);margin-top:2px;">${monday.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – today</div></div><div class="week-hours">${weekHours.toFixed(1)} hrs</div></div>`;
+  el.innerHTML = visits.map(v => {
+    const d = new Date(v.date+'T12:00:00');
     const dateStr = d.toLocaleDateString('en-US', {weekday:'short',month:'short',day:'numeric'});
-    const timeStr = t.clock_in ? `${t.clock_in} – ${t.clock_out}` : '';
-    const photos = t.photo_urls ? t.photo_urls.split(',').filter(Boolean) : [];
+    const timeStr = v.clock_in ? `${v.clock_in} – ${v.clock_out}` : '';
+    const lines = linesByVisit[v.id] || [];
+    const photos = v.photo_urls ? v.photo_urls.split(',').filter(Boolean) : [];
     return `<div class="history-entry">
-      <div class="history-header"><div><div class="history-vessel">${t.job_vessel}</div>
-      <div class="history-meta">${dateStr}${timeStr ? ' · '+timeStr : ''}</div></div>
-      <div class="history-hours">${parseFloat(t.hours_worked).toFixed(1)}h</div></div>
-      ${t.job_no ? `<span class="history-tag">${t.job_no}</span>` : ''}
-      ${t.work_description ? `<div class="history-detail">${t.work_description}</div>` : ''}
-      ${t.materials_used ? `<div class="history-detail" style="color:var(--silver-dim);margin-top:4px;">Materials: ${t.materials_used}</div>` : ''}
-      ${t.problem_notes ? `<div class="history-detail" style="color:#d8a048;margin-top:4px;">⚠ ${t.problem_notes}</div>` : ''}
+      <div class="history-header"><div><div class="history-vessel">${v.job_vessel}</div><div class="history-meta">${dateStr}${timeStr ? ' · '+timeStr : ''}</div></div><div class="history-hours">${parseFloat(v.hours_worked).toFixed(1)}h</div></div>
+      ${lines.map(l => `<div class="history-line"><span class="ln-job">${l.job_no}</span> <span class="ln-hrs">· ${parseFloat(l.hours).toFixed(1)}h</span><br>${l.work_description}</div>`).join('')}
+      ${v.materials_used ? `<div class="history-line" style="border-color:var(--border);color:var(--silver-dim);">Materials: ${v.materials_used}</div>` : ''}
+      ${v.problem_notes ? `<div class="history-line" style="border-color:var(--warn);color:var(--warn);">⚠ ${v.problem_notes}</div>` : ''}
       ${photos.length ? `<div class="history-photos">${photos.map(p => `<img src="${p}">`).join('')}</div>` : ''}
     </div>`;
   }).join('');
