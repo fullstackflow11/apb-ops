@@ -162,9 +162,10 @@
   </div>
   <div class="launch-panel" id="lp-social">
     <div class="tile-grid">
-      <a class="tile" href="https://facebook.com" target="_blank"><span class="ico">📘</span><span class="name">Facebook</span><span class="sub">Page</span></a>
-      <a class="tile" href="https://instagram.com" target="_blank"><span class="ico">📸</span><span class="name">Instagram</span><span class="sub">Feed</span></a>
-      <a class="tile" href="https://youtube.com" target="_blank"><span class="ico">▶️</span><span class="name">YouTube</span><span class="sub">Channel</span></a>
+      <a class="tile" href="https://www.facebook.com/allpointsboats/" target="_blank"><span class="ico">📘</span><span class="name">Facebook</span><span class="sub">@allpointsboats</span></a>
+      <a class="tile" href="https://www.instagram.com/allpointsboats/" target="_blank"><span class="ico">📸</span><span class="name">Instagram</span><span class="sub">@allpointsboats</span></a>
+      <a class="tile" href="https://www.linkedin.com/company/all-points-boats" target="_blank"><span class="ico">💼</span><span class="name">LinkedIn</span><span class="sub">Company page</span></a>
+      <a class="tile" href="https://www.youtube.com/results?search_query=all+points+boats+fort+lauderdale" target="_blank"><span class="ico">▶️</span><span class="name">YouTube</span><span class="sub">Channel</span></a>
     </div>
   </div>
   <div class="launch-panel" id="lp-marine">
@@ -196,6 +197,16 @@
     <div class="panel">
       <div class="panel-header"><span class="panel-title">Wind & Sea — Windy</span></div>
       <div class="panel-body"><iframe class="embed" height="380" src="https://embed.windy.com/embed2.html?lat=26.122&lon=-80.137&detailLat=26.122&detailLon=-80.137&width=650&height=380&zoom=10&level=surface&overlay=wind&menu=&message=&marker=&calendar=12&pressure=&type=map&location=coordinates&detail=&metricWind=mph&metricTemp=%C2%B0F&radarRange=-1"></iframe></div>
+    </div>
+  </div>
+  <div class="widget-grid" style="margin-top:16px;">
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">Marine Forecast — Coastal Waters</span><a class="panel-count" href="https://forecast.weather.gov/MapClick.php?lat=26.12&lon=-80.14" target="_blank" style="text-decoration:none;cursor:pointer;">NWS ↗</a></div>
+      <div class="panel-body pad" id="marineForecast"><div class="spinner"></div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">Tides — Ft Lauderdale</span><a class="panel-count" href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722956" target="_blank" style="text-decoration:none;cursor:pointer;">NOAA ↗</a></div>
+      <div class="panel-body pad" id="tideInfo"><div class="spinner"></div></div>
     </div>
   </div>
 
@@ -344,6 +355,31 @@ async function loadTimesheets(){
   document.getElementById('tsCount').textContent=data.length+' recent';
   if(!data.length){ document.getElementById('tsList').innerHTML='<div class="empty-state">No timesheets logged yet</div>'; return; }
   document.getElementById('tsList').innerHTML=data.map(t=>`<div class="ts-row"><div class="ts-tech">${t.tech_name}</div><div class="ts-job">${t.job_vessel}${t.work_description?' — '+t.work_description.slice(0,40):''}</div><div class="ts-hours">${t.hours_worked}h</div><div class="ts-date">${new Date(t.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div></div>`).join('');
+}
+
+async function loadMarineForecast(){
+  try{
+    // NWS marine zone AMZ630 = Coastal waters from Deerfield Beach to Ocean Reef
+    const r = await fetch('https://api.weather.gov/zones/forecast/AMZ630/forecast');
+    const d = await r.json();
+    const periods = (d.properties && d.properties.periods) ? d.properties.periods.slice(0,4) : [];
+    if(!periods.length){ document.getElementById('marineForecast').innerHTML='<div class="empty-state">Forecast unavailable</div>'; return; }
+    document.getElementById('marineForecast').innerHTML = periods.map(p=>`<div style="padding:8px 0;border-bottom:1px solid var(--border);"><div style="font-family:var(--font-mono);font-size:11px;color:var(--silver);letter-spacing:1px;">${p.name}</div><div style="font-size:13px;color:var(--text);margin-top:3px;line-height:1.5;">${p.detailedForecast}</div></div>`).join('');
+  }catch(e){ document.getElementById('marineForecast').innerHTML='<div class="empty-state">Forecast unavailable<br><span style="font-size:11px">Open NWS link above</span></div>'; }
+}
+async function loadTides(){
+  try{
+    const today = new Date().toISOString().split('T')[0].replace(/-/g,'');
+    const url = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&application=apb&begin_date=${today}&end_date=${today}&datum=MLLW&station=8722956&time_zone=lst_ldt&units=english&interval=hilo&format=json`;
+    const r = await fetch(url); const d = await r.json();
+    const preds = d.predictions || [];
+    if(!preds.length){ document.getElementById('tideInfo').innerHTML='<div class="empty-state">Tide data unavailable</div>'; return; }
+    document.getElementById('tideInfo').innerHTML = preds.map(p=>{
+      const t = new Date(p.t.replace(' ','T')); const time = t.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+      const hi = p.type==='H';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);"><div><span style="font-family:var(--font-mono);font-size:13px;color:${hi?'var(--blue)':'var(--silver-dim)'};">${hi?'▲ HIGH':'▼ LOW'}</span></div><div style="font-size:13px;color:var(--text);">${time}</div><div style="font-family:var(--font-mono);font-size:13px;color:var(--silver-bright);">${parseFloat(p.v).toFixed(1)} ft</div></div>`;
+    }).join('');
+  }catch(e){ document.getElementById('tideInfo').innerHTML='<div class="empty-state">Tide data unavailable<br><span style="font-size:11px">Open NOAA link above</span></div>'; }
 }
 
 setInterval(loadAll, 5*60*1000);
