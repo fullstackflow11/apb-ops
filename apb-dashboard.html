@@ -359,18 +359,31 @@ async function loadTimesheets(){
 
 async function loadMarineForecast(){
   try{
-    // Use NWS point API for Ft Lauderdale coastal - more reliable than zone lookup
-    const pointR = await fetch('https://api.weather.gov/points/26.1224,-80.1373');
-    const pointD = await pointR.json();
-    const forecastUrl = pointD.properties && pointD.properties.forecast;
-    if(!forecastUrl) throw new Error('no forecast url');
-    const r = await fetch(forecastUrl);
+    // NWS hourly forecast for Ft Lauderdale area (FLZ168 zone — SE Broward)
+    const r = await fetch('https://api.weather.gov/zones/forecast/FLZ168/forecast');
     const d = await r.json();
     const periods = (d.properties && d.properties.periods) ? d.properties.periods.slice(0,4) : [];
     if(!periods.length) throw new Error('no periods');
-    document.getElementById('marineForecast').innerHTML = periods.map(p=>`<div style="padding:8px 0;border-bottom:1px solid var(--border);"><div style="font-family:var(--font-mono);font-size:11px;color:var(--silver);letter-spacing:1px;">${p.name} · ${p.temperature}°${p.temperatureUnit}</div><div style="font-size:13px;color:var(--text);margin-top:3px;line-height:1.5;">${p.detailedForecast}</div></div>`).join('');
+    document.getElementById('marineForecast').innerHTML = periods.map(p=>`
+      <div style="padding:9px 0;border-bottom:1px solid var(--border);">
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--silver);letter-spacing:1px;margin-bottom:3px;">${p.name} · ${p.temperature}°${p.temperatureUnit}</div>
+        <div style="font-size:13px;color:var(--text);line-height:1.5;">${p.detailedForecast}</div>
+      </div>`).join('');
   }catch(e){
-    document.getElementById('marineForecast').innerHTML='<div class="empty-state">Forecast unavailable<br><a href="https://forecast.weather.gov/MapClick.php?lat=26.12&lon=-80.14" target="_blank" style="color:var(--silver);font-size:12px;">Open NWS Forecast ↗</a></div>';
+    // Fallback: try the grid-based forecast for Broward coast
+    try{
+      const r2 = await fetch('https://api.weather.gov/gridpoints/MFL/110,61/forecast');
+      const d2 = await r2.json();
+      const periods = (d2.properties && d2.properties.periods) ? d2.properties.periods.slice(0,4) : [];
+      if(!periods.length) throw new Error('no periods');
+      document.getElementById('marineForecast').innerHTML = periods.map(p=>`
+        <div style="padding:9px 0;border-bottom:1px solid var(--border);">
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--silver);letter-spacing:1px;margin-bottom:3px;">${p.name} · ${p.temperature}°${p.temperatureUnit}</div>
+          <div style="font-size:13px;color:var(--text);line-height:1.5;">${p.detailedForecast}</div>
+        </div>`).join('');
+    }catch(e2){
+      document.getElementById('marineForecast').innerHTML=`<div class="empty-state">Forecast unavailable<br><a href="https://forecast.weather.gov/MapClick.php?lat=26.12&lon=-80.14" target="_blank" style="color:var(--silver);font-size:12px;">Open NWS Forecast ↗</a></div>`;
+    }
   }
 }
 async function loadTides(){
