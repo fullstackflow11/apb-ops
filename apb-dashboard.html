@@ -320,7 +320,7 @@ const STATUS_COLORS={'Ready To Be Billed':'#d8a048','In Progress':'#2a9fd8','App
 const STATUS_BADGE={'Ready To Be Billed':'badge-rtbb','In Progress':'badge-ip','Needs Invoice Review':'badge-nir','Invoice Sent':'badge-is','Approved':'badge-app'};
 function statusBadge(s){ return `<span class="badge ${STATUS_BADGE[s]||''}">${s}</span>`; }
 
-async function loadAll(){ document.getElementById('lastUpdated').textContent='Updating...'; await Promise.all([loadJobs(),loadTimesheets(),loadWeather()]); document.getElementById('lastUpdated').textContent='Updated '+new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}); }
+async function loadAll(){ document.getElementById('lastUpdated').textContent='Updating...'; await Promise.all([loadJobs(),loadTimesheets(),loadWeather(),loadMarineForecast(),loadTides()]); document.getElementById('lastUpdated').textContent='Updated '+new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}); }
 
 async function loadJobs(){
   const {data:jobs,error}=await sb.from('APB').select('*'); if(error){console.error(error);return;}
