@@ -339,3 +339,5 @@ function v(id) { const el = document.getElementById(id); return el ? el.value.tr
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>\/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtDate(d) { if (!d) return ''; try { return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); } catch(e) { return ''; } }
 function showMsg(id, type, text) { const el = document.getElementById(id); el.textContent = text; el.className = 'msg ' + type; if (type === 'success') setTimeout(() => el.className = 'msg', 5000); }
+function fmtDate(d) { if (!d) return ''; try { return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); } catch(e) { return ''; } }
+function showMsg(id, type, text) { const el = document.getElementById(id); el.textContent = text; el.className = 'msg ' + type; if (type === 'success') setTimeout(() => el.className = 'msg', 5000); }
