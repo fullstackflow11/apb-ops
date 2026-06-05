@@ -6,10 +6,9 @@ const sb = window.supabase.createClient(SB_URL, SB_KEY);
 let allLeads = [], allJobs = [], editingLeadId = null, editingJobId = null, pendingFile = null, pendingFileUrl = null, pendingFileName = null;
 
 // ── INIT ──
-(async function init() {
+window.addEventListener('load', async function init() {
   await Promise.all([loadLeads(), loadJobs()]);
-})();
-
+});
 // ── TAB SWITCH ──
 function switchMainTab(tab, el) {
   document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
