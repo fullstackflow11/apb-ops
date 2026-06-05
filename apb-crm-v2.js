@@ -1,12 +1,12 @@
 
 const SB_URL = 'https://aanrxyiocxxndkvkeocv.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDA3NzAyOSwiZXhwIjoyMDk1NjUzMDI5fQ.6fLSMOi9n67qPbxgKTxwSGPmsD-KjxKZalQsDrsW_xE';
-
+let sb;
 let allLeads = [], allJobs = [], editingLeadId = null, editingJobId = null, pendingFile = null, pendingFileUrl = null, pendingFileName = null;
 
 // ── INIT ──
 window.addEventListener('load', async function init() {
-    const sb = window.supabase.createClient(SB_URL, SB_KEY);
+      sb = window.supabase.createClient(SB_URL, SB_KEY);
   await Promise.all([loadLeads(), loadJobs()]);
 });
 // ── TAB SWITCH ──
