@@ -355,7 +355,7 @@ main { padding: 24px 28px; max-width: 1400px; margin: 0 auto; }
 
 <script>
 const SB_URL = 'https://aanrxyiocxxndkvkeocv.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDA3NzAyOSwiZXhwIjoyMDk1NjUzMDI5fQ.6fLSMOi9n67qPbxgKTxwSGPmsD-KjxKZalQsDrsW_xE';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU';
 
 let sb, allLeads = [], allJobs = [], editingLeadId = null, editingJobId = null, pendingFile = null, pendingFileUrl = null, pendingFileName = null;
 
@@ -478,7 +478,7 @@ function showLeadDetail(id) {
 }
 
 async function loadJobs() {
-  const { data, error } = await sb.from('apb_jobs').select('*').order('created_at', { ascending: false });
+  const { data, error } = await sb.from('apb_jobs').select('*, apb_engagements(name)').order('created_at', { ascending: false });
   if (error) { console.error(error); return; }
   allJobs = data || [];
   renderJobs();
@@ -491,7 +491,7 @@ function renderJobs() {
   let filtered = allJobs.filter(j => {
     const matchS = !statusF || j.status === statusF;
     const matchD = !deptF || j.department === deptF;
-    const matchQ = !search || [j.client_name, j.company, j.vessel_name, j.job_no, j.job_description].some(v => v && v.toLowerCase().includes(search));
+    const matchQ = !search || [j.client_name, j.company, (j.apb_engagements?.name || j.vessel_name || '—'), j.job_number, j.job_name].some(v => v && v.toLowerCase().includes(search));
     return matchS && matchD && matchQ;
   });
   document.getElementById('jobCount').textContent = filtered.length + ' job' + (filtered.length !== 1 ? 's' : '');
@@ -507,10 +507,10 @@ function jobRowHtml(j) {
     <div class="card-row" onclick="showJobDetail('${j.id}')">
       <div class="card-status-dot ${sc.dot}"></div>
       <div style="flex:1;">
-        <div class="card-name">${esc(j.job_description || j.vessel_name || 'Unnamed Job')}</div>
-        ${j.vessel_name ? `<div class="card-vessel">${esc(j.vessel_name)}${j.vessel_length ? ' · ' + j.vessel_length + 'ft' : ''}</div>` : ''}
+        <div class="card-name">${esc(j.job_name || (j.apb_engagements?.name || j.vessel_name || '—') || 'Unnamed Job')}</div>
+        ${(j.apb_engagements?.name || j.vessel_name || '—') ? `<div class="card-vessel">${esc((j.apb_engagements?.name || j.vessel_name || '—'))}${j.vessel_length ? ' · ' + j.vessel_length + 'ft' : ''}</div>` : ''}
       </div>
-      ${j.job_no ? `<div style="font-family:var(--font-mono);font-size:11px;color:var(--silver-dim);">${esc(j.job_no)}</div>` : ''}
+      ${j.job_number ? `<div style="font-family:var(--font-mono);font-size:11px;color:var(--silver-dim);">${esc(j.job_number)}</div>` : ''}
       ${pri}
       <span class="card-badge ${sc.badge}">${j.status}</span>
       ${j.estimated_value ? `<div style="font-family:var(--font-mono);font-size:11px;color:var(--silver-dim);">$${Number(j.estimated_value).toLocaleString()}</div>` : ''}
@@ -531,7 +531,7 @@ function openJobModal(id) {
   document.getElementById('uploadProgress').style.display = 'none';
   document.getElementById('jobModalTitle').textContent = id ? 'Edit Job' : 'New Job';
   document.getElementById('jobFormMsg').className = 'msg';
-  const fields = ['client_name','company','phone','email','vessel_name','vessel_type','vessel_length','vessel_year','vessel_make','vessel_flag','vessel_location','job_no','department','status','priority','estimated_value','job_description','scope_of_work','notes'];
+  const fields = ['client_name','company','phone','email','vessel_name','vessel_type','vessel_length','vessel_year','vessel_make','vessel_flag','vessel_location','job_number','department','status','priority','estimated_value','job_name','scope_of_work','notes'];
   if (id) {
     const j = allJobs.find(x => x.id === id);
     if (j) fields.forEach(f => { const el = document.getElementById('jf_'+f); if(el) el.value = j[f] || ''; });
@@ -611,14 +611,14 @@ async function deleteJob(id) {
 
 function showJobDetail(id) {
   const j = allJobs.find(x => x.id === id); if (!j) return;
-  document.getElementById('detailTitle').textContent = j.job_description || j.vessel_name || 'Job Detail';
+  document.getElementById('detailTitle').textContent = j.job_name || (j.apb_engagements?.name || j.vessel_name || '—') || 'Job Detail';
   document.getElementById('detailBody').innerHTML = `
     <div class="detail-row">
       <div class="detail-field"><div class="detail-label">Client</div><div class="detail-value">${esc(j.client_name||'—')}</div></div>
       <div class="detail-field"><div class="detail-label">Status</div><div class="detail-value"><span class="card-badge ${statusClass(j.status,'job').badge}">${j.status}</span></div></div>
-      <div class="detail-field"><div class="detail-label">Vessel</div><div class="detail-value">${esc(j.vessel_name||'—')}</div></div>
+      <div class="detail-field"><div class="detail-label">Vessel</div><div class="detail-value">${esc((j.apb_engagements?.name || j.vessel_name || '—')||'—')}</div></div>
       <div class="detail-field"><div class="detail-label">Type / Length</div><div class="detail-value">${[j.vessel_type, j.vessel_length ? j.vessel_length+'ft' : ''].filter(Boolean).join(' · ')||'—'}</div></div>
-      <div class="detail-field"><div class="detail-label">Job No</div><div class="detail-value">${esc(j.job_no||'—')}</div></div>
+      <div class="detail-field"><div class="detail-label">Job No</div><div class="detail-value">${esc(j.job_number||'—')}</div></div>
       <div class="detail-field"><div class="detail-label">Department</div><div class="detail-value">${esc(j.department||'—')}</div></div>
       <div class="detail-field"><div class="detail-label">Value</div><div class="detail-value">${j.estimated_value ? '$'+Number(j.estimated_value).toLocaleString() : '—'}</div></div>
       <div class="detail-field"><div class="detail-label">Priority</div><div class="detail-value">${esc(j.priority||'Normal')}</div></div>
