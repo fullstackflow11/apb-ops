@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>APB — Leads & Jobs</title>
+<!-- cache-bust: v2 -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -230,10 +231,10 @@ main { padding: 24px 28px; max-width: 1400px; margin: 0 auto; }
     <div class="modal-body">
       <div id="leadFormMsg" class="msg"></div>
       <div class="form-grid">
-        <div class="field"><label>Name <span class="req">*</span></label><input class="form-input" id="lf_client_name" placeholder="Contact name"></div>
+        <div class="field"><label>Name <span class="req">*</span></label><input class="form-input" id="lf_name" placeholder="Contact name"></div>
         <div class="field"><label>Company</label><input class="form-input" id="lf_company" placeholder="Company or owner name"></div>
-        <div class="field"><label>Phone</label><input class="form-input" id="lf_phone" type="tel" placeholder="+1 (954) 000-0000"></div>
-        <div class="field"><label>Email</label><input class="form-input" id="lf_email" type="email" placeholder="email@example.com"></div>
+        <div class="field"><label>Phone</label><input class="form-input" id="lf_contact_phone" type="tel" placeholder="+1 (954) 000-0000"></div>
+        <div class="field"><label>Email</label><input class="form-input" id="lf_contact_email" type="email" placeholder="email@example.com"></div>
         <div class="field"><label>Vessel / Project</label><input class="form-input" id="lf_vessel" placeholder="Vessel name or project"></div>
         <div class="field"><label>Status</label>
           <select class="form-select" id="lf_status">
@@ -250,7 +251,7 @@ main { padding: 24px 28px; max-width: 1400px; margin: 0 auto; }
         </div>
         <div class="field"><label>Assigned To</label><input class="form-input" id="lf_assigned_to" placeholder="Rep name"></div>
         <div class="field"><label>Follow-up Date</label><input class="form-input" id="lf_follow_up_date" type="date"></div>
-        <div class="field form-full"><label>RFQ Notes</label><textarea class="form-textarea" id="lf_rfq_notes" placeholder="What do they need? Scope, vessel details, timeline..."></textarea></div>
+        <div class="field form-full"><label>RFQ Notes</label><textarea class="form-textarea" id="lf_description" placeholder="What do they need? Scope, vessel details, timeline..."></textarea></div>
         <div class="field form-full"><label>Internal Notes</label><textarea class="form-textarea" id="lf_notes" placeholder="Internal notes, pricing hints, context..."></textarea></div>
       </div>
     </div>
@@ -384,12 +385,12 @@ function renderLeads() {
   const statusF = document.getElementById('leadStatusFilter').value;
   let filtered = allLeads.filter(l => {
     const matchS = !statusF || l.status === statusF;
-    const matchQ = !search || [l.client_name, l.company, l.vessel, l.phone, l.rfq_notes].some(v => v && v.toLowerCase().includes(search));
+    const matchQ = !search || [l.name, l.company, l.vessel, l.contact_phone, l.description].some(v => v && v.toLowerCase().includes(search));
     return matchS && matchQ;
   });
   document.getElementById('leadCount').textContent = filtered.length + ' lead' + (filtered.length !== 1 ? 's' : '');
   if (!filtered.length) { document.getElementById('leadsView').innerHTML = '<div class="empty-state">No leads found.</div>'; return; }
-  const byClient = groupBy(filtered, l => (l.company || l.client_name || 'Unknown').trim());
+  const byClient = groupBy(filtered, l => (l.company || l.name || 'Unknown').trim());
   document.getElementById('leadsView').innerHTML = Object.entries(byClient).sort((a,b) => a[0].localeCompare(b[0])).map(([client, leads]) => folderHtml('lead', client, leads, leadRowHtml)).join('');
 }
 
@@ -399,10 +400,10 @@ function leadRowHtml(l) {
     <div class="card-row" onclick="showLeadDetail('${l.id}')">
       <div class="card-status-dot ${sc.dot}"></div>
       <div style="flex:1;">
-        <div class="card-name">${esc(l.client_name)}</div>
+        <div class="card-name">${esc(l.name)}</div>
         ${l.vessel ? `<div class="card-vessel">${esc(l.vessel)}</div>` : ''}
       </div>
-      ${l.phone ? `<div style="font-family:var(--font-mono);font-size:11px;color:var(--silver-dim);">${esc(l.phone)}</div>` : ''}
+      ${l.contact_phone ? `<div style="font-family:var(--font-mono);font-size:11px;color:var(--silver-dim);">${esc(l.contact_phone)}</div>` : ''}
       <span class="card-badge ${sc.badge}">${l.status}</span>
       <div class="card-date">${fmtDate(l.created_at)}</div>
       <div class="card-actions" onclick="event.stopPropagation()">
@@ -417,7 +418,7 @@ function openLeadModal(id) {
   editingLeadId = id || null;
   document.getElementById('leadModalTitle').textContent = id ? 'Edit Lead' : 'New Lead';
   document.getElementById('leadFormMsg').className = 'msg';
-  const fields = ['client_name','company','phone','email','vessel','rfq_notes','status','source','assigned_to','follow_up_date','notes'];
+  const fields = ['name','company','phone','email','vessel','rfq_notes','status','source','assigned_to','follow_up_date','notes'];
   if (id) {
     const l = allLeads.find(x => x.id === id);
     if (l) fields.forEach(f => { const el = document.getElementById('lf_'+f); if(el) el.value = l[f] || ''; });
@@ -430,13 +431,13 @@ function openLeadModal(id) {
 function closeLeadModal() { document.getElementById('leadModal').classList.remove('open'); }
 
 async function saveLead() {
-  const name = document.getElementById('lf_client_name').value.trim();
+  const name = document.getElementById('lf_name').value.trim();
   if (!name) { showMsg('leadFormMsg', 'error', 'Client name required.'); return; }
   const btn = document.getElementById('leadSaveBtn'); btn.disabled = true; btn.textContent = 'Saving...';
   const payload = {
-    client_name: name,
-    company: v('lf_company'), phone: v('lf_phone'), email: v('lf_email'), vessel: v('lf_vessel'),
-    rfq_notes: v('lf_rfq_notes'), status: v('lf_status'), source: v('lf_source'),
+    name: name,
+    company: v('lf_company'), phone: v('lf_contact_phone'), email: v('lf_contact_email'), vessel: v('lf_vessel'),
+    rfq_notes: v('lf_description'), status: v('lf_status'), source: v('lf_source'),
     assigned_to: v('lf_assigned_to'), notes: v('lf_notes'),
     follow_up_date: v('lf_follow_up_date') || null
   };
@@ -456,19 +457,19 @@ async function deleteLead(id) {
 
 function showLeadDetail(id) {
   const l = allLeads.find(x => x.id === id); if (!l) return;
-  document.getElementById('detailTitle').textContent = l.client_name;
+  document.getElementById('detailTitle').textContent = l.name;
   document.getElementById('detailBody').innerHTML = `
     <div class="detail-row">
       <div class="detail-field"><div class="detail-label">Company</div><div class="detail-value">${esc(l.company||'—')}</div></div>
       <div class="detail-field"><div class="detail-label">Status</div><div class="detail-value"><span class="card-badge ${statusClass(l.status,'lead').badge}">${l.status}</span></div></div>
-      <div class="detail-field"><div class="detail-label">Phone</div><div class="detail-value">${l.phone ? `<a href="tel:${l.phone}">${esc(l.phone)}</a>` : '—'}</div></div>
-      <div class="detail-field"><div class="detail-label">Email</div><div class="detail-value">${l.email ? `<a href="mailto:${l.email}">${esc(l.email)}</a>` : '—'}</div></div>
+      <div class="detail-field"><div class="detail-label">Phone</div><div class="detail-value">${l.contact_phone ? `<a href="tel:${l.contact_phone}">${esc(l.contact_phone)}</a>` : '—'}</div></div>
+      <div class="detail-field"><div class="detail-label">Email</div><div class="detail-value">${l.contact_email ? `<a href="mailto:${l.contact_email}">${esc(l.contact_email)}</a>` : '—'}</div></div>
       <div class="detail-field"><div class="detail-label">Vessel</div><div class="detail-value">${esc(l.vessel||'—')}</div></div>
       <div class="detail-field"><div class="detail-label">Source</div><div class="detail-value">${esc(l.source||'—')}</div></div>
       <div class="detail-field"><div class="detail-label">Assigned To</div><div class="detail-value">${esc(l.assigned_to||'—')}</div></div>
       <div class="detail-field"><div class="detail-label">Follow-up</div><div class="detail-value">${l.follow_up_date ? new Date(l.follow_up_date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'}</div></div>
     </div>
-    ${l.rfq_notes ? `<div class="detail-section">RFQ Notes</div><div class="detail-value" style="white-space:pre-wrap;">${esc(l.rfq_notes)}</div>` : ''}
+    ${l.description ? `<div class="detail-section">RFQ Notes</div><div class="detail-value" style="white-space:pre-wrap;">${esc(l.description)}</div>` : ''}
     ${l.notes ? `<div class="detail-section">Internal Notes</div><div class="detail-value" style="white-space:pre-wrap;">${esc(l.notes)}</div>` : ''}
     <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:20px;">Added ${fmtDate(l.created_at)}</div>`;
   document.getElementById('detailFooter').innerHTML = `
@@ -491,7 +492,7 @@ function renderJobs() {
   let filtered = allJobs.filter(j => {
     const matchS = !statusF || j.status === statusF;
     const matchD = !deptF || j.department === deptF;
-    const matchQ = !search || [j.client_name, j.company, (j.apb_engagements?.name || j.vessel_name || '—'), j.job_number, j.job_name].some(v => v && v.toLowerCase().includes(search));
+    const matchQ = !search || [j.client_name, j.company, j.vessel_name, j.job_number, j.job_name].some(v => v && v.toLowerCase().includes(search));
     return matchS && matchD && matchQ;
   });
   document.getElementById('jobCount').textContent = filtered.length + ' job' + (filtered.length !== 1 ? 's' : '');
@@ -507,8 +508,8 @@ function jobRowHtml(j) {
     <div class="card-row" onclick="showJobDetail('${j.id}')">
       <div class="card-status-dot ${sc.dot}"></div>
       <div style="flex:1;">
-        <div class="card-name">${esc(j.job_name || (j.apb_engagements?.name || j.vessel_name || '—') || 'Unnamed Job')}</div>
-        ${(j.apb_engagements?.name || j.vessel_name || '—') ? `<div class="card-vessel">${esc((j.apb_engagements?.name || j.vessel_name || '—'))}${j.vessel_length ? ' · ' + j.vessel_length + 'ft' : ''}</div>` : ''}
+        <div class="card-name">${esc(j.job_name || j.job_name || 'Unnamed Job')}</div>
+        ${j.vessel_name ? `<div class="card-vessel">${esc(j.vessel_name)}${j.vessel_length ? ' · ' + j.vessel_length + 'ft' : ''}</div>` : ''}
       </div>
       ${j.job_number ? `<div style="font-family:var(--font-mono);font-size:11px;color:var(--silver-dim);">${esc(j.job_number)}</div>` : ''}
       ${pri}
@@ -531,7 +532,7 @@ function openJobModal(id) {
   document.getElementById('uploadProgress').style.display = 'none';
   document.getElementById('jobModalTitle').textContent = id ? 'Edit Job' : 'New Job';
   document.getElementById('jobFormMsg').className = 'msg';
-  const fields = ['client_name','company','phone','email','vessel_name','vessel_type','vessel_length','vessel_year','vessel_make','vessel_flag','vessel_location','job_number','department','status','priority','estimated_value','job_name','scope_of_work','notes'];
+  const fields = ['name','company','phone','email','vessel_name','vessel_type','vessel_length','vessel_year','vessel_make','vessel_flag','vessel_location','job_no','department','status','priority','estimated_value','job_name','scope_of_work','notes'];
   if (id) {
     const j = allJobs.find(x => x.id === id);
     if (j) fields.forEach(f => { const el = document.getElementById('jf_'+f); if(el) el.value = j[f] || ''; });
@@ -582,7 +583,7 @@ async function saveJob() {
   const upload = await uploadProposal(document.getElementById('jf_company').value || name);
   if (upload === null) { btn.disabled = false; btn.textContent = 'Save Job'; return; }
   const payload = {
-    client_name: name,
+    name: name,
     company: v('jf_company'), phone: v('jf_phone'), email: v('jf_email'),
     vessel_name: v('jf_vessel_name'), vessel_type: v('jf_vessel_type'),
     vessel_length: v('jf_vessel_length') || null, vessel_year: v('jf_vessel_year') || null,
@@ -611,12 +612,12 @@ async function deleteJob(id) {
 
 function showJobDetail(id) {
   const j = allJobs.find(x => x.id === id); if (!j) return;
-  document.getElementById('detailTitle').textContent = j.job_name || (j.apb_engagements?.name || j.vessel_name || '—') || 'Job Detail';
+  document.getElementById('detailTitle').textContent = j.job_name || j.vessel_name || 'Job Detail';
   document.getElementById('detailBody').innerHTML = `
     <div class="detail-row">
       <div class="detail-field"><div class="detail-label">Client</div><div class="detail-value">${esc(j.client_name||'—')}</div></div>
       <div class="detail-field"><div class="detail-label">Status</div><div class="detail-value"><span class="card-badge ${statusClass(j.status,'job').badge}">${j.status}</span></div></div>
-      <div class="detail-field"><div class="detail-label">Vessel</div><div class="detail-value">${esc((j.apb_engagements?.name || j.vessel_name || '—')||'—')}</div></div>
+      <div class="detail-field"><div class="detail-label">Vessel</div><div class="detail-value">${esc(j.vessel_name||'—')}</div></div>
       <div class="detail-field"><div class="detail-label">Type / Length</div><div class="detail-value">${[j.vessel_type, j.vessel_length ? j.vessel_length+'ft' : ''].filter(Boolean).join(' · ')||'—'}</div></div>
       <div class="detail-field"><div class="detail-label">Job No</div><div class="detail-value">${esc(j.job_number||'—')}</div></div>
       <div class="detail-field"><div class="detail-label">Department</div><div class="detail-value">${esc(j.department||'—')}</div></div>
