@@ -640,7 +640,7 @@ function folderHtml(type, client, items, rowFn) {
   const id = 'folder-' + type + '-' + client.replace(/[^a-z0-9]/gi,'_');
   return `<div class="folder-group">
     <div class="folder-header open" onclick="toggleFolder('${id}')">
-      <span class="folder-icon">🚳</span>
+      <span class="folder-icon">📁</span>
       <span class="folder-name">${esc(client)}</span>
       <span class="folder-badge">${items.length}</span>
       <span class="folder-chevron">▶</span>
