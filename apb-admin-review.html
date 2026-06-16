@@ -32,11 +32,18 @@ function cancelEdit(type, lineId) {
 async function saveDesc(lineId) {
   const val = document.getElementById('desc-val-' + lineId).value.trim();
   if (!val) { showToast('Description cannot be empty'); return; }
-  const { error } = await sb.from('apb_timesheet_lines').update({ description: val }).eq('id', lineId);
+  const editor = currentUser?.email || 'admin';
+  const { error } = await sb.from('apb_timesheet_lines').update({
+    description: val,
+    edited_by: editor,
+    edited_at: new Date().toISOString()
+  }).eq('id', lineId);
   if (error) { showToast('Error saving: ' + error.message); return; }
   const l = lines.find(x => x.id === lineId);
   if (l) l.description = val;
   document.getElementById('desc-' + lineId).textContent = val;
+  const auditEl = document.getElementById('audit-' + lineId);
+  if (auditEl) auditEl.innerHTML = `<span style="font-size:10px;color:var(--muted);font-family:var(--font-mono);">Edited by ${editor}</span>`;
   cancelEdit('desc', lineId);
   showToast('Description updated ✓');
 }
@@ -44,11 +51,20 @@ async function saveDesc(lineId) {
 async function saveHours(lineId) {
   const val = parseFloat(document.getElementById('hrs-val-' + lineId).value);
   if (!val || val <= 0 || val > 24) { showToast('Enter valid hours (0.5 - 24)'); return; }
-  const { error } = await sb.from('apb_timesheet_lines').update({ hours: val }).eq('id', lineId);
-  if (error) { showToast('Error saving: ' + error.message); return; }
   const l = lines.find(x => x.id === lineId);
+  const originalHours = l ? parseFloat(l.hours) : null;
+  const editor = currentUser?.email || 'admin';
+  const { error } = await sb.from('apb_timesheet_lines').update({
+    hours: val,
+    edited_by: editor,
+    edited_at: new Date().toISOString(),
+    original_hours: originalHours
+  }).eq('id', lineId);
+  if (error) { showToast('Error saving: ' + error.message); return; }
   if (l) l.hours = val;
   document.getElementById('hrs-' + lineId).textContent = val.toFixed(1) + 'h';
+  const auditEl = document.getElementById('audit-' + lineId);
+  if (auditEl) auditEl.innerHTML = `<span style="font-size:10px;color:var(--muted);font-family:var(--font-mono);">Edited by ${editor} &mdash; was ${originalHours}h</span>`;
   cancelEdit('hrs', lineId);
   updateSummary();
   showToast('Hours updated to ' + val.toFixed(1) + 'h ✓');
@@ -316,6 +332,7 @@ function renderVisits() {
             </td>
             <td>
               <span class="hours-cell" id="hrs-${l.id}">${parseFloat(l.hours||0).toFixed(1)}h</span>
+              ${l.edited_by ? `<div id="audit-${l.id}" style="font-size:10px;color:var(--muted);font-family:var(--font-mono);margin-top:2px;">Edited by ${l.edited_by}${l.original_hours ? ' &mdash; was ' + l.original_hours + 'h' : ''}</div>` : `<div id="audit-${l.id}"></div>`}
               <span class="edit-icon" onclick="startEditHours('${l.id}', ${parseFloat(l.hours||0)})">✎</span>
               <div id="hrs-edit-${l.id}" style="display:none;margin-top:4px;">
                 <input type="number" step="0.5" min="0" max="24" class="edit-input edit-hours" id="hrs-val-${l.id}" value="${parseFloat(l.hours||0).toFixed(1)}">
@@ -439,11 +456,18 @@ function cancelEdit(type, lineId) {
 async function saveDesc(lineId) {
   const val = document.getElementById('desc-val-' + lineId).value.trim();
   if (!val) { showToast('Description cannot be empty'); return; }
-  const { error } = await sb.from('apb_timesheet_lines').update({ description: val }).eq('id', lineId);
+  const editor = currentUser?.email || 'admin';
+  const { error } = await sb.from('apb_timesheet_lines').update({
+    description: val,
+    edited_by: editor,
+    edited_at: new Date().toISOString()
+  }).eq('id', lineId);
   if (error) { showToast('Error saving: ' + error.message); return; }
   const l = lines.find(x => x.id === lineId);
   if (l) l.description = val;
   document.getElementById('desc-' + lineId).textContent = val;
+  const auditEl = document.getElementById('audit-' + lineId);
+  if (auditEl) auditEl.innerHTML = `<span style="font-size:10px;color:var(--muted);font-family:var(--font-mono);">Edited by ${editor}</span>`;
   cancelEdit('desc', lineId);
   showToast('Description updated ✓');
 }
@@ -451,11 +475,20 @@ async function saveDesc(lineId) {
 async function saveHours(lineId) {
   const val = parseFloat(document.getElementById('hrs-val-' + lineId).value);
   if (!val || val <= 0 || val > 24) { showToast('Enter valid hours (0.5 - 24)'); return; }
-  const { error } = await sb.from('apb_timesheet_lines').update({ hours: val }).eq('id', lineId);
-  if (error) { showToast('Error saving: ' + error.message); return; }
   const l = lines.find(x => x.id === lineId);
+  const originalHours = l ? parseFloat(l.hours) : null;
+  const editor = currentUser?.email || 'admin';
+  const { error } = await sb.from('apb_timesheet_lines').update({
+    hours: val,
+    edited_by: editor,
+    edited_at: new Date().toISOString(),
+    original_hours: originalHours
+  }).eq('id', lineId);
+  if (error) { showToast('Error saving: ' + error.message); return; }
   if (l) l.hours = val;
   document.getElementById('hrs-' + lineId).textContent = val.toFixed(1) + 'h';
+  const auditEl = document.getElementById('audit-' + lineId);
+  if (auditEl) auditEl.innerHTML = `<span style="font-size:10px;color:var(--muted);font-family:var(--font-mono);">Edited by ${editor} &mdash; was ${originalHours}h</span>`;
   cancelEdit('hrs', lineId);
   updateSummary();
   showToast('Hours updated to ' + val.toFixed(1) + 'h ✓');
