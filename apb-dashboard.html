@@ -398,7 +398,7 @@ async function loadJobs(){
   if(e1){console.error('engagements:', e1); return;}
 
   // Load jobs with engagement name joined
-  const {data:jobs, error:e2} = await sb.from('apb_jobs').select('*, apb_engagements(name, rep, engagement_type)');
+  const {data:jobs, error:e2} = await sb.from('apb_jobs').select('id, job_name, job_number, job_type, status, job_status_pct, start_date, completion_date, ms_list_item_id, apb_engagements(name, rep, engagement_type)');
   if(e2){console.error('jobs:', e2); return;}
 
   // Load leads for pipeline
@@ -440,7 +440,7 @@ async function loadJobs(){
         <div class="status-dot" style="background:${STATUS_COLORS[j.status]||'#666'}"></div>
         <div class="job-engagement">${j.apb_engagements?.name||'—'}</div>
         <div class="job-num">${j.job_number||''}</div>
-        <div class="job-name">${j.job_name}</div>
+        <div class="job-name">${j.job_name}${j.ms_list_item_id ? '<a href="https://allpointsboats1.sharepoint.com/sites/operations/Lists/Jobs/DispForm.aspx?ID='+j.ms_list_item_id+'" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:var(--muted);margin-left:5px;text-decoration:none;" title="Open in SharePoint">↗</a>' : ''}</div>
         ${statusBadge(j.status)}
         <div class="job-rep">${j.apb_engagements?.rep||''}</div>
       </div>`).join('')
@@ -454,7 +454,7 @@ async function loadJobs(){
         <div class="status-dot" style="background:${STATUS_COLORS[j.status]||'#666'}"></div>
         <div class="job-engagement">${j.apb_engagements?.name||'—'}</div>
         <div class="job-num">${j.job_number||''}</div>
-        <div class="job-name">${j.job_name}</div>
+        <div class="job-name">${j.job_name}${j.ms_list_item_id ? '<a href="https://allpointsboats1.sharepoint.com/sites/operations/Lists/Jobs/DispForm.aspx?ID='+j.ms_list_item_id+'" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:var(--muted);margin-left:5px;text-decoration:none;" title="Open in SharePoint">↗</a>' : ''}</div>
         <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);flex-shrink:0;">${j.job_status_pct!=null?j.job_status_pct+'%':''}</div>
         <div class="job-rep">${j.apb_engagements?.rep||''}</div>
       </div>`).join('')
