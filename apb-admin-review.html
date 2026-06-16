@@ -221,32 +221,71 @@ const SUPABASE_URL = 'https://aanrxyiocxxndkvkeocv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ── AUTH GATE (same as dashboard) ──
-const SYNTHETIC_DOMAIN = 'apb-techs.local';
+// ── AUTH GATE — MANAGER/ADMIN ONLY ──
+const MANAGER_DOMAIN = 'apb1.com';
+const ALLOWED_MANAGERS = ['jerry@apb1.com','christopher@apb1.com','chelsea@apb1.com','brandonw@apb1.com','christina@apb1.com','nate@apb1.com'];
+let currentUser = null;
+
 const _gate = document.createElement('div');
 _gate.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:#000;font-family:inherit;';
 _gate.innerHTML = '<div style="width:340px;max-width:90vw;border:1px solid #2a2a2e;border-radius:14px;padding:32px 28px;background:#0c0c0e;">' +
   '<div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#c8ccd2;margin-bottom:6px;">APB Timesheet Review</div>' +
   '<div style="font-size:20px;font-weight:700;color:#e8ebef;margin-bottom:18px;">Manager Sign In</div>' +
-  '<label style="display:block;font-size:12px;color:#8a8e96;margin-bottom:4px;">Name / ID or email</label>' +
-  '<input id="apb-id" type="text" autocapitalize="none" style="width:100%;box-sizing:border-box;padding:11px 12px;margin-bottom:12px;border-radius:8px;border:1px solid #3a3a40;background:#111114;color:#f4f5f7;font-size:14px;outline:none;"/>' +
-  '<label style="display:block;font-size:12px;color:#8a8e96;margin-bottom:4px;">PIN</label>' +
-  '<input id="apb-pin" type="password" inputmode="numeric" style="width:100%;box-sizing:border-box;padding:11px 12px;margin-bottom:16px;border-radius:8px;border:1px solid #3a3a40;background:#111114;color:#f4f5f7;font-size:18px;letter-spacing:.25em;outline:none;"/>' +
-  '<button id="apb-go" style="width:100%;padding:11px;border:none;border-radius:8px;cursor:pointer;background:linear-gradient(135deg,#d8dce2,#9a9ea6);color:#000;font-size:14px;font-weight:700;">Continue</button>' +
-  '<div id="apb-msg" style="margin-top:12px;font-size:12.5px;color:#d84848;min-height:16px;"></div></div>';
+  '<label style="display:block;font-size:12px;color:#8a8e96;margin-bottom:4px;">Email</label>' +
+  '<input id="apb-email" type="email" autocapitalize="none" placeholder="you@apb1.com" style="width:100%;box-sizing:border-box;padding:11px 13px;border-radius:8px;border:1px solid #2a2a2e;background:#111114;color:#e8ebef;font-size:14px;outline:none;margin-bottom:14px;">' +
+  '<label style="display:block;font-size:12px;color:#8a8e96;margin-bottom:4px;">Password</label>' +
+  '<input id="apb-pass" type="password" placeholder="Password" style="width:100%;box-sizing:border-box;padding:11px 13px;border-radius:8px;border:1px solid #2a2a2e;background:#111114;color:#e8ebef;font-size:14px;outline:none;margin-bottom:18px;">' +
+  '<div id="apb-msg" style="font-size:12px;color:#d84848;min-height:16px;margin-bottom:10px;"></div>' +
+  '<button id="apb-go" style="width:100%;padding:12px;border-radius:8px;border:none;background:#e8ebef;color:#000;font-size:14px;font-weight:700;cursor:pointer;">Sign In</button>' +
+  '</div>';
 document.body.appendChild(_gate);
-function _normId(raw){ const v=(raw||'').trim().toLowerCase(); if(!v)return null; return v.includes('@')?v:v.replace(/\s+/g,'.')+'@'+SYNTHETIC_DOMAIN; }
-const _id=_gate.querySelector('#apb-id'),_pin=_gate.querySelector('#apb-pin'),_go=_gate.querySelector('#apb-go'),_msg=_gate.querySelector('#apb-msg');
-async function _enter(){ const email=_normId(_id.value),pin=_pin.value; if(!email){_msg.textContent='Enter your name or ID.';return;} if(!pin){_msg.textContent='Enter your PIN.';return;} _go.disabled=true;_go.textContent='...';
-  try{ const{error}=await sb.auth.signInWithPassword({email,password:pin}); if(error)throw error; }catch(e){_msg.textContent='Wrong name/ID or PIN.';} finally{_go.disabled=false;_go.textContent='Continue';} }
-_go.addEventListener('click',_enter); _gate.addEventListener('keydown',e=>{if(e.key==='Enter')_enter();});
-let _booted=false;
-function _unlock(){ if(_booted)return; _booted=true; _gate.remove();
-  // Verify manager role
+
+async function _enter() {
+  const email = document.getElementById('apb-email').value.trim().toLowerCase();
+  const pass = document.getElementById('apb-pass').value;
+  const _msg = document.getElementById('apb-msg');
+  const _go = document.getElementById('apb-go');
+  if (!email) { _msg.textContent = 'Enter your email.'; return; }
+  if (!pass) { _msg.textContent = 'Enter your password.'; return; }
+  _go.disabled = true; _go.textContent = '...';
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+    if (error) throw error;
+    if (!ALLOWED_MANAGERS.includes(data.user.email)) {
+      await sb.auth.signOut();
+      throw new Error('Access restricted to managers only.');
+    }
+    currentUser = data.user;
+  } catch(e) {
+    _msg.textContent = e.message || 'Sign in failed.';
+  } finally {
+    _go.disabled = false; _go.textContent = 'Sign In';
+  }
+}
+document.getElementById('apb-go').addEventListener('click', _enter);
+_gate.addEventListener('keydown', e => { if(e.key === 'Enter') _enter(); });
+
+let _booted = false;
+function _unlock(session) {
+  if (_booted) return;
+  if (!session) return;
+  const email = session.user?.email;
+  if (!ALLOWED_MANAGERS.includes(email)) {
+    sb.auth.signOut();
+    document.getElementById('apb-msg').textContent = 'Access restricted to managers only.';
+    return;
+  }
+  _booted = true;
+  currentUser = session.user;
+  _gate.remove();
   loadData();
-  const so=document.createElement('button'); so.textContent='Sign out'; so.className='btn btn-ghost'; so.style.cssText='position:fixed;top:14px;right:14px;z-index:9000;'; so.onclick=async()=>{await sb.auth.signOut();location.reload();}; document.body.appendChild(so); }
-sb.auth.onAuthStateChange((_e,s)=>{ if(s)_unlock(); });
-sb.auth.getSession().then(({data})=>{ if(data&&data.session)_unlock(); });
+  const so = document.createElement('div');
+  so.style.cssText = 'position:fixed;top:14px;right:14px;z-index:9000;display:flex;align-items:center;gap:10px;';
+  so.innerHTML = `<span style="font-size:11px;color:var(--muted);font-family:var(--font-mono);">${email}</span><button class="btn btn-ghost" onclick="sb.auth.signOut().then(()=>location.reload())">Sign out</button>`;
+  document.body.appendChild(so);
+}
+sb.auth.onAuthStateChange((_e, s) => { if (s) _unlock(s); });
+sb.auth.getSession().then(({ data }) => { if (data && data.session) _unlock(data.session); });
 
 // ── DATA ──
 let visits = [], lines = [], currentFilter = 'all';
