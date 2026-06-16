@@ -479,7 +479,7 @@ function showLeadDetail(id) {
 }
 
 async function loadJobs() {
-  const { data, error } = await sb.from('apb_jobs').select('*, apb_engagements(name)').order('created_at', { ascending: false });
+  const { data, error } = await sb.from('apb_jobs').select('id, job_name, job_number, job_type, status, priority, start_date, completion_date, ms_list_item_id, apb_engagements(name)').order('created_at', { ascending: false });
   if (error) { console.error(error); return; }
   allJobs = data || [];
   renderJobs();
@@ -508,7 +508,7 @@ function jobRowHtml(j) {
     <div class="card-row" onclick="showJobDetail('${j.id}')">
       <div class="card-status-dot ${sc.dot}"></div>
       <div style="flex:1;">
-        <div class="card-name">${esc(j.job_name || j.job_name || 'Unnamed Job')}</div>
+        <div class="card-name">${esc(j.job_name || j.job_name || 'Unnamed Job')}${j.ms_list_item_id ? ` <a href="https://allpointsboats1.sharepoint.com/sites/operations/Lists/Jobs/DispForm.aspx?ID=${j.ms_list_item_id}" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:var(--muted);margin-left:6px;text-decoration:none;vertical-align:middle;" title="Open in SharePoint">↗</a>` : ''}</div>
         ${j.vessel_name ? `<div class="card-vessel">${esc(j.vessel_name)}${j.vessel_length ? ' · ' + j.vessel_length + 'ft' : ''}</div>` : ''}
       </div>
       ${j.job_number ? `<div style="font-family:var(--font-mono);font-size:11px;color:var(--silver-dim);">${esc(j.job_number)}</div>` : ''}
