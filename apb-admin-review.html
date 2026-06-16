@@ -4,7 +4,57 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>APB — Timesheet Review</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+function startEditDesc(lineId, currentVal) {
+  document.getElementById('desc-' + lineId).style.display = 'none';
+  document.getElementById('desc-edit-' + lineId).style.display = 'block';
+  const ta = document.getElementById('desc-val-' + lineId);
+  ta.focus(); ta.select();
+}
+
+function startEditHours(lineId, currentVal) {
+  document.getElementById('hrs-' + lineId).style.display = 'none';
+  document.getElementById('hrs-edit-' + lineId).style.display = 'block';
+  const inp = document.getElementById('hrs-val-' + lineId);
+  inp.focus(); inp.select();
+}
+
+function cancelEdit(type, lineId) {
+  if (type === 'desc') {
+    document.getElementById('desc-' + lineId).style.display = '';
+    document.getElementById('desc-edit-' + lineId).style.display = 'none';
+  } else {
+    document.getElementById('hrs-' + lineId).style.display = '';
+    document.getElementById('hrs-edit-' + lineId).style.display = 'none';
+  }
+}
+
+async function saveDesc(lineId) {
+  const val = document.getElementById('desc-val-' + lineId).value.trim();
+  if (!val) { showToast('Description cannot be empty'); return; }
+  const { error } = await sb.from('apb_timesheet_lines').update({ description: val }).eq('id', lineId);
+  if (error) { showToast('Error saving: ' + error.message); return; }
+  const l = lines.find(x => x.id === lineId);
+  if (l) l.description = val;
+  document.getElementById('desc-' + lineId).textContent = val;
+  cancelEdit('desc', lineId);
+  showToast('Description updated ✓');
+}
+
+async function saveHours(lineId) {
+  const val = parseFloat(document.getElementById('hrs-val-' + lineId).value);
+  if (!val || val <= 0 || val > 24) { showToast('Enter valid hours (0.5 - 24)'); return; }
+  const { error } = await sb.from('apb_timesheet_lines').update({ hours: val }).eq('id', lineId);
+  if (error) { showToast('Error saving: ' + error.message); return; }
+  const l = lines.find(x => x.id === lineId);
+  if (l) l.hours = val;
+  document.getElementById('hrs-' + lineId).textContent = val.toFixed(1) + 'h';
+  cancelEdit('hrs', lineId);
+  updateSummary();
+  showToast('Hours updated to ' + val.toFixed(1) + 'h ✓');
+}
+
+</script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -74,6 +124,13 @@
   .job-no { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--silver); white-space: nowrap; }
   .work-desc { color: var(--text); line-height: 1.5; max-width: 480px; }
   .hours-cell { font-family: 'DM Mono', monospace; font-size: 14px; color: var(--silver-bright); white-space: nowrap; }
+  .edit-input { background: var(--input-bg); border: 1px solid var(--silver-dim); border-radius: 6px; color: var(--text); padding: 6px 8px; font-size: 13px; font-family: 'DM Sans', sans-serif; width: 100%; box-sizing: border-box; }
+  .edit-input:focus { outline: none; border-color: var(--silver); }
+  .edit-hours { width: 70px; font-family: 'DM Mono', monospace; text-align: center; }
+  .edit-icon { cursor: pointer; color: var(--muted); font-size: 11px; margin-left: 5px; opacity: 0.5; vertical-align: middle; }
+  .edit-icon:hover { opacity: 1; color: var(--silver); }
+  .save-edit-btn { padding: 3px 9px; border-radius: 4px; font-size: 10px; font-weight: 700; cursor: pointer; border: 1px solid rgba(74,192,120,.4); background: rgba(74,192,120,.1); color: var(--green); font-family: 'DM Mono', monospace; margin-left: 4px; letter-spacing: .5px; }
+  .cancel-edit-btn { padding: 3px 7px; border-radius: 4px; font-size: 10px; cursor: pointer; border: 1px solid var(--border); background: none; color: var(--muted); font-family: 'DM Mono', monospace; margin-left: 2px; }
 
   /* BILLABLE TOGGLE */
   .billable-toggle { display: flex; align-items: center; gap: 6px; }
@@ -145,7 +202,7 @@
 
 <script>
 const SUPABASE_URL = 'https://aanrxyiocxxndkvkeocv.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDA3NzAyOSwiZXhwIjoyMDk1NjUzMDI5fQ.6fLSMOi9n67qPbxgKTxwSGPmsD-KjxKZalQsDrsW_xE';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ── AUTH GATE (same as dashboard) ──
@@ -181,7 +238,7 @@ let visits = [], lines = [], currentFilter = 'all';
 async function loadData() {
   document.getElementById('visitList').innerHTML = '<div class="spinner"></div>';
   const [vRes, lRes] = await Promise.all([
-    sb.from('apb_timesheets').select('*').order('date', {ascending:false}).limit(200),
+    sb.from('apb_timesheets').select('*, apb_engagements(name)').order('visit_date', {ascending:false}).limit(200),
     sb.from('apb_timesheet_lines').select('*').order('created_at', {ascending:true})
   ]);
   visits = vRes.data || [];
@@ -189,7 +246,7 @@ async function loadData() {
 
   // Populate filter dropdowns
   const techs = [...new Set(visits.map(v=>v.tech_name))].sort();
-  const vessels = [...new Set(visits.map(v=>v.job_vessel))].sort();
+  const vessels = [...new Set(visits.map(v=>v.vessel_name))].sort();
   document.getElementById('techFilter').innerHTML = '<option value="">All Techs</option>' + techs.map(t=>`<option>${t}</option>`).join('');
   document.getElementById('vesselFilter').innerHTML = '<option value="">All Vessels</option>' + vessels.map(v=>`<option>${v}</option>`).join('');
 
@@ -198,7 +255,7 @@ async function loadData() {
 }
 
 function updateSummary() {
-  const totalHours = visits.reduce((s,v)=>s+parseFloat(v.hours_worked||0),0);
+  const totalHours = visits.reduce((s,v)=>s+parseFloat(v.total_hours||0),0);
   const pending = lines.filter(l=>!l.reviewed).length;
   const reviewed = lines.filter(l=>l.reviewed).length;
   document.getElementById('statVisits').textContent = visits.length;
@@ -220,11 +277,11 @@ function renderVisits() {
   const vesselF = document.getElementById('vesselFilter').value;
   let filtered = visits.filter(v => {
     if (techF && v.tech_name !== techF) return false;
-    if (vesselF && v.job_vessel !== vesselF) return false;
+    const vName = v.apb_engagements?.name || v.vessel_name || '';
+    if (vesselF && vName !== vesselF) return false;
     const vLines = lines.filter(l=>l.timesheet_id===v.id);
-    if (currentFilter === 'pending') return vLines.length ? vLines.some(l=>!l.reviewed) : true;
-    if (currentFilter === 'reviewed') return vLines.length ? vLines.every(l=>l.reviewed) : false;
-    if (currentFilter === 'nonbillable') return vLines.some(l=>!l.billable);
+    if (currentFilter === 'pending') return vLines.some(l=>!l.reviewed);
+    if (currentFilter === 'reviewed') return vLines.length && vLines.every(l=>l.reviewed);
     return true;
   });
 
@@ -236,18 +293,38 @@ function renderVisits() {
   document.getElementById('visitList').innerHTML = '<div class="visits">' + filtered.map(v => {
     const vLines = lines.filter(l=>l.timesheet_id===v.id);
     const allReviewed = vLines.length && vLines.every(l=>l.reviewed);
+    const vesselName = v.apb_engagements?.name || v.vessel_name || '—';
+    const dateStr = v.visit_date ? new Date(v.visit_date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'}) : '—';
     const photos = v.photo_urls ? v.photo_urls.split(',').filter(Boolean) : [];
-    const dateStr = new Date(v.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
-    const timeStr = v.clock_in ? `${v.clock_in} – ${v.clock_out}` : '';
 
     const linesHtml = vLines.length ? `
       <table class="lines-table">
-        <thead><tr><th>Job No</th><th>Description of Work</th><th>Hours</th><th>Billable</th><th>Status</th></tr></thead>
+        <thead><tr><th>Job</th><th>Description of Work</th><th>Hours</th><th>Billable</th><th>Status</th></tr></thead>
         <tbody>${vLines.map(l=>`
           <tr>
-            <td><span class="job-no">${l.job_no||'—'}</span></td>
-            <td><span class="work-desc">${l.work_description||''}</span></td>
-            <td><span class="hours-cell">${parseFloat(l.hours).toFixed(1)}h</span></td>
+            <td><span class="job-no">${l.job_number||l.job_no||'—'}</span></td>
+            <td>
+              <span class="work-desc" id="desc-${l.id}">${l.description||''}</span>
+              <span class="edit-icon" onclick="startEditDesc('${l.id}')">✎</span>
+              <div id="desc-edit-${l.id}" style="display:none;margin-top:6px;">
+                <textarea class="edit-input" id="desc-val-${l.id}" rows="2">${l.description||''}</textarea>
+                <div style="margin-top:4px;">
+                  <button class="save-edit-btn" onclick="saveDesc('${l.id}')">SAVE</button>
+                  <button class="cancel-edit-btn" onclick="cancelEdit('desc','${l.id}')">CANCEL</button>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="hours-cell" id="hrs-${l.id}">${parseFloat(l.hours||0).toFixed(1)}h</span>
+              <span class="edit-icon" onclick="startEditHours('${l.id}', ${parseFloat(l.hours||0)})">✎</span>
+              <div id="hrs-edit-${l.id}" style="display:none;margin-top:4px;">
+                <input type="number" step="0.5" min="0" max="24" class="edit-input edit-hours" id="hrs-val-${l.id}" value="${parseFloat(l.hours||0).toFixed(1)}">
+                <div style="margin-top:4px;">
+                  <button class="save-edit-btn" onclick="saveHours('${l.id}')">SAVE</button>
+                  <button class="cancel-edit-btn" onclick="cancelEdit('hrs','${l.id}')">CANCEL</button>
+                </div>
+              </div>
+            </td>
             <td>
               <div class="billable-toggle">
                 <label class="toggle"><input type="checkbox" ${l.billable!==false?'checked':''} onchange="toggleBillable('${l.id}', this.checked)"><span class="toggle-slider"></span></label>
@@ -258,28 +335,21 @@ function renderVisits() {
           </tr>`).join('')}
         </tbody>
       </table>` :
-      // No line items (older entry) — show flat row
-      `<div style="padding:12px 0;font-size:13px;color:var(--muted);">
-        <div style="color:var(--text);margin-bottom:6px;">${v.work_description||'No description'}</div>
-        <span style="font-family:'DM Mono',monospace;font-size:11px;">${parseFloat(v.hours_worked||0).toFixed(1)} hrs — no line items</span>
-      </div>`;
+      `<div style="padding:12px 0;font-size:13px;color:var(--muted);">No line items on this visit.</div>`;
 
-    return `<div class="visit-card ${allReviewed?'':''}">
+    return `<div class="visit-card">
       <div class="visit-head" onclick="toggleCard(this)">
-        <div class="visit-vessel">${v.job_vessel}</div>
+        <div class="visit-vessel">${vesselName}</div>
         <span class="visit-tech">${v.tech_name}</span>
         <span class="visit-date">${dateStr}</span>
-        ${timeStr?`<span class="visit-time">${timeStr}</span>`:''}
-        <span class="visit-hours">${parseFloat(v.hours_worked||0).toFixed(1)}h</span>
+        <span class="visit-hours">${parseFloat(v.total_hours||0).toFixed(1)}h</span>
         ${allReviewed?'<span style="font-size:10px;color:var(--green);font-family:DM Mono,monospace;border:1px solid rgba(74,192,120,.3);padding:2px 7px;border-radius:3px;">✓ DONE</span>':''}
         <span class="visit-chevron">▼</span>
       </div>
       <div class="visit-body">
-        ${v.materials_used||v.problem_notes||photos.length?`<div class="visit-notes">
-          ${v.materials_used?`<span class="note-chip note-materials">📦 ${v.materials_used}</span>`:''}
-          ${v.problem_notes?`<span class="note-chip note-problems">⚠ ${v.problem_notes}</span>`:''}
-        </div>`:''}
-        ${photos.length?`<div class="visit-photos">${photos.map(p=>`<img src="${p}" onclick="window.open('${p}','_blank')">`).join('')}</div>`:''}
+        ${photos.length?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;">${photos.map(p=>`<img src="${p}" style="width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer;" onclick="window.open('${p}','_blank')">`).join('')}</div>`:''}
+        ${v.materials_used?`<div style="font-size:12px;color:var(--blue);margin:8px 0;">📦 ${v.materials_used}</div>`:''}
+        ${v.problem_notes?`<div style="font-size:12px;color:var(--amber);margin:8px 0;">⚠ ${v.problem_notes}</div>`:''}
         ${linesHtml}
         <div style="margin-top:12px;display:flex;gap:8px;">
           ${vLines.length?`<button class="btn btn-primary" onclick="markAllReviewed('${v.id}')">✓ Mark All Reviewed</button>`:''}
@@ -341,6 +411,56 @@ function showToast(msg) {
   const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), 2500);
 }
+
+function startEditDesc(lineId, currentVal) {
+  document.getElementById('desc-' + lineId).style.display = 'none';
+  document.getElementById('desc-edit-' + lineId).style.display = 'block';
+  const ta = document.getElementById('desc-val-' + lineId);
+  ta.focus(); ta.select();
+}
+
+function startEditHours(lineId, currentVal) {
+  document.getElementById('hrs-' + lineId).style.display = 'none';
+  document.getElementById('hrs-edit-' + lineId).style.display = 'block';
+  const inp = document.getElementById('hrs-val-' + lineId);
+  inp.focus(); inp.select();
+}
+
+function cancelEdit(type, lineId) {
+  if (type === 'desc') {
+    document.getElementById('desc-' + lineId).style.display = '';
+    document.getElementById('desc-edit-' + lineId).style.display = 'none';
+  } else {
+    document.getElementById('hrs-' + lineId).style.display = '';
+    document.getElementById('hrs-edit-' + lineId).style.display = 'none';
+  }
+}
+
+async function saveDesc(lineId) {
+  const val = document.getElementById('desc-val-' + lineId).value.trim();
+  if (!val) { showToast('Description cannot be empty'); return; }
+  const { error } = await sb.from('apb_timesheet_lines').update({ description: val }).eq('id', lineId);
+  if (error) { showToast('Error saving: ' + error.message); return; }
+  const l = lines.find(x => x.id === lineId);
+  if (l) l.description = val;
+  document.getElementById('desc-' + lineId).textContent = val;
+  cancelEdit('desc', lineId);
+  showToast('Description updated ✓');
+}
+
+async function saveHours(lineId) {
+  const val = parseFloat(document.getElementById('hrs-val-' + lineId).value);
+  if (!val || val <= 0 || val > 24) { showToast('Enter valid hours (0.5 - 24)'); return; }
+  const { error } = await sb.from('apb_timesheet_lines').update({ hours: val }).eq('id', lineId);
+  if (error) { showToast('Error saving: ' + error.message); return; }
+  const l = lines.find(x => x.id === lineId);
+  if (l) l.hours = val;
+  document.getElementById('hrs-' + lineId).textContent = val.toFixed(1) + 'h';
+  cancelEdit('hrs', lineId);
+  updateSummary();
+  showToast('Hours updated to ' + val.toFixed(1) + 'h ✓');
+}
+
 </script>
 </body>
 </html>
