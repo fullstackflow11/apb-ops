@@ -479,7 +479,7 @@ function showLeadDetail(id) {
 }
 
 async function loadJobs() {
-  const { data, error } = await sb.from('apb_jobs').select('id, job_name, job_number, job_type, status, priority, start_date, completion_date, ms_list_item_id, apb_engagements(name)').order('created_at', { ascending: false });
+  const { data, error } = await sb.from('apb_jobs').select('id, job_name, job_number, job_type, status, start_date, completion_date, ms_list_item_id, apb_engagements(name)').order('created_at', { ascending: false });
   if (error) { console.error(error); return; }
   allJobs = data || [];
   renderJobs();
@@ -503,7 +503,7 @@ function renderJobs() {
 
 function jobRowHtml(j) {
   const sc = statusClass(j.status, 'job');
-  const pri = j.priority === 'Urgent' ? '<span class="card-badge badge-priority-urgent">URGENT</span>' : j.priority === 'High' ? '<span class="card-badge badge-priority-high">HIGH</span>' : '';
+  const pri = false ? '<span class="card-badge badge-priority-urgent">URGENT</span>' : false ? '<span class="card-badge badge-priority-high">HIGH</span>' : '';
   return `<div class="card-item">
     <div class="card-row" onclick="showJobDetail('${j.id}')">
       <div class="card-status-dot ${sc.dot}"></div>
