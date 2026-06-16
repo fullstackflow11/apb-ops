@@ -66,7 +66,6 @@
   .lunch-btn { background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 4px; text-align: center; font-size: 13px; cursor: pointer; color: var(--silver-dim); transition: all 0.15s; }
   .lunch-btn.selected { border-color: var(--silver); color: #000; background: var(--metal); font-weight: 600; }
   .hours-display { background: var(--input-bg); border: 1px solid var(--border-bright); border-radius: 8px; padding: 12px; font-family: 'DM Mono', monospace; font-size: 17px; text-align: center; color: var(--silver-bright); }
-  /* JOB LINES */
   .job-line { background: var(--card2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 12px; position: relative; }
   .job-line-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
   .job-line-num { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--silver-dim); letter-spacing: 1px; }
@@ -100,7 +99,6 @@
   .history-line { font-size: 12.5px; color: var(--text); margin-top: 6px; padding-left: 10px; border-left: 2px solid var(--border-bright); line-height: 1.5; }
   .history-line .ln-job { font-family: 'DM Mono', monospace; color: var(--silver); }
   .history-line .ln-hrs { color: var(--silver-dim); }
-  .history-tag { display: inline-block; font-family: 'DM Mono', monospace; font-size: 10px; background: var(--input-bg); border: 1px solid var(--border); padding: 2px 7px; border-radius: 4px; color: var(--silver); margin-top: 6px; }
   .history-photos { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
   .history-photos img { width: 56px; height: 56px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
   .empty-state { text-align: center; color: var(--muted); padding: 40px 20px; font-size: 13px; line-height: 1.7; }
@@ -136,14 +134,10 @@
     <div class="tab active" onclick="switchTab('log')">Log Time</div>
     <div class="tab" onclick="switchTab('history')">My Hours</div>
   </div>
-
   <div class="tab-content active" id="tabLog">
     <div class="form-section">
       <div class="form-section-title">Visit</div>
-      <div class="field">
-        <label>Vessel / Project <span class="req">*</span></label>
-        <select class="form-select" id="vesselSelect" onchange="onVesselChange()"><option value="">Select vessel...</option></select>
-      </div>
+      <div class="field"><label>Vessel / Project <span class="req">*</span></label><select class="form-select" id="vesselSelect" onchange="onVesselChange()"><option value="">Select vessel...</option></select></div>
       <div class="field"><label>Date <span class="req">*</span></label><input type="date" class="form-input" id="dateInput"></div>
       <div class="field"><div class="time-row">
         <div><label>Clock In <span class="req">*</span></label><input type="time" class="form-input" id="clockIn" onchange="calcHours()"></div>
@@ -157,23 +151,17 @@
       </div></div>
       <div class="field"><label>Clock Hours</label><div class="hours-display" id="hoursDisplay">—</div></div>
     </div>
-
     <div class="form-section">
       <div class="form-section-title"><span>Jobs Worked</span></div>
       <div id="jobLines"></div>
       <button class="add-line-btn" onclick="addJobLine()" id="addLineBtn">+ Add Job Line</button>
-      <div class="totals-bar">
-        <span class="label">Logged across jobs</span>
-        <span class="vals" id="totalsVals">0.0 / 0.0 hrs</span>
-      </div>
+      <div class="totals-bar"><span class="label">Logged across jobs</span><span class="vals" id="totalsVals">0.0 / 0.0 hrs</span></div>
     </div>
-
     <div class="form-section">
       <div class="form-section-title">Visit Notes</div>
       <div class="field"><label>Materials Used</label><textarea class="form-textarea" id="materialsUsed" placeholder="Parts, consumables, materials (optional)"></textarea></div>
       <div class="field"><label>Problems / Notes for Team</label><textarea class="form-textarea" id="problemNotes" placeholder="Issues, blockers, safety concerns (optional)"></textarea></div>
     </div>
-
     <div class="form-section">
       <div class="form-section-title">Photos</div>
       <div class="photo-add">
@@ -183,12 +171,10 @@
       <div class="photo-uploading" id="photoStatus"></div>
       <div class="photo-previews" id="photoPreviews"></div>
     </div>
-
     <button class="submit-btn" id="submitBtn" onclick="submitTimesheet()">LOG TIMESHEET</button>
     <div class="msg-box" id="logMsg"></div>
     <div style="height: 32px;"></div>
   </div>
-
   <div class="tab-content" id="tabHistory">
     <div id="weekSummary"></div>
     <div id="historyContent"><div class="empty-state">Loading your hours...</div></div>
@@ -198,21 +184,20 @@
 
 <script>
 const SUPABASE_URL = 'https://aanrxyiocxxndkvkeocv.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDA3NzAyOSwiZXhwIjoyMDk1NjUzMDI5fQ.6fLSMOi9n67qPbxgKTxwSGPmsD-KjxKZalQsDrsW_xE';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU';
 const PHOTO_BUCKET = 'timesheet-photos';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-let allTechs = [], allJobs = [], currentTech = null, selectedPin = '', lunchHours = 0, uploadedPhotos = [], lineCounter = 0;
+let allTechs = [], allEngagements = [], currentTech = null, selectedPin = '', lunchHours = 0, uploadedPhotos = [], lineCounter = 0;
 
 (async function init() {
   document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
   const { data: techs } = await sb.from('apb_techs').select('*').eq('active', true).order('name');
   allTechs = techs || [];
   document.getElementById('techGrid').innerHTML = allTechs.map(t => `<button class="tech-btn" onclick="selectTech('${t.id}', this)">${t.name}</button>`).join('');
-  const { data: jobs } = await sb.from('APB').select('"Vessel/Project", "Job No", "Job Description", "Status"').not('Status', 'in', '("Paid","Closed","Cancelled")').order('"Vessel/Project"');
-  allJobs = jobs || [];
-  const vessels = [...new Set(allJobs.map(j => j['Vessel/Project']))].sort();
+  const { data: engs } = await sb.from('apb_engagements').select('id, name, status').not('status', 'in', '("Closed","Cancelled")').order('name');
+  allEngagements = engs || [];
   const sel = document.getElementById('vesselSelect');
-  vessels.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o); });
+  allEngagements.forEach(e => { const o = document.createElement('option'); o.value = e.id; o.textContent = e.name; sel.appendChild(o); });
 })();
 
 function selectTech(id, el) { document.querySelectorAll('.tech-btn').forEach(b => b.classList.remove('selected')); el.classList.add('selected'); currentTech = allTechs.find(t => t.id === id); selectedPin = ''; updatePinDots(); document.getElementById('loginError').textContent = ''; }
@@ -225,43 +210,39 @@ function showApp() { document.getElementById('loginScreen').classList.remove('ac
 function logout() { currentTech = null; selectedPin = ''; document.getElementById('appScreen').classList.remove('active'); document.getElementById('loginScreen').classList.add('active'); document.querySelectorAll('.tech-btn').forEach(b => b.classList.remove('selected')); updatePinDots(); document.getElementById('loginError').textContent = ''; resetForm(); }
 function switchTab(tab) { document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active'); document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active'); if (tab === 'history') loadHistory(); }
 
-function jobOptionsHtml() {
-  const vessel = document.getElementById('vesselSelect').value;
-  const jobs = allJobs.filter(j => j['Vessel/Project'] === vessel);
-  return '<option value="">Select job...</option>' + jobs.map(j => `<option value="${j['Job No']}" data-desc="${(j['Job Description']||'').replace(/"/g,'&quot;')}">${j['Job No']} — ${j['Job Description']||''}</option>`).join('');
+async function getJobsForEngagement(engId) {
+  const { data } = await sb.from('apb_jobs').select('id, job_name, job_number, status').eq('engagement_id', engId).not('status', 'in', '("Paid","Cancelled")').order('job_number');
+  return data || [];
 }
-function onVesselChange() {
-  // reset job lines when vessel changes
+
+async function onVesselChange() {
   document.getElementById('jobLines').innerHTML = '';
   lineCounter = 0;
-  const vessel = document.getElementById('vesselSelect').value;
-  if (vessel) addJobLine();
+  const engId = document.getElementById('vesselSelect').value;
+  if (engId) {
+    const jobs = await getJobsForEngagement(engId);
+    if (jobs.length) addJobLine(jobs);
+  }
   updateTotals();
 }
-function addJobLine() {
-  const vessel = document.getElementById('vesselSelect').value;
-  if (!vessel) { showMsg('error', 'Select a vessel first.'); return; }
+
+function jobOptionsHtml(jobs) {
+  return '<option value="">Select job...</option>' + jobs.map(j => `<option value="${j.id}">${j.job_number ? j.job_number+' — ' : ''}${j.job_name}</option>`).join('');
+}
+
+async function addJobLine(preloadedJobs) {
+  const engId = document.getElementById('vesselSelect').value;
+  if (!engId) { showMsg('error', 'Select a vessel first.'); return; }
+  const jobs = preloadedJobs || await getJobsForEngagement(engId);
   lineCounter++;
   const id = 'line_' + lineCounter;
   const div = document.createElement('div');
   div.className = 'job-line'; div.id = id;
   div.innerHTML = `
-    <div class="job-line-head">
-      <span class="job-line-num">JOB LINE ${lineCounter}</span>
-      <button class="job-line-remove" onclick="removeJobLine('${id}')">×</button>
-    </div>
-    <div class="field">
-      <label>Job Number <span class="req">*</span></label>
-      <select class="form-select line-job">${jobOptionsHtml()}</select>
-    </div>
-    <div class="field">
-      <label>Description of Work <span class="req">*</span></label>
-      <textarea class="form-textarea line-desc" placeholder="What did you do on this job?"></textarea>
-    </div>
-    <div class="field">
-      <label>Hours on This Job <span class="req">*</span></label>
-      <input type="number" step="0.5" min="0" class="form-input line-hours" placeholder="0.0" oninput="updateTotals()">
-    </div>`;
+    <div class="job-line-head"><span class="job-line-num">JOB LINE ${lineCounter}</span><button class="job-line-remove" onclick="removeJobLine('${id}')">×</button></div>
+    <div class="field"><label>Job <span class="req">*</span></label><select class="form-select line-job">${jobOptionsHtml(jobs)}</select></div>
+    <div class="field"><label>Description of Work <span class="req">*</span></label><textarea class="form-textarea line-desc" placeholder="What did you do on this job?"></textarea></div>
+    <div class="field"><label>Hours <span class="req">*</span></label><input type="number" step="0.5" min="0" class="form-input line-hours" placeholder="0.0" oninput="updateTotals()"></div>`;
   document.getElementById('jobLines').appendChild(div);
   updateTotals();
 }
@@ -274,17 +255,15 @@ function clockHours() {
   const total = (oh*60+om) - (ih*60+im); if (total <= 0) return null;
   const net = (total/60) - lunchHours; return net > 0 ? parseFloat(net.toFixed(2)) : null;
 }
-function calcHours() { const h = clockHours(); document.getElementById('hoursDisplay').textContent = h !== null ? h.toFixed(1) + ' hrs' : (document.getElementById('clockIn').value && document.getElementById('clockOut').value ? 'Check times' : '—'); updateTotals(); }
+function calcHours() { const h = clockHours(); document.getElementById('hoursDisplay').textContent = h !== null ? h.toFixed(1) + ' hrs' : '—'; updateTotals(); }
 function lineHoursTotal() { return [...document.querySelectorAll('.line-hours')].reduce((s, el) => s + (parseFloat(el.value) || 0), 0); }
 function updateTotals() {
   const lineTotal = lineHoursTotal(); const clock = clockHours();
   const el = document.getElementById('totalsVals');
-  const clockStr = clock !== null ? clock.toFixed(1) : '0.0';
-  el.textContent = `${lineTotal.toFixed(1)} / ${clockStr} hrs`;
+  el.textContent = `${lineTotal.toFixed(1)} / ${clock !== null ? clock.toFixed(1) : '0.0'} hrs`;
   el.className = 'vals';
   if (clock !== null && lineTotal > 0) el.classList.add(Math.abs(lineTotal - clock) < 0.05 ? 'match' : 'mismatch');
 }
-
 async function handlePhotos(files) {
   if (!files || !files.length) return;
   const status = document.getElementById('photoStatus');
@@ -303,50 +282,44 @@ function renderPhotos() { document.getElementById('photoPreviews').innerHTML = u
 function removePhoto(i) { uploadedPhotos.splice(i, 1); renderPhotos(); document.getElementById('photoStatus').textContent = uploadedPhotos.length + ' photo(s) attached'; }
 
 async function submitTimesheet() {
-  const vessel = document.getElementById('vesselSelect').value;
+  const engId = document.getElementById('vesselSelect').value;
+  const engName = document.getElementById('vesselSelect').options[document.getElementById('vesselSelect').selectedIndex]?.text;
   const date = document.getElementById('dateInput').value;
   const cin = document.getElementById('clockIn').value, cout = document.getElementById('clockOut').value;
-  const materials = document.getElementById('materialsUsed').value.trim();
-  const problems = document.getElementById('problemNotes').value.trim();
   const clock = clockHours();
-  if (!vessel) return showMsg('error', 'Select a vessel.');
+  if (!engId) return showMsg('error', 'Select a vessel.');
   if (!date) return showMsg('error', 'Enter a date.');
-  if (!cin || !cout) return showMsg('error', 'Enter clock in and clock out times.');
-  if (clock === null) return showMsg('error', 'Check your times — clock out must be after clock in.');
-  // Gather lines
+  if (!cin || !cout || clock === null) return showMsg('error', 'Check your times.');
   const lineEls = [...document.querySelectorAll('.job-line')];
   if (!lineEls.length) return showMsg('error', 'Add at least one job line.');
   const lines = [];
   for (const le of lineEls) {
     const jobSel = le.querySelector('.line-job');
-    const jobNo = jobSel.value;
-    const jobDesc = jobSel.options[jobSel.selectedIndex]?.dataset.desc || '';
+    const jobId = jobSel.value;
     const workDesc = le.querySelector('.line-desc').value.trim();
     const hrs = parseFloat(le.querySelector('.line-hours').value);
-    if (!jobNo) return showMsg('error', 'Each job line needs a job number selected.');
-    if (!workDesc) return showMsg('error', 'Each job line needs a description of work.');
-    if (!hrs || hrs <= 0) return showMsg('error', 'Each job line needs hours greater than 0.');
-    lines.push({ job_no: jobNo, job_description: jobDesc, work_description: workDesc, hours: hrs });
+    if (!jobId) return showMsg('error', 'Select a job number for each line.');
+    if (!workDesc) return showMsg('error', 'Add a description for each job line.');
+    if (!hrs || hrs <= 0) return showMsg('error', 'Enter hours > 0 for each line.');
+    lines.push({ job_id: jobId, work_description: workDesc, hours: hrs });
   }
-  const totalLineHours = lines.reduce((s, l) => s + l.hours, 0);
-
+  const totalHours = lines.reduce((s, l) => s + l.hours, 0);
   const btn = document.getElementById('submitBtn'); btn.disabled = true; btn.textContent = 'Saving...';
-  // Insert parent visit
   const { data: visit, error: vErr } = await sb.from('apb_timesheets').insert({
-    tech_id: currentTech.id, tech_name: currentTech.name, job_vessel: vessel,
-    job_no: lines.map(l => l.job_no).join(', '),
-    date, clock_in: cin, clock_out: cout, lunch_hours: lunchHours, hours_worked: totalLineHours,
-    work_description: lines.map(l => `${l.job_no}: ${l.work_description}`).join(' | '),
-    materials_used: materials || null, problem_notes: problems || null,
+    tech_id: currentTech.id, tech_name: currentTech.name,
+    engagement_id: engId, vessel_name: engName,
+    visit_date: date, clock_in: cin, clock_out: cout,
+    lunch_hours: lunchHours, total_hours: totalHours,
+    materials_used: document.getElementById('materialsUsed').value.trim() || null,
+    problem_notes: document.getElementById('problemNotes').value.trim() || null,
     photo_urls: uploadedPhotos.length ? uploadedPhotos.join(',') : null
   }).select().single();
-  if (vErr) { btn.disabled = false; btn.textContent = 'LOG TIMESHEET'; showMsg('error', 'Error saving visit: ' + vErr.message); return; }
-  // Insert child lines
-  const lineRows = lines.map(l => ({ timesheet_id: visit.id, job_no: l.job_no, job_description: l.job_description, work_description: l.work_description, hours: l.hours }));
+  if (vErr) { btn.disabled = false; btn.textContent = 'LOG TIMESHEET'; showMsg('error', 'Error: ' + vErr.message); return; }
+  const lineRows = lines.map(l => ({ timesheet_id: visit.id, job_id: l.job_id, work_description: l.work_description, hours: l.hours }));
   const { error: lErr } = await sb.from('apb_timesheet_lines').insert(lineRows);
   btn.disabled = false; btn.textContent = 'LOG TIMESHEET';
-  if (lErr) { showMsg('error', 'Visit saved but job lines failed: ' + lErr.message); return; }
-  showMsg('success', `✓ Logged ${lines.length} job line(s), ${totalLineHours.toFixed(1)} hrs total on ${vessel}`);
+  if (lErr) { showMsg('error', 'Visit saved but lines failed: ' + lErr.message); return; }
+  showMsg('success', `✓ Logged ${lines.length} job line(s), ${totalHours.toFixed(1)} hrs on ${engName}`);
   resetForm();
 }
 function resetForm() {
@@ -364,28 +337,24 @@ function resetForm() {
 function showMsg(type, text) { const el = document.getElementById('logMsg'); el.textContent = text; el.className = 'msg-box ' + type; if (type === 'success') setTimeout(() => { el.className = 'msg-box'; }, 6000); }
 
 async function loadHistory() {
-  const { data: visits } = await sb.from('apb_timesheets').select('*').eq('tech_name', currentTech.name).order('date', {ascending:false}).limit(30);
+  const { data: visits } = await sb.from('apb_timesheets').select('*, apb_engagements(name)').eq('tech_name', currentTech.name).order('visit_date', {ascending:false}).limit(30);
   const el = document.getElementById('historyContent');
   if (!visits || !visits.length) { el.innerHTML = '<div class="empty-state">No timesheets logged yet.</div>'; document.getElementById('weekSummary').innerHTML = ''; return; }
-  // fetch lines for these visits
   const ids = visits.map(v => v.id);
-  const { data: allLines } = await sb.from('apb_timesheet_lines').select('*').in('timesheet_id', ids);
+  const { data: allLines } = await sb.from('apb_timesheet_lines').select('*, apb_jobs(job_name, job_number)').in('timesheet_id', ids);
   const linesByVisit = {};
   (allLines || []).forEach(l => { (linesByVisit[l.timesheet_id] = linesByVisit[l.timesheet_id] || []).push(l); });
   const today = new Date(); const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay()+6)%7)); monday.setHours(0,0,0,0);
-  const weekHours = visits.filter(t => new Date(t.date+'T12:00:00') >= monday).reduce((s,t) => s + parseFloat(t.hours_worked||0), 0);
-  document.getElementById('weekSummary').innerHTML = `<div class="week-summary"><div><div class="week-label">This week</div><div style="font-size:12px;color:var(--muted);margin-top:2px;">${monday.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – today</div></div><div class="week-hours">${weekHours.toFixed(1)} hrs</div></div>`;
+  const weekHours = visits.filter(t => new Date(t.visit_date+'T12:00:00') >= monday).reduce((s,t) => s + parseFloat(t.total_hours||0), 0);
+  document.getElementById('weekSummary').innerHTML = `<div class="week-summary"><div><div class="week-label">This week</div></div><div class="week-hours">${weekHours.toFixed(1)} hrs</div></div>`;
   el.innerHTML = visits.map(v => {
-    const d = new Date(v.date+'T12:00:00');
+    const d = new Date(v.visit_date+'T12:00:00');
     const dateStr = d.toLocaleDateString('en-US', {weekday:'short',month:'short',day:'numeric'});
-    const timeStr = v.clock_in ? `${v.clock_in} – ${v.clock_out}` : '';
     const lines = linesByVisit[v.id] || [];
     const photos = v.photo_urls ? v.photo_urls.split(',').filter(Boolean) : [];
     return `<div class="history-entry">
-      <div class="history-header"><div><div class="history-vessel">${v.job_vessel}</div><div class="history-meta">${dateStr}${timeStr ? ' · '+timeStr : ''}</div></div><div class="history-hours">${parseFloat(v.hours_worked).toFixed(1)}h</div></div>
-      ${lines.map(l => `<div class="history-line"><span class="ln-job">${l.job_no}</span> <span class="ln-hrs">· ${parseFloat(l.hours).toFixed(1)}h</span><br>${l.work_description}</div>`).join('')}
-      ${v.materials_used ? `<div class="history-line" style="border-color:var(--border);color:var(--silver-dim);">Materials: ${v.materials_used}</div>` : ''}
-      ${v.problem_notes ? `<div class="history-line" style="border-color:var(--warn);color:var(--warn);">⚠ ${v.problem_notes}</div>` : ''}
+      <div class="history-header"><div><div class="history-vessel">${v.apb_engagements?.name || v.vessel_name || '—'}</div><div class="history-meta">${dateStr}</div></div><div class="history-hours">${parseFloat(v.total_hours||0).toFixed(1)}h</div></div>
+      ${lines.map(l => `<div class="history-line"><span class="ln-job">${l.apb_jobs?.job_number||''} ${l.apb_jobs?.job_name||''}</span> <span class="ln-hrs">· ${parseFloat(l.hours).toFixed(1)}h</span><br>${l.work_description}</div>`).join('')}
       ${photos.length ? `<div class="history-photos">${photos.map(p => `<img src="${p}">`).join('')}</div>` : ''}
     </div>`;
   }).join('');
