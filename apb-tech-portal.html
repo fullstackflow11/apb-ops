@@ -63,6 +63,10 @@
   .form-textarea { resize: vertical; min-height: 60px; line-height: 1.5; }
   .time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .lunch-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .punch-pair { display: grid; grid-template-columns: 1fr 1fr 28px; gap: 8px; align-items: end; margin-bottom: 10px; }
+  .punch-pair label { font-size: 12px; color: var(--silver-dim); margin-bottom: 7px; display: block; font-family: 'DM Mono', monospace; }
+  .punch-remove { background: none; border: 1px solid var(--border-bright); color: var(--danger); border-radius: 6px; width: 28px; height: 44px; font-size: 16px; cursor: pointer; margin-top: 22px; }
+  .add-punch-btn { width: 100%; background: var(--input-bg); border: 1px dashed var(--border-bright); border-radius: 8px; padding: 10px; color: var(--silver-dim); font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 14px; }
   .lunch-btn { background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 4px; text-align: center; font-size: 13px; cursor: pointer; color: var(--silver-dim); transition: all 0.15s; }
   .lunch-btn.selected { border-color: var(--silver); color: #000; background: var(--metal); font-weight: 600; }
   .hours-display { background: var(--input-bg); border: 1px solid var(--border-bright); border-radius: 8px; padding: 12px; font-family: 'DM Mono', monospace; font-size: 17px; text-align: center; color: var(--silver-bright); }
@@ -138,16 +142,14 @@
     <div class="form-section">
       <div class="form-section-title">Visit</div>
       <div class="field"><label>Date <span class="req">*</span></label><input type="date" class="form-input" id="dateInput"></div>
-      <div class="field"><div class="time-row">
-        <div><label>Clock In <span class="req">*</span></label><input type="time" class="form-input" id="clockIn" onchange="calcHours()"></div>
-        <div><label>Clock Out <span class="req">*</span></label><input type="time" class="form-input" id="clockOut" onchange="calcHours()"></div>
-      </div></div>
+      <div id="punchPairs"></div>
+      <button class="add-punch-btn" onclick="addPunchPair()" id="addPunchBtn">+ Add Punch</button>
       <div class="field"><label>Lunch Break</label><div class="lunch-row">
         <div class="lunch-btn selected" onclick="setLunch(0.5, this)">30 min</div>
         <div class="lunch-btn" onclick="setLunch(1, this)">1 hr</div>
         <div class="lunch-btn" onclick="setLunch(1.5, this)">1.5 hr</div>
       </div></div>
-      <div class="field"><label>Clock Hours</label><div class="hours-display" id="hoursDisplay">—</div></div>
+      <div class="field"><label>Total Hours On Site</label><div class="hours-display" id="hoursDisplay">—</div></div>
     </div>
     <div class="form-section">
       <div class="form-section-title"><span>Jobs Worked</span></div>
@@ -194,6 +196,7 @@ let allTechs = [], allEngagements = [], currentTech = null, selectedPin = '', lu
   document.getElementById('techGrid').innerHTML = allTechs.map(t => `<button class="tech-btn" onclick="selectTech('${t.id}', this)">${t.name}</button>`).join('');
   const { data: engs } = await sb.from('apb_engagements').select('id, name, status').not('status', 'in', '("Closed","Cancelled")').order('name');
   allEngagements = engs || [];
+  addPunchPair(); // Start with one punch pair
 })();
 
 function selectTech(id, el) { document.querySelectorAll('.tech-btn').forEach(b => b.classList.remove('selected')); el.classList.add('selected'); currentTech = allTechs.find(t => t.id === id); selectedPin = ''; updatePinDots(); document.getElementById('loginError').textContent = ''; }
@@ -283,13 +286,42 @@ async function addJobLine() {
   updateTotals();
 }
 function removeJobLine(id) { const el = document.getElementById(id); if (el) el.remove(); updateTotals(); }
+let punchCounter = 0;
+function addPunchPair() {
+  punchCounter++;
+  const id = 'punch_' + punchCounter;
+  const div = document.createElement('div');
+  div.className = 'punch-pair'; div.id = id;
+  const removeBtn = punchCounter > 1 ? `<button class="punch-remove" onclick="removePunch('${id}')">×</button>` : '<div></div>';
+  div.innerHTML = `
+    <div><label>Clock In ${punchCounter > 1 ? '(Return)' : ''}</label><input type="time" class="form-input punch-in" onchange="calcHours()"></div>
+    <div><label>Clock Out ${punchCounter > 1 ? '(Leave)' : ''}</label><input type="time" class="form-input punch-out" onchange="calcHours()"></div>
+    ${removeBtn}`;
+  document.getElementById('punchPairs').appendChild(div);
+  calcHours();
+}
+function removePunch(id) { const el = document.getElementById(id); if (el) { el.remove(); calcHours(); } }
 function setLunch(hrs, el) { lunchHours = hrs; document.querySelectorAll('.lunch-btn').forEach(b => b.classList.remove('selected')); el.classList.add('selected'); calcHours(); }
 function clockHours() {
-  const cin = document.getElementById('clockIn').value, cout = document.getElementById('clockOut').value;
-  if (!cin || !cout) return null;
-  const [ih,im] = cin.split(':').map(Number), [oh,om] = cout.split(':').map(Number);
-  const total = (oh*60+om) - (ih*60+im); if (total <= 0) return null;
-  const net = (total/60) - lunchHours; return net > 0 ? parseFloat(net.toFixed(2)) : null;
+  const pairs = [...document.querySelectorAll('.punch-pair')];
+  let total = 0;
+  for (const p of pairs) {
+    const cin = p.querySelector('.punch-in').value;
+    const cout = p.querySelector('.punch-out').value;
+    if (!cin || !cout) continue;
+    const [ih,im] = cin.split(':').map(Number), [oh,om] = cout.split(':').map(Number);
+    const mins = (oh*60+om) - (ih*60+im);
+    if (mins > 0) total += mins;
+  }
+  if (total === 0) return null;
+  const net = (total/60) - lunchHours;
+  return net > 0 ? parseFloat(net.toFixed(2)) : null;
+}
+function getPunches() {
+  return [...document.querySelectorAll('.punch-pair')].map(p => ({
+    punch_in: p.querySelector('.punch-in').value,
+    punch_out: p.querySelector('.punch-out').value
+  })).filter(p => p.punch_in && p.punch_out);
 }
 function calcHours() { const h = clockHours(); document.getElementById('hoursDisplay').textContent = h !== null ? h.toFixed(1) + ' hrs' : '—'; updateTotals(); }
 function lineHoursTotal() { return [...document.querySelectorAll('.line-hours')].reduce((s, el) => s + (parseFloat(el.value) || 0), 0); }
@@ -319,10 +351,10 @@ function removePhoto(i) { uploadedPhotos.splice(i, 1); renderPhotos(); document.
 
 async function submitTimesheet() {
   const date = document.getElementById('dateInput').value;
-  const cin = document.getElementById('clockIn').value, cout = document.getElementById('clockOut').value;
+  const punches = getPunches();
   const clock = clockHours();
   if (!date) return showMsg('error', 'Enter a date.');
-  if (!cin || !cout || clock === null) return showMsg('error', 'Check your times.');
+  if (punches.length === 0 || clock === null) return showMsg('error', 'Add at least one complete clock in/out pair.');
   const lineEls = [...document.querySelectorAll('.job-line')];
   if (!lineEls.length) return showMsg('error', 'Add at least one job line.');
   const lines = [];
@@ -355,11 +387,12 @@ async function submitTimesheet() {
   const primaryLine = lines.find(l => l.vessel_id) || lines[0];
   const engId = primaryLine.vessel_id || null;
   const engName = primaryLine.vessel_name;
+  const firstPunch = punches[0];
   const btn = document.getElementById('submitBtn'); btn.disabled = true; btn.textContent = 'Saving...';
   const { data: visit, error: vErr } = await sb.from('apb_timesheets').insert({
     tech_id: currentTech.id, tech_name: currentTech.name,
     engagement_id: engId, vessel_name: engName,
-    visit_date: date, clock_in: cin, clock_out: cout,
+    visit_date: date, clock_in: firstPunch.punch_in, clock_out: punches[punches.length-1].punch_out,
     lunch_hours: lunchHours, total_hours: totalHours,
     materials_used: document.getElementById('materialsUsed').value.trim() || null,
     problem_notes: document.getElementById('problemNotes').value.trim() || null,
@@ -368,15 +401,22 @@ async function submitTimesheet() {
   if (vErr) { btn.disabled = false; btn.textContent = 'LOG TIMESHEET'; showMsg('error', 'Error: ' + vErr.message); return; }
   const lineRows = lines.map(l => ({ timesheet_id: visit.id, engagement_id: l.vessel_id || null, vessel_name: l.vessel_name, job_id: l.job_id || null, shop_category: l.shop_category || null, work_description: l.work_description, hours: l.hours }));
   const { error: lErr } = await sb.from('apb_timesheet_lines').insert(lineRows);
+  if (lErr) { btn.disabled = false; btn.textContent = 'LOG TIMESHEET'; showMsg('error', 'Visit saved but lines failed: ' + lErr.message); return; }
+  // Save punch records
+  const punchRows = punches.map(p => {
+    const [ih,im] = p.punch_in.split(':').map(Number), [oh,om] = p.punch_out.split(':').map(Number);
+    const dur = parseFloat((((oh*60+om)-(ih*60+im))/60).toFixed(2));
+    return { timesheet_id: visit.id, tech_id: currentTech.id, tech_name: currentTech.name, visit_date: date, punch_in: p.punch_in, punch_out: p.punch_out, duration_hours: dur > 0 ? dur : 0, is_open: false };
+  });
+  await sb.from('apb_punches').insert(punchRows);
   btn.disabled = false; btn.textContent = 'LOG TIMESHEET';
-  if (lErr) { showMsg('error', 'Visit saved but lines failed: ' + lErr.message); return; }
   showMsg('success', `✓ Logged ${lines.length} job line(s), ${totalHours.toFixed(1)} hrs on ${engName}`);
   resetForm();
 }
 function resetForm() {
   document.getElementById('jobLines').innerHTML = ''; lineCounter = 0;
+  document.getElementById('punchPairs').innerHTML = ''; punchCounter = 0; addPunchPair();
   document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
-  document.getElementById('clockIn').value = ''; document.getElementById('clockOut').value = '';
   document.getElementById('hoursDisplay').textContent = '—';
   document.getElementById('materialsUsed').value = ''; document.getElementById('problemNotes').value = '';
   lunchHours = 0.5; uploadedPhotos = [];
