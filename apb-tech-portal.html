@@ -217,19 +217,34 @@ const SHOP_CATEGORIES = [
   '8.0 Fabrication & Manufacturing Development (R&D)'
 ];
 
+const ADMIN_CATEGORIES = [
+  '1.0 General Admin — Email & Communication',
+  '2.0 Planning & Scheduling',
+  '3.0 Policy & Procedure Development',
+  '4.0 Staff / Safety Meeting',
+  '5.0 Sales, Estimating & Proposals',
+  '6.0 Legal & Document Review',
+  '7.0 Project Management (Non-Billable)',
+  '8.0 R&D Review & Direction'
+];
+
 async function getJobsForEngagement(engId) {
   const { data } = await sb.from('apb_jobs').select('id, job_name, job_number, status').eq('engagement_id', engId).not('status', 'in', '("Paid","Cancelled")').order('job_number');
   return data || [];
 }
 
 function vesselOptionsHtml() {
-  let opts = '<option value="">Select vessel...</option><option value="SHOP">— Shop Work —</option>';
+  let opts = '<option value="">Select vessel...</option><option value="SHOP">— Shop Work —</option><option value="ADMIN">— Admin / Non-Billable —</option>';
   allEngagements.forEach(e => { opts += `<option value="${e.id}">${e.name}</option>`; });
   return opts;
 }
 
 function shopOptionsHtml() {
   return '<option value="">Select category...</option>' + SHOP_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
+}
+
+function adminOptionsHtml() {
+  return '<option value="">Select category...</option>' + ADMIN_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
 }
 
 function jobOptionsHtml(jobs) {
@@ -244,6 +259,8 @@ async function onLineVesselChange(lineId) {
   if (!val) { jobSlot.innerHTML = ''; return; }
   if (val === 'SHOP') {
     jobSlot.innerHTML = `<div class="field"><label>Shop Category <span class="req">*</span></label><select class="form-select line-job">${shopOptionsHtml()}</select></div>`;
+  } else if (val === 'ADMIN') {
+    jobSlot.innerHTML = `<div class="field"><label>Admin Category <span class="req">*</span></label><select class="form-select line-job">${adminOptionsHtml()}</select></div>`;
   } else {
     jobSlot.innerHTML = `<div class="field"><label>Job <span class="req">*</span></label><select class="form-select line-job"><option value="">Loading...</option></select></div>`;
     const jobs = await getJobsForEngagement(val);
@@ -322,18 +339,20 @@ async function submitTimesheet() {
     if (!workDesc) return showMsg('error', 'Add a description for each job line.');
     if (!hrs || hrs <= 0) return showMsg('error', 'Enter hours > 0 for each line.');
     const isShop = vesselVal === 'SHOP';
+    const isAdmin = vesselVal === 'ADMIN';
     lines.push({
-      vessel_id: isShop ? null : vesselVal,
-      vessel_name: isShop ? 'Shop' : vesselName,
-      job_id: isShop ? null : jobVal,
-      shop_category: isShop ? jobVal : null,
+      vessel_id: (isShop || isAdmin) ? null : vesselVal,
+      vessel_name: isShop ? 'Shop' : isAdmin ? 'Admin' : vesselName,
+      job_id: (isShop || isAdmin) ? null : jobVal,
+      shop_category: isShop ? jobVal : isAdmin ? jobVal : null,
       work_description: workDesc,
       hours: hrs
     });
   }
   const totalHours = lines.reduce((s, l) => s + l.hours, 0);
   // Use first line's vessel as the primary engagement for the visit record
-  const primaryLine = lines[0];
+  // Use first billable vessel line as primary, fallback to first line
+  const primaryLine = lines.find(l => l.vessel_id) || lines[0];
   const engId = primaryLine.vessel_id || null;
   const engName = primaryLine.vessel_name;
   const btn = document.getElementById('submitBtn'); btn.disabled = true; btn.textContent = 'Saving...';
