@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APB Time Reports</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #000; --card: #0c0c0e; --card2: #141417; --border: #2a2a2e; --border-bright: #3a3a40;
+  --silver: #c8ccd2; --silver-bright: #e8ebef; --silver-dim: #8a8e96;
+  --metal: linear-gradient(135deg, #d8dce2 0%, #9a9ea6 45%, #c0c4ca 55%, #7a7e86 100%);
+  --text: #f4f5f7; --muted: #72767e; --input-bg: #111114;
+  --danger: #d84848; --ok: #4ac078; --warn: #d8a048; --rd: #7b68ee;
+}
+html, body { min-height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; }
+.header { background: var(--card); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+.header-left { display: flex; align-items: center; gap: 16px; }
+.header h1 { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; letter-spacing: 4px; background: var(--metal); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.back-btn { background: none; border: 1px solid var(--border-bright); border-radius: 8px; color: var(--silver-dim); padding: 7px 13px; font-size: 12px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.main { max-width: 1100px; margin: 0 auto; padding: 24px; }
+
+/* Filters */
+.filters { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px; align-items: end; }
+.filter-field label { font-size: 11px; color: var(--silver-dim); font-family: 'DM Mono', monospace; letter-spacing: 1px; display: block; margin-bottom: 6px; }
+.filter-field select, .filter-field input { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 10px 12px; font-size: 13px; font-family: 'DM Sans', sans-serif; -webkit-appearance: none; }
+.run-btn { background: var(--metal); color: #000; border: none; border-radius: 8px; padding: 10px 20px; font-size: 13px; font-weight: 700; cursor: pointer; letter-spacing: 1px; white-space: nowrap; height: 40px; }
+
+/* KPI row */
+.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+.kpi { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+.kpi-label { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; }
+.kpi-value { font-family: 'DM Mono', monospace; font-size: 26px; color: var(--silver-bright); }
+.kpi-value.ok { color: var(--ok); }
+.kpi-value.warn { color: var(--warn); }
+.kpi-value.rd { color: var(--rd); }
+
+/* Tech summary table */
+.section-title { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--silver-dim); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 1.5px; text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--card2); }
+
+/* Day detail */
+.day-block { background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+.day-header { padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); cursor: pointer; }
+.day-header:hover { background: var(--card2); }
+.day-date { font-weight: 600; font-size: 14px; }
+.day-tech { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.day-hrs { font-family: 'DM Mono', monospace; font-size: 18px; color: var(--silver-bright); }
+.day-body { padding: 14px 18px; display: none; }
+.day-block.open .day-body { display: block; }
+.punch-row { display: flex; gap: 12px; font-size: 12px; color: var(--silver-dim); font-family: 'DM Mono', monospace; margin-bottom: 4px; }
+.punch-row .reason { color: var(--muted); }
+.line-item { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.line-item:last-child { border-bottom: none; }
+.line-vessel { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; letter-spacing: 1px; margin-bottom: 3px; }
+.line-job { font-size: 13px; font-weight: 600; color: var(--silver-bright); }
+.line-desc { font-size: 12px; color: var(--silver-dim); margin-top: 3px; line-height: 1.5; }
+.line-hrs { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--silver); float: right; }
+.tag { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-family: 'DM Mono', monospace; letter-spacing: 1px; margin-left: 6px; }
+.tag-rd { background: rgba(123,104,238,.15); color: var(--rd); border: 1px solid rgba(123,104,238,.3); }
+.tag-admin { background: rgba(216,160,72,.1); color: var(--warn); border: 1px solid rgba(216,160,72,.25); }
+.tag-shop { background: rgba(74,192,120,.1); color: var(--ok); border: 1px solid rgba(74,192,120,.25); }
+.tag-billable { background: rgba(200,204,210,.08); color: var(--silver-dim); border: 1px solid var(--border); }
+
+.empty { text-align: center; color: var(--muted); padding: 48px; font-size: 13px; }
+.loading { text-align: center; color: var(--muted); padding: 48px; font-size: 13px; font-family: 'DM Mono', monospace; letter-spacing: 1px; }
+
+/* Billable bar */
+.bill-bar-wrap { margin-top: 10px; }
+.bill-bar-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; margin-bottom: 5px; }
+.bill-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.bill-bar-fill { height: 100%; background: var(--ok); border-radius: 3px; transition: width 0.4s; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <a href="apb-dashboard.html" class="back-btn">← Dashboard</a>
+    <h1>APB TIME REPORTS</h1>
+  </div>
+</div>
+
+<div class="main">
+  <!-- Filters -->
+  <div class="filters">
+    <div class="filter-field">
+      <label>TECH</label>
+      <select id="filterTech">
+        <option value="">All Techs</option>
+      </select>
+    </div>
+    <div class="filter-field">
+      <label>DATE FROM</label>
+      <input type="date" id="filterFrom">
+    </div>
+    <div class="filter-field">
+      <label>DATE TO</label>
+      <input type="date" id="filterTo">
+    </div>
+    <div>
+      <button class="run-btn" onclick="loadReport()">RUN REPORT</button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-row" id="kpiRow">
+    <div class="kpi"><div class="kpi-label">Total Hours</div><div class="kpi-value" id="kpiTotal">—</div></div>
+    <div class="kpi"><div class="kpi-label">Billable Hours</div><div class="kpi-value ok" id="kpiBillable">—</div></div>
+    <div class="kpi"><div class="kpi-label">Non-Billable</div><div class="kpi-value warn" id="kpiNonBill">—</div></div>
+    <div class="kpi"><div class="kpi-label">R&D Hours</div><div class="kpi-value rd" id="kpiRD">—</div></div>
+  </div>
+
+  <!-- Tech summary -->
+  <div class="card" id="techSummaryCard" style="display:none;">
+    <div class="section-title">Hours by Tech</div>
+    <table id="techTable">
+      <thead><tr><th>TECH</th><th>DAYS</th><th>TOTAL HRS</th><th>BILLABLE</th><th>NON-BILLABLE</th><th>R&D</th><th>BILLABLE %</th></tr></thead>
+      <tbody id="techTbody"></tbody>
+    </table>
+  </div>
+
+  <!-- Day details -->
+  <div id="dayDetails"></div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://aanrxyiocxxndkvkeocv.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+function isRD(name) { return name && /R&D|R and D|Engineering|Design Development|Mechanical Systems|Fabrication/i.test(name); }
+function isAdmin(name) { return name && /Admin|Non-Billable|Planning|Policy|Meeting|Sales|Legal|Project Management \(Non/i.test(name); }
+function isShop(name) { return name && /Shop Maintenance|Equipment Maintenance|Material Processing|Training|Facility|Fabrication & Manufacturing/i.test(name); }
+function isBillable(line) { return line.job_id && !isAdmin(line.shop_category) && !isAdmin(line.job_name); }
+
+function getTag(line) {
+  const name = line.shop_category || line.apb_jobs?.job_name || '';
+  if (isRD(name)) return '<span class="tag tag-rd">R&D</span>';
+  if (isAdmin(name)) return '<span class="tag tag-admin">ADMIN</span>';
+  if (isShop(name)) return '<span class="tag tag-shop">SHOP</span>';
+  if (line.job_id) return '<span class="tag tag-billable">BILLABLE</span>';
+  return '';
+}
+
+// Set default date range — current week
+function setDefaultDates() {
+  const today = new Date();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+  document.getElementById('filterFrom').value = monday.toISOString().split('T')[0];
+  document.getElementById('filterTo').value = today.toISOString().split('T')[0];
+}
+
+async function loadTechs() {
+  const { data } = await sb.from('apb_techs').select('name').eq('active', true).order('name');
+  const sel = document.getElementById('filterTech');
+  (data || []).forEach(t => { const o = document.createElement('option'); o.value = t.name; o.textContent = t.name; sel.appendChild(o); });
+}
+
+async function loadReport() {
+  const tech = document.getElementById('filterTech').value;
+  const from = document.getElementById('filterFrom').value;
+  const to = document.getElementById('filterTo').value;
+
+  document.getElementById('dayDetails').innerHTML = '<div class="loading">Loading...</div>';
+  document.getElementById('techSummaryCard').style.display = 'none';
+
+  let q = sb.from('apb_timesheets').select('*, apb_timesheet_lines(*, apb_jobs(job_name, job_number))').order('visit_date', { ascending: false }).order('tech_name');
+  if (tech) q = q.eq('tech_name', tech);
+  if (from) q = q.gte('visit_date', from);
+  if (to) q = q.lte('visit_date', to);
+
+  const { data: visits, error } = await q;
+  if (error || !visits?.length) {
+    document.getElementById('dayDetails').innerHTML = '<div class="empty">No timesheets found for this period.</div>';
+    updateKPIs([], []);
+    return;
+  }
+
+  // Load punches for these visits
+  const ids = visits.map(v => v.id);
+  const { data: punches } = await sb.from('apb_punches').select('*').in('timesheet_id', ids);
+  const punchMap = {};
+  (punches || []).forEach(p => { (punchMap[p.timesheet_id] = punchMap[p.timesheet_id] || []).push(p); });
+
+  // Calculate billable/non-billable/RD per line
+  const allLines = visits.flatMap(v => v.apb_timesheet_lines || []);
+  let totalHrs = 0, billHrs = 0, nonBillHrs = 0, rdHrs = 0;
+
+  visits.forEach(v => {
+    totalHrs += parseFloat(v.total_hours || 0);
+    (v.apb_timesheet_lines || []).forEach(l => {
+      const hrs = parseFloat(l.hours || 0);
+      const name = l.shop_category || l.apb_jobs?.job_name || '';
+      if (isRD(name)) rdHrs += hrs;
+      if (isAdmin(name) || isShop(name) || !l.job_id) nonBillHrs += hrs;
+      else billHrs += hrs;
+    });
+  });
+
+  updateKPIs({ totalHrs, billHrs, nonBillHrs, rdHrs });
+  renderTechSummary(visits);
+  renderDays(visits, punchMap);
+}
+
+function updateKPIs({ totalHrs, billHrs, nonBillHrs, rdHrs }) {
+  document.getElementById('kpiTotal').textContent = (totalHrs || 0).toFixed(1) + ' hrs';
+  document.getElementById('kpiBillable').textContent = (billHrs || 0).toFixed(1) + ' hrs';
+  document.getElementById('kpiNonBill').textContent = (nonBillHrs || 0).toFixed(1) + ' hrs';
+  document.getElementById('kpiRD').textContent = (rdHrs || 0).toFixed(1) + ' hrs';
+}
+
+function renderTechSummary(visits) {
+  const techMap = {};
+  visits.forEach(v => {
+    if (!techMap[v.tech_name]) techMap[v.tech_name] = { days: new Set(), total: 0, bill: 0, nonBill: 0, rd: 0 };
+    const t = techMap[v.tech_name];
+    t.days.add(v.visit_date);
+    t.total += parseFloat(v.total_hours || 0);
+    (v.apb_timesheet_lines || []).forEach(l => {
+      const hrs = parseFloat(l.hours || 0);
+      const name = l.shop_category || l.apb_jobs?.job_name || '';
+      if (isRD(name)) t.rd += hrs;
+      if (isAdmin(name) || isShop(name) || !l.job_id) t.nonBill += hrs;
+      else t.bill += hrs;
+    });
+  });
+
+  const tbody = document.getElementById('techTbody');
+  tbody.innerHTML = Object.entries(techMap).map(([name, t]) => {
+    const pct = t.total > 0 ? Math.round((t.bill / t.total) * 100) : 0;
+    return `<tr>
+      <td><strong>${name}</strong></td>
+      <td>${t.days.size}</td>
+      <td style="font-family:'DM Mono',monospace">${t.total.toFixed(1)}</td>
+      <td style="font-family:'DM Mono',monospace;color:var(--ok)">${t.bill.toFixed(1)}</td>
+      <td style="font-family:'DM Mono',monospace;color:var(--warn)">${t.nonBill.toFixed(1)}</td>
+      <td style="font-family:'DM Mono',monospace;color:var(--rd)">${t.rd.toFixed(1)}</td>
+      <td style="min-width:120px">
+        <div class="bill-bar-label"><span>${pct}% billable</span></div>
+        <div class="bill-bar"><div class="bill-bar-fill" style="width:${pct}%"></div></div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('techSummaryCard').style.display = 'block';
+}
+
+function renderDays(visits, punchMap) {
+  const el = document.getElementById('dayDetails');
+  if (!visits.length) { el.innerHTML = '<div class="empty">No timesheets found.</div>'; return; }
+
+  el.innerHTML = '<div class="section-title" style="margin-bottom:12px;">Daily Breakdown</div>' + visits.map(v => {
+    const d = new Date(v.visit_date + 'T12:00:00');
+    const dateStr = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+    const lines = v.apb_timesheet_lines || [];
+    const vPunches = punchMap[v.id] || [];
+
+    const punchHtml = vPunches.length
+      ? vPunches.map(p => `<div class="punch-row"><span>${p.punch_in || '--'} → ${p.punch_out || 'open'}</span><span class="reason">${p.reason || 'Work'}</span><span>${p.duration_hours ? parseFloat(p.duration_hours).toFixed(1) + ' hrs' : ''}</span></div>`).join('')
+      : v.clock_in ? `<div class="punch-row"><span>${v.clock_in} → ${v.clock_out || 'open'}</span><span class="reason">Work</span></div>` : '';
+
+    const linesHtml = lines.map(l => {
+      const jobName = l.shop_category || l.apb_jobs?.job_name || '—';
+      const jobNum = l.apb_jobs?.job_number ? l.apb_jobs.job_number + ' — ' : '';
+      const vessel = l.vessel_name || '—';
+      return `<div class="line-item">
+        <div class="line-vessel">${vessel}</div>
+        <div class="line-job">${jobNum}${jobName}${getTag(l)}<span class="line-hrs">${parseFloat(l.hours || 0).toFixed(1)} hrs</span></div>
+        <div class="line-desc">${l.work_description || ''}</div>
+      </div>`;
+    }).join('');
+
+    return `<div class="day-block" onclick="this.classList.toggle('open')">
+      <div class="day-header">
+        <div>
+          <div class="day-date">${dateStr}</div>
+          <div class="day-tech">${v.tech_name} &nbsp;·&nbsp; Lunch: ${v.lunch_hours || 0}h deducted</div>
+        </div>
+        <div class="day-hrs">${parseFloat(v.total_hours || 0).toFixed(1)} hrs</div>
+      </div>
+      <div class="day-body">
+        ${punchHtml ? `<div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)">${punchHtml}</div>` : ''}
+        ${linesHtml || '<div style="color:var(--muted);font-size:13px">No job lines logged.</div>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+(async function init() {
+  setDefaultDates();
+  await loadTechs();
+  await loadReport();
+})();
+</script>
+</body>
+</html>
