@@ -62,7 +62,7 @@
   .form-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a8e96' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
   .form-textarea { resize: vertical; min-height: 60px; line-height: 1.5; }
   .time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .lunch-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .lunch-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
   .punch-pair { display: grid; grid-template-columns: 1fr 1fr 28px; gap: 8px; align-items: end; margin-bottom: 10px; }
   .punch-pair label { font-size: 12px; color: var(--silver-dim); margin-bottom: 7px; display: block; font-family: 'DM Mono', monospace; }
   .punch-remove { background: none; border: 1px solid var(--border-bright); color: var(--danger); border-radius: 6px; width: 28px; height: 44px; font-size: 16px; cursor: pointer; margin-top: 22px; }
@@ -148,6 +148,10 @@
         <div class="lunch-btn selected" onclick="setLunch(0.5, this)">30 min</div>
         <div class="lunch-btn" onclick="setLunch(1, this)">1 hr</div>
         <div class="lunch-btn" onclick="setLunch(1.5, this)">1.5 hr</div>
+        <div class="lunch-btn" onclick="setLunchOther(this)">Other</div>
+      </div>
+      <div id="lunchOtherWrap" style="display:none;margin-top:8px;">
+        <input type="number" class="form-input" id="lunchOtherHrs" step="0.25" min="0" max="8" placeholder="Hours away (e.g. 2.0)" oninput="setLunchCustom(this.value)">
       </div></div>
       <div class="field"><label>Total Hours On Site</label><div class="hours-display" id="hoursDisplay">—</div></div>
     </div>
@@ -301,7 +305,25 @@ function addPunchPair() {
   calcHours();
 }
 function removePunch(id) { const el = document.getElementById(id); if (el) { el.remove(); calcHours(); } }
-function setLunch(hrs, el) { lunchHours = hrs; document.querySelectorAll('.lunch-btn').forEach(b => b.classList.remove('selected')); el.classList.add('selected'); calcHours(); }
+function setLunch(hrs, el) {
+  lunchHours = hrs;
+  document.querySelectorAll('.lunch-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('lunchOtherWrap').style.display = 'none';
+  document.getElementById('lunchOtherHrs').value = '';
+  calcHours();
+}
+function setLunchOther(el) {
+  document.querySelectorAll('.lunch-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('lunchOtherWrap').style.display = 'block';
+  document.getElementById('lunchOtherHrs').focus();
+  calcHours();
+}
+function setLunchCustom(val) {
+  lunchHours = parseFloat(val) || 0;
+  calcHours();
+}
 function clockHours() {
   const pairs = [...document.querySelectorAll('.punch-pair')];
   let total = 0;
@@ -421,6 +443,8 @@ function resetForm() {
   document.getElementById('materialsUsed').value = ''; document.getElementById('problemNotes').value = '';
   lunchHours = 0.5; uploadedPhotos = [];
   document.querySelectorAll('.lunch-btn').forEach((b,i) => b.classList.toggle('selected', i===0));
+  document.getElementById('lunchOtherWrap').style.display = 'none';
+  document.getElementById('lunchOtherHrs').value = '';
   document.getElementById('photoPreviews').innerHTML = ''; document.getElementById('photoStatus').textContent = '';
   updateTotals();
 }
