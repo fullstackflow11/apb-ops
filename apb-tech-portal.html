@@ -62,11 +62,14 @@
   .form-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a8e96' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
   .form-textarea { resize: vertical; min-height: 60px; line-height: 1.5; }
   .time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .lunch-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-  .punch-pair { display: grid; grid-template-columns: 1fr 1fr 28px; gap: 8px; align-items: end; margin-bottom: 10px; }
+  .lunch-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .punch-pair { background: var(--card2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+  .punch-pair-times { display: grid; grid-template-columns: 1fr 1fr 28px; gap: 8px; align-items: end; margin-bottom: 8px; }
   .punch-pair label { font-size: 12px; color: var(--silver-dim); margin-bottom: 7px; display: block; font-family: 'DM Mono', monospace; }
+  .punch-pair-label { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--silver-dim); letter-spacing: 1px; margin-bottom: 8px; }
   .punch-remove { background: none; border: 1px solid var(--border-bright); color: var(--danger); border-radius: 6px; width: 28px; height: 44px; font-size: 16px; cursor: pointer; margin-top: 22px; }
   .add-punch-btn { width: 100%; background: var(--input-bg); border: 1px dashed var(--border-bright); border-radius: 8px; padding: 10px; color: var(--silver-dim); font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 14px; }
+  .punch-reason { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 10px 12px; font-size: 13px; font-family: 'DM Sans', sans-serif; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a8e96' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
   .lunch-btn { background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 4px; text-align: center; font-size: 13px; cursor: pointer; color: var(--silver-dim); transition: all 0.15s; }
   .lunch-btn.selected { border-color: var(--silver); color: #000; background: var(--metal); font-weight: 600; }
   .hours-display { background: var(--input-bg); border: 1px solid var(--border-bright); border-radius: 8px; padding: 12px; font-family: 'DM Mono', monospace; font-size: 17px; text-align: center; color: var(--silver-bright); }
@@ -148,10 +151,6 @@
         <div class="lunch-btn selected" onclick="setLunch(0.5, this)">30 min</div>
         <div class="lunch-btn" onclick="setLunch(1, this)">1 hr</div>
         <div class="lunch-btn" onclick="setLunch(1.5, this)">1.5 hr</div>
-        <div class="lunch-btn" onclick="setLunchOther(this)">Other</div>
-      </div>
-      <div id="lunchOtherWrap" style="display:none;margin-top:8px;">
-        <input type="number" class="form-input" id="lunchOtherHrs" step="0.25" min="0" max="8" placeholder="Hours away (e.g. 2.0)" oninput="setLunchCustom(this.value)">
       </div></div>
       <div class="field"><label>Total Hours On Site</label><div class="hours-display" id="hoursDisplay">—</div></div>
     </div>
@@ -291,16 +290,31 @@ async function addJobLine() {
 }
 function removeJobLine(id) { const el = document.getElementById(id); if (el) el.remove(); updateTotals(); }
 let punchCounter = 0;
+const PUNCH_REASONS = [
+  'Work',
+  'Lunch',
+  'Personal / Medical',
+  'Errand',
+  'Early Departure',
+  'Other'
+];
+
 function addPunchPair() {
   punchCounter++;
   const id = 'punch_' + punchCounter;
+  const isFirst = punchCounter === 1;
   const div = document.createElement('div');
   div.className = 'punch-pair'; div.id = id;
-  const removeBtn = punchCounter > 1 ? `<button class="punch-remove" onclick="removePunch('${id}')">×</button>` : '<div></div>';
+  const removeBtn = !isFirst ? `<button class="punch-remove" onclick="removePunch('${id}')">×</button>` : '<div></div>';
+  const reasonOpts = PUNCH_REASONS.map(r => `<option value="${r}" ${r === 'Work' ? 'selected' : ''}>${r}</option>`).join('');
   div.innerHTML = `
-    <div><label>Clock In ${punchCounter > 1 ? '(Return)' : ''}</label><input type="time" class="form-input punch-in" onchange="calcHours()"></div>
-    <div><label>Clock Out ${punchCounter > 1 ? '(Leave)' : ''}</label><input type="time" class="form-input punch-out" onchange="calcHours()"></div>
-    ${removeBtn}`;
+    <div class="punch-pair-label">PUNCH ${punchCounter}</div>
+    <div class="punch-pair-times">
+      <div><label>Clock In</label><input type="time" class="form-input punch-in" onchange="calcHours()"></div>
+      <div><label>Clock Out</label><input type="time" class="form-input punch-out" onchange="calcHours()"></div>
+      ${removeBtn}
+    </div>
+    <select class="punch-reason">${reasonOpts}</select>`;
   document.getElementById('punchPairs').appendChild(div);
   calcHours();
 }
@@ -309,19 +323,6 @@ function setLunch(hrs, el) {
   lunchHours = hrs;
   document.querySelectorAll('.lunch-btn').forEach(b => b.classList.remove('selected'));
   el.classList.add('selected');
-  document.getElementById('lunchOtherWrap').style.display = 'none';
-  document.getElementById('lunchOtherHrs').value = '';
-  calcHours();
-}
-function setLunchOther(el) {
-  document.querySelectorAll('.lunch-btn').forEach(b => b.classList.remove('selected'));
-  el.classList.add('selected');
-  document.getElementById('lunchOtherWrap').style.display = 'block';
-  document.getElementById('lunchOtherHrs').focus();
-  calcHours();
-}
-function setLunchCustom(val) {
-  lunchHours = parseFloat(val) || 0;
   calcHours();
 }
 function clockHours() {
@@ -342,7 +343,8 @@ function clockHours() {
 function getPunches() {
   return [...document.querySelectorAll('.punch-pair')].map(p => ({
     punch_in: p.querySelector('.punch-in').value,
-    punch_out: p.querySelector('.punch-out').value
+    punch_out: p.querySelector('.punch-out').value,
+    reason: p.querySelector('.punch-reason')?.value || 'Work'
   })).filter(p => p.punch_in && p.punch_out);
 }
 function calcHours() { const h = clockHours(); document.getElementById('hoursDisplay').textContent = h !== null ? h.toFixed(1) + ' hrs' : '—'; updateTotals(); }
@@ -428,7 +430,7 @@ async function submitTimesheet() {
   const punchRows = punches.map(p => {
     const [ih,im] = p.punch_in.split(':').map(Number), [oh,om] = p.punch_out.split(':').map(Number);
     const dur = parseFloat((((oh*60+om)-(ih*60+im))/60).toFixed(2));
-    return { timesheet_id: visit.id, tech_id: currentTech.id, tech_name: currentTech.name, visit_date: date, punch_in: p.punch_in, punch_out: p.punch_out, duration_hours: dur > 0 ? dur : 0, is_open: false };
+    return { timesheet_id: visit.id, tech_id: currentTech.id, tech_name: currentTech.name, visit_date: date, punch_in: p.punch_in, punch_out: p.punch_out, duration_hours: dur > 0 ? dur : 0, reason: p.reason || 'Work', is_open: false };
   });
   await sb.from('apb_punches').insert(punchRows);
   btn.disabled = false; btn.textContent = 'LOG TIMESHEET';
@@ -443,8 +445,6 @@ function resetForm() {
   document.getElementById('materialsUsed').value = ''; document.getElementById('problemNotes').value = '';
   lunchHours = 0.5; uploadedPhotos = [];
   document.querySelectorAll('.lunch-btn').forEach((b,i) => b.classList.toggle('selected', i===0));
-  document.getElementById('lunchOtherWrap').style.display = 'none';
-  document.getElementById('lunchOtherHrs').value = '';
   document.getElementById('photoPreviews').innerHTML = ''; document.getElementById('photoStatus').textContent = '';
   updateTotals();
 }
