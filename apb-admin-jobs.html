@@ -636,12 +636,19 @@ function showJobDetail(id) {
 
 function closeDetail() { document.getElementById('detailModal').classList.remove('open'); }
 
+function spFolderUrl(name) {
+  const enc = encodeURIComponent(name);
+  return `https://allpointsboats1.sharepoint.com/sites/operations/Lists/Jobs/Grouped%20by%20Project.aspx?FilterField1=Parent%5Fx0020%5FProject&FilterValue1=${enc}&FilterType1=Text&FilterDisplay1=${enc}&viewid=3af2d7b3%2D0ba9%2D4ab5%2Dbed7%2Dbc4bdf461cb9`;
+}
+
 function folderHtml(type, client, items, rowFn) {
   const id = 'folder-' + type + '-' + client.replace(/[^a-z0-9]/gi,'_');
+  const spLink = type === 'job' ? `<a href="${spFolderUrl(client)}" target="_blank" onclick="event.stopPropagation()" title="Open in SharePoint" style="font-size:11px;color:var(--muted);text-decoration:none;padding:2px 6px;border:1px solid var(--border);border-radius:4px;margin-left:4px;white-space:nowrap;">📋 SharePoint</a>` : '';
   return `<div class="folder-group">
     <div class="folder-header open" onclick="toggleFolder('${id}')">
       <span class="folder-icon">📁</span>
       <span class="folder-name">${esc(client)}</span>
+      ${spLink}
       <span class="folder-badge">${items.length}</span>
       <span class="folder-chevron">▶</span>
     </div>
@@ -694,4 +701,3 @@ function showMsg(id, type, text) { const el = document.getElementById(id); el.te
 </script>
 </body>
 </html>
- 
