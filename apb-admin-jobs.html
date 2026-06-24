@@ -504,11 +504,13 @@ function renderJobs() {
 function jobRowHtml(j) {
   const sc = statusClass(j.status, 'job');
   const pri = false ? '<span class="card-badge badge-priority-urgent">URGENT</span>' : false ? '<span class="card-badge badge-priority-high">HIGH</span>' : '';
+  const engName = j.apb_engagements?.name || '';
+  const spFolderLink = engName ? spFolderUrl(engName) : '';
   return `<div class="card-item">
-    <div class="card-row" onclick="showJobDetail('${j.id}')">
+    <div class="card-row" onclick="${spFolderLink ? `window.open('${spFolderLink}','_blank')` : `showJobDetail('${j.id}')`}" style="cursor:pointer;" title="${spFolderLink ? 'Open vessel folder in SharePoint' : 'View job detail'}">
       <div class="card-status-dot ${sc.dot}"></div>
       <div style="flex:1;">
-        <div class="card-name">${esc(j.job_name || j.job_name || 'Unnamed Job')}${j.ms_list_item_id ? ` <a href="https://allpointsboats1.sharepoint.com/sites/operations/Lists/Jobs/DispForm.aspx?ID=${j.ms_list_item_id}" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:var(--muted);margin-left:6px;text-decoration:none;vertical-align:middle;" title="Open in SharePoint">↗</a>` : ''}</div>
+        <div class="card-name">${esc(j.job_name || 'Unnamed Job')}${j.ms_list_item_id ? ` <a href="https://allpointsboats1.sharepoint.com/sites/operations/Lists/Jobs/DispForm.aspx?ID=${j.ms_list_item_id}" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:var(--muted);margin-left:6px;text-decoration:none;vertical-align:middle;" title="Open job in SharePoint">↗</a>` : ''}</div>
         ${j.vessel_name ? `<div class="card-vessel">${esc(j.vessel_name)}${j.vessel_length ? ' · ' + j.vessel_length + 'ft' : ''}</div>` : ''}
       </div>
       ${j.job_number ? `<div style="font-family:var(--font-mono);font-size:11px;color:var(--silver-dim);">${esc(j.job_number)}</div>` : ''}
@@ -517,6 +519,7 @@ function jobRowHtml(j) {
       ${j.estimated_value ? `<div style="font-family:var(--font-mono);font-size:11px;color:var(--silver-dim);">$${Number(j.estimated_value).toLocaleString()}</div>` : ''}
       <div class="card-date">${fmtDate(j.created_at)}</div>
       <div class="card-actions" onclick="event.stopPropagation()">
+        <button class="icon-btn" onclick="showJobDetail('${j.id}')" title="View detail">👁</button>
         <button class="icon-btn" onclick="openJobModal('${j.id}')" title="Edit">✎</button>
         <button class="icon-btn danger" onclick="deleteJob('${j.id}')" title="Delete">✕</button>
       </div>
