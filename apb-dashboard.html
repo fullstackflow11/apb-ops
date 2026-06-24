@@ -439,7 +439,7 @@ async function loadJobs(){
     ? billJobs.map(j=>`
       <div class="job-item">
         <div class="status-dot" style="background:${STATUS_COLORS[j.status]||'#666'}"></div>
-        <div class="job-engagement">${j.apb_engagements?.name||'—'}</div>
+        <div class="job-engagement"><a href="${j.apb_engagements?.name ? 'https://allpointsboats1.sharepoint.com/sites/operations/Lists/Jobs/Grouped%20by%20Project.aspx?FilterField1=Parent%5Fx0020%5FProject&FilterValue1='+encodeURIComponent(j.apb_engagements.name)+'&FilterType1=Text&FilterDisplay1='+encodeURIComponent(j.apb_engagements.name)+'&viewid=3af2d7b3%2D0ba9%2D4ab5%2Dbed7%2Dbc4bdf461cb9' : '#'}" target="_blank" onclick="event.stopPropagation()" title="Open in SharePoint" style="color:inherit;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${j.apb_engagements?.name||'—'}</a></div>
         <div class="job-num">${j.job_number||''}</div>
         <div class="job-name">${j.job_name}${j.ms_list_item_id ? '<a href="https://allpointsboats1.sharepoint.com/sites/operations/Lists/Jobs/DispForm.aspx?ID='+j.ms_list_item_id+'" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:var(--muted);margin-left:5px;text-decoration:none;" title="Open in SharePoint">↗</a>' : ''}</div>
         ${statusBadge(j.status)}
@@ -453,7 +453,7 @@ async function loadJobs(){
     ? inProgressJobs.map(j=>`
       <div class="job-item">
         <div class="status-dot" style="background:${STATUS_COLORS[j.status]||'#666'}"></div>
-        <div class="job-engagement">${j.apb_engagements?.name||'—'}</div>
+        <div class="job-engagement"><a href="${j.apb_engagements?.name ? 'https://allpointsboats1.sharepoint.com/sites/operations/Lists/Jobs/Grouped%20by%20Project.aspx?FilterField1=Parent%5Fx0020%5FProject&FilterValue1='+encodeURIComponent(j.apb_engagements.name)+'&FilterType1=Text&FilterDisplay1='+encodeURIComponent(j.apb_engagements.name)+'&viewid=3af2d7b3%2D0ba9%2D4ab5%2Dbed7%2Dbc4bdf461cb9' : '#'}" target="_blank" onclick="event.stopPropagation()" title="Open in SharePoint" style="color:inherit;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${j.apb_engagements?.name||'—'}</a></div>
         <div class="job-num">${j.job_number||''}</div>
         <div class="job-name">${j.job_name}${j.ms_list_item_id ? '<a href="https://allpointsboats1.sharepoint.com/sites/operations/Lists/Jobs/DispForm.aspx?ID='+j.ms_list_item_id+'" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:var(--muted);margin-left:5px;text-decoration:none;" title="Open in SharePoint">↗</a>' : ''}</div>
         <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);flex-shrink:0;">${j.job_status_pct!=null?j.job_status_pct+'%':''}</div>
