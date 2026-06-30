@@ -5,22 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>APB Operations Hub</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 :root {
-    --bg: #EDEEF2; --card: #ffffff; --card2: #F5F6FA; --border: #DDE1E8; --border-bright: #C7CED9;
-    --silver: #2457E6; --silver-bright: #0D1626; --silver-dim: #6B7A92;
-    --metal: linear-gradient(135deg, #2457E6 0%, #1B45B8 100%);
-    --text: #0D1626; --muted: #6B7A92; --input-bg: #ffffff; --danger: #C43030; --ok: #0B9E6A; --warn: #B86A00;
-    --ink-3: #6B7A92; --ink-4: #9BA9BE;
-    --blue: #2457E6; --green: #0B9E6A; --red: #C43030; --amber: #B86A00; --violet: #6B3FD4;
-    --accent: #2457E6; --accent-soft: #EAF0FE;
-    --shadow-sm: 0 1px 3px rgba(13,22,38,.07); --shadow: 0 8px 28px -12px rgba(13,22,38,.14);
-    --font-body: 'Inter', -apple-system, 'Segoe UI', sans-serif;
-    --font-mono: 'DM Mono', ui-monospace, monospace;
+  --bg:#EDEEF2; --card:#ffffff; --card2:#F5F6FA; --panel:#ffffff; --panel-2:#F5F6FA;
+    --border:#DDE1E8; --border-bright:#C7CED9; --line:#DDE1E8; --line-2:#E8EBF0;
+    --silver:#2457E6; --silver-bright:#0D1626; --silver-dim:#6B7A92;
+    --metal:linear-gradient(135deg,#2457E6 0%,#1B45B8 100%);
+    --text:#0D1626; --muted:#6B7A92; --input-bg:#ffffff;
+    --danger:#C43030; --ok:#0B9E6A; --warn:#B86A00;
+    --ink:#0D1626; --ink-2:#3A4559; --ink-3:#6B7A92; --ink-4:#9BA9BE;
+    --accent:#2457E6; --accent-2:#1B45B8; --accent-soft:#EAF0FE;
+    --green:#0B9E6A; --green-soft:#E4F5EE;
+    --amber:#B86A00; --amber-soft:#FBF0E2;
+    --red:#C43030; --red-soft:#FBEAEA;
+    --violet:#6B3FD4; --violet-soft:#EEE9FC;
+    --blue:#2457E6; --cyan:#0A6E99;
+    --shadow-sm:0 1px 3px rgba(13,22,38,.07); --shadow:0 8px 28px -12px rgba(13,22,38,.14);
+    --mono:"DM Mono",ui-monospace,monospace;
+    --font-mono:"DM Mono",ui-monospace,monospace;
+    --font-body:Inter,-apple-system,"Segoe UI",sans-serif;
 }
-html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-body); }
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:Inter,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
 body { overflow-x: hidden; }
 a { color: inherit; text-decoration: none; }
 
@@ -36,7 +43,7 @@ header { display: flex; align-items: center; justify-content: space-between; pad
 .weather-chip .desc { font-size: 12px; color: var(--text); }
 .updated { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-align: right; }
 .btn-ghost { background: var(--card); border: 1px solid var(--border-bright); color: var(--ink-3); padding: 7px 13px; border-radius: 8px; cursor: pointer; font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; }
-.btn-ghost:active { background: var(--card2); }
+.btn-ghost:active { background:var(--panel-2); }
 
 main { background: var(--bg); padding: 24px 28px; max-width: 1600px; margin: 0 auto; }
 .section-label { font-size: 11px; font-weight: 700; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; margin: 32px 0 14px; display: flex; align-items: center; gap: 10px; } .section-label::after { content: ""; flex: 1; height: 1px; background: var(--border); }
@@ -95,7 +102,7 @@ iframe.embed { width: 100%; border: none; display: block; }
 
 /* TODO */
 .todo-input-row { display: flex; gap: 8px; padding: 14px 16px; border-bottom: 1px solid var(--border); }
-.todo-input { flex: 1; background: var(--card2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 10px 12px; font-size: 14px; font-family: var(--font-body); }
+.todo-input { flex: 1; background:var(--panel-2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 10px 12px; font-size: 14px; font-family: var(--font-body); }
 .todo-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .todo-add { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 0 16px; font-weight: 700; cursor: pointer; font-size: 18px; }
 .todo-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
@@ -111,12 +118,12 @@ iframe.embed { width: 100%; border: none; display: block; }
 .pipeline-label { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); width: 150px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pipeline-bar-wrap { flex: 1; height: 8px; background: var(--card); border-radius: 4px; overflow: hidden; }
 .pipeline-bar { height: 100%; border-radius: 4px; transition: width 0.8s cubic-bezier(0.16,1,0.3,1); }
-.pipeline-count { font-family: var(--font-mono); font-size: 11px; color: var(--silver-bright); width: 24px; text-align: right; }
+.pipeline-count { font-family: var(--font-mono); font-size: 11px; color: var(--ink); width: 24px; text-align: right; }
 
 /* JOB ITEMS */
 .job-item { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-bottom: 1px solid var(--border); }
 .job-item:last-child { border-bottom: none; }
-.job-item:hover { background: var(--card2); }
+.job-item:hover { background:var(--panel-2); }
 .job-engagement { font-size: 12px; font-weight: 600; color: var(--text); min-width: 100px; max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
 .job-name { font-size: 12px; color: var(--muted); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .job-num { font-family: var(--font-mono); font-size: 10px; color: var(--muted); flex-shrink: 0; }
@@ -126,7 +133,7 @@ iframe.embed { width: 100%; border: none; display: block; }
 .badge-rtbb { background: rgba(216,160,72,.12); color: #d8a048; border: 1px solid rgba(216,160,72,.3); }
 .badge-ip   { background: rgba(42,159,216,.12); color: #2a9fd8; border: 1px solid rgba(42,159,216,.3); }
 .badge-nir  { background: rgba(216,72,72,.12);  color: #d84848; border: 1px solid rgba(216,72,72,.3); }
-.badge-is   { background: rgba(74,192,120,.12); color: #4ac078; border: 1px solid rgba(74,192,120,.3); }
+.badge-is   { background: rgba(74,192,120,.12); color: #0B9E6A; border: 1px solid rgba(74,192,120,.3); }
 .badge-app  { background: rgba(154,122,224,.12);color: #9a7ae0; border: 1px solid rgba(154,122,224,.3); }
 .badge-lead { background: rgba(114,118,126,.12);color: #8a8e96; border: 1px solid rgba(114,118,126,.3); }
 
@@ -135,19 +142,19 @@ iframe.embed { width: 100%; border: none; display: block; }
 .rd-item:last-child { border-bottom: none; }
 .rd-item:hover { background: rgba(216,160,72,.03); }
 .rd-item-header { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
-.rd-entity { font-size: 13px; font-weight: 600; color: var(--silver-bright); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rd-entity { font-size: 13px; font-weight: 600; color: var(--ink); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rd-type { font-family: var(--font-mono); font-size: 10px; background: rgba(154,122,224,.1); color: var(--purple); border: 1px solid rgba(154,122,224,.2); padding: 2px 7px; border-radius: 3px; flex-shrink: 0; }
 .rd-conf-high { font-family: var(--font-mono); font-size: 10px; background: rgba(216,160,72,.12); color: var(--amber); border: 1px solid rgba(216,160,72,.3); padding: 2px 7px; border-radius: 3px; }
 .rd-conf-medium { font-family: var(--font-mono); font-size: 10px; background: rgba(42,159,216,.1); color: var(--blue); border: 1px solid rgba(42,159,216,.3); padding: 2px 7px; border-radius: 3px; }
 .rd-reason { font-size: 12px; color: var(--muted); line-height: 1.5; margin-bottom: 10px; }
 .rd-actions { display: flex; gap: 8px; }
 .rd-btn { font-family: var(--font-mono); font-size: 11px; padding: 5px 12px; border-radius: 6px; border: none; cursor: pointer; letter-spacing: .5px; transition: all .15s; }
-.rd-btn-approve { background: rgba(74,192,120,.15); color: #4ac078; border: 1px solid rgba(74,192,120,.3); }
+.rd-btn-approve { background: rgba(74,192,120,.15); color: #0B9E6A; border: 1px solid rgba(74,192,120,.3); }
 .rd-btn-approve:hover { background: rgba(74,192,120,.25); }
 .rd-btn-reject { background: rgba(216,72,72,.1); color: #d84848; border: 1px solid rgba(216,72,72,.25); }
 .rd-btn-reject:hover { background: rgba(216,72,72,.2); }
 .rd-decided { font-family: var(--font-mono); font-size: 11px; padding: 4px 10px; border-radius: 5px; }
-.rd-decided.approved { background: rgba(74,192,120,.1); color: #4ac078; }
+.rd-decided.approved { background: rgba(74,192,120,.1); color: #0B9E6A; }
 .rd-decided.rejected { background: rgba(216,72,72,.08); color: #d84848; }
 
 /* TIMESHEETS */
@@ -155,7 +162,7 @@ iframe.embed { width: 100%; border: none; display: block; }
 .ts-row:last-child { border-bottom: none; }
 .ts-tech { font-family: var(--font-mono); font-size: 12px; background: var(--card); border: 1px solid var(--border); padding: 3px 7px; border-radius: 4px; color: var(--silver); flex-shrink: 0; }
 .ts-job { font-size: 12px; color: var(--text); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ts-hours { font-family: var(--font-mono); font-size: 13px; color: var(--silver-bright); flex-shrink: 0; }
+.ts-hours { font-family: var(--font-mono); font-size: 13px; color: var(--ink); flex-shrink: 0; }
 .ts-date { font-family: var(--font-mono); font-size: 10px; color: var(--muted); flex-shrink: 0; }
 
 .empty-state { padding: 30px; text-align: center; color: var(--muted); font-size: 13px; }
@@ -163,6 +170,7 @@ iframe.embed { width: 100%; border: none; display: block; }
 .calendar-placeholder { padding: 40px 24px; text-align: center; color: var(--muted); font-size: 13px; line-height: 1.7; }
 .calendar-placeholder .big { font-size: 32px; margin-bottom: 10px; }
 </style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -338,7 +346,7 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const SYNTHETIC_DOMAIN = 'apb-techs.local';
 const _gate = document.createElement('div');
 _gate.id = 'apb-auth-gate';
-_gate.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:#000;font-family:inherit;';
+_gate.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:var(--bg);font-family:inherit;';
 _gate.innerHTML = '<div style="width:340px;max-width:90vw;border:1px solid #2a2a2e;border-radius:14px;padding:32px 28px;background:#0c0c0e;">' +
 '<div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#c8ccd2;margin-bottom:6px;">APB Ops Hub</div>' +
 '<div style="font-size:20px;font-weight:700;color:#e8ebef;margin-bottom:18px;">Sign in</div>' +
@@ -385,7 +393,7 @@ document.getElementById('wwind').textContent='Wind '+Math.round(w.windspeed)+' m
 }catch(e){document.getElementById('wdesc').textContent='—';} }
 
 // ── STATUS CONFIG ──
-const STATUS_COLORS={'Ready To Be Billed':'#d8a048','In Progress':'#2a9fd8','Approved':'#9a7ae0','Invoice Sent':'#4ac078','Invoice In Review':'#d84848','Lead':'#555','Estimating':'#c0c020','Proposal Sent':'#d87a35','Proposal Created':'#d87a35','Paid':'#4ac078','Canceled':'#555','Active':'#4ac078','On Hold':'#a06020'};
+const STATUS_COLORS={'Ready To Be Billed':'#d8a048','In Progress':'#2a9fd8','Approved':'#9a7ae0','Invoice Sent':'#0B9E6A','Invoice In Review':'#d84848','Lead':'#555','Estimating':'#c0c020','Proposal Sent':'#d87a35','Proposal Created':'#d87a35','Paid':'#0B9E6A','Canceled':'#555','Active':'#0B9E6A','On Hold':'#a06020'};
 const STATUS_BADGE={'Ready To Be Billed':'badge-rtbb','In Progress':'badge-ip','Invoice In Review':'badge-nir','Invoice Sent':'badge-is','Approved':'badge-app','Lead':'badge-lead','Estimating':'badge-lead'};
 function statusBadge(s){ return `<span class="badge ${STATUS_BADGE[s]||'badge-lead'}">${s}</span>`; }
 
@@ -580,7 +588,7 @@ async function loadTides(){
       return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);">
         <span style="font-family:var(--font-mono);font-size:13px;color:${hi?'var(--blue)':'var(--silver-dim)'};">${hi?'▲ HIGH':'▼ LOW'}</span>
         <span style="font-size:13px;color:var(--text);">${time}</span>
-        <span style="font-family:var(--font-mono);font-size:13px;color:var(--silver-bright);">${parseFloat(p.v).toFixed(1)} ft</span>
+        <span style="font-family:var(--font-mono);font-size:13px;color:var(--ink);">${parseFloat(p.v).toFixed(1)} ft</span>
       </div>`;
     }).join('');
   }catch(e){document.getElementById('tideInfo').innerHTML='<div class="empty-state">Tide data unavailable</div>';}
