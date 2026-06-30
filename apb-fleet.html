@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script src="apb-roles.js"></script>
+<script>APBRoles.guard(['admin','pm','fleet'],'Fleet');</script>
+<script src="apb-demo.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fleet Command · APB</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDEEF2;--panel:#fff;--panel-2:#F5F6FA;
+  --ink:#0D1626;--ink-2:#3A4559;--ink-3:#6B7A92;
+  --line:#DDE1E8;--line-2:#E8EBF0;
+  --accent:#2457E6;--accent-2:#1B45B8;--accent-soft:#EAF0FE;
+  --green:#0B9E6A;--green-soft:#E4F5EE;
+  --amber:#B86A00;--amber-soft:#FBF0E2;
+  --red:#C43030;--red-soft:#FDEAEA;
+  --purple:#6B3DBB;--purple-soft:#F0EBFF;
+  --shadow-sm:0 1px 3px rgba(13,22,38,.07);
+  --shadow:0 8px 28px -12px rgba(13,22,38,.14);
+  --mono:"DM Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:Inter,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;letter-spacing:-.01em;min-height:100vh}
+
+/* dark command banner */
+.topbar{position:sticky;top:0;z-index:30;background:#0E1726;color:#fff;display:flex;align-items:center;gap:14px;padding:0 26px;height:64px;border-bottom:1px solid #1d2a40}
+.topbar img{height:42px;width:auto;display:block;filter:brightness(0) invert(1);opacity:.95}
+.topbar .t{border-left:1px solid #2a3a55;padding-left:14px}
+.topbar .t b{font-size:15px;color:#fff}
+.topbar .t span{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#7e8ca6}
+.topbar .sp{flex:1}
+.topbar .navbtn{font-size:12.5px;font-weight:600;color:#cfe0ff;padding:7px 13px;border:1px solid #2a3a55;border-radius:8px;background:rgba(255,255,255,.04);cursor:pointer;text-decoration:none;transition:.12s;white-space:nowrap}
+.topbar .navbtn:hover{border-color:#5b8bff;background:rgba(46,99,240,.2);color:#fff}
+.role-pill{font-family:var(--mono);font-size:11px;font-weight:600;padding:5px 11px;border-radius:20px;background:rgba(46,99,240,.25);color:#cfe0ff;letter-spacing:.04em}
+
+.wrap{max-width:1120px;margin:0 auto;padding:22px 22px 64px}
+
+/* KPI ribbon */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:24px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm);padding:15px 17px}
+.kpi .lab{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);display:flex;align-items:center;gap:7px}
+.kpi .lab svg{width:14px;height:14px;stroke:var(--accent);fill:none;stroke-width:2}
+.kpi .val{font-size:27px;font-weight:800;letter-spacing:-.03em;margin-top:6px}
+.kpi .val small{font-size:13px;font-weight:600;color:var(--ink-3)}
+
+.sec{display:flex;align-items:center;gap:12px;margin:26px 2px 14px}
+.sec h2{font-size:15px;font-weight:800;letter-spacing:-.02em;margin:0}
+.sec .sp{flex:1}
+.sec .hint{font-size:12px;color:var(--ink-3)}
+
+/* vessel cards */
+.vgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}
+.vcard{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm);overflow:hidden;display:flex;flex-direction:column}
+.vcard .vhead{padding:16px 18px 12px;border-bottom:1px solid var(--line-2)}
+.vcard .vtag{font-family:var(--mono);font-size:10.5px;font-weight:600;color:var(--accent-2);letter-spacing:.06em}
+.vcard h3{font-size:18px;font-weight:800;letter-spacing:-.02em;margin:3px 0 2px}
+.vcard .vsub{font-size:12px;color:var(--ink-3)}
+.vbody{padding:14px 18px 16px;flex:1;display:flex;flex-direction:column;gap:12px}
+.statusrow{display:flex;align-items:center;gap:8px}
+.badge{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:7px}
+.b-active{background:var(--accent-soft);color:var(--accent-2)}
+.b-svc{background:var(--green-soft);color:#0a7a52}
+.b-hold{background:var(--amber-soft);color:var(--amber)}
+.prog{height:8px;border-radius:6px;background:var(--panel-2);overflow:hidden}
+.prog>i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#5b8bff);border-radius:6px}
+.progmeta{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-3);margin-top:5px}
+.nextrow{font-size:12.5px;color:var(--ink-2);line-height:1.45}
+.nextrow b{color:var(--ink)}
+.vstats{display:flex;gap:14px;border-top:1px solid var(--line-2);padding-top:11px;margin-top:auto}
+.vstat{font-size:11.5px;color:var(--ink-3)}
+.vstat b{display:block;font-size:16px;font-weight:800;color:var(--ink);letter-spacing:-.02em}
+.vbtn{display:block;text-align:center;font-size:12.5px;font-weight:600;padding:9px;border-radius:9px;border:1px solid var(--line);background:var(--panel-2);color:var(--accent-2);text-decoration:none;transition:.12s;cursor:pointer}
+.vbtn:hover{border-color:var(--accent);background:var(--accent-soft)}
+
+/* records sections */
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:12px}
+.rcard{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow-sm);padding:14px 15px;text-decoration:none;color:inherit;transition:.14s;display:flex;flex-direction:column;gap:7px;cursor:pointer}
+.rcard:hover{border-color:var(--accent);box-shadow:var(--shadow);transform:translateY(-1px)}
+.rcard .ric{width:34px;height:34px;border-radius:9px;background:var(--accent-soft);display:grid;place-items:center}
+.rcard .ric svg{width:18px;height:18px;stroke:var(--accent-2);fill:none;stroke-width:2}
+.rcard h4{font-size:13px;font-weight:700;margin:0;letter-spacing:-.01em}
+.rcard p{font-size:11.5px;color:var(--ink-3);margin:0;line-height:1.4}
+
+/* drawer */
+.scrim{display:none;position:fixed;inset:0;background:rgba(8,12,22,.5);z-index:60}
+.scrim.open{display:block}
+.drawer{position:fixed;top:0;right:0;height:100%;width:min(480px,94vw);background:var(--panel);z-index:70;box-shadow:-12px 0 40px -16px rgba(13,22,38,.4);transform:translateX(100%);transition:transform .22s ease;display:flex;flex-direction:column}
+.drawer.open{transform:translateX(0)}
+.dhead{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+.dhead b{font-size:16px;font-weight:800;letter-spacing:-.02em}
+.dhead .x{margin-left:auto;border:none;background:var(--panel-2);width:30px;height:30px;border-radius:8px;font-size:17px;cursor:pointer;color:var(--ink-3)}
+.dbody{padding:18px 22px;overflow:auto;flex:1}
+.dbody .lab{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin:16px 0 8px}
+.dbody .lab:first-child{margin-top:0}
+.wi{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--line-2)}
+.wi:last-child{border-bottom:none}
+.wi .wbar{flex:1}
+.wi .wname{font-size:13px;font-weight:600;color:var(--ink)}
+.wi .wmeta{font-size:11px;color:var(--ink-3);margin-top:2px}
+.wi .wpct{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent-2);min-width:38px;text-align:right}
+.wmini{height:5px;border-radius:4px;background:var(--panel-2);overflow:hidden;margin-top:5px}
+.wmini>i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#5b8bff)}
+.folderrow{display:flex;align-items:center;gap:9px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;margin-bottom:8px;font-size:13px;color:var(--ink-2)}
+.folderrow svg{width:16px;height:16px;stroke:var(--accent);fill:none;stroke-width:2;flex-shrink:0}
+.folderrow .cnt{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+.note{font-size:12px;color:var(--ink-3);background:var(--panel-2);border:1px solid var(--line-2);border-radius:9px;padding:11px 13px;line-height:1.5;margin-top:14px}
+
+@media(max-width:880px){.kpis{grid-template-columns:repeat(2,1fr)}.vgrid{grid-template-columns:1fr}}
+</style>
+<link rel="stylesheet" href="apb-theme.css">
+</head>
+<body>
+
+<header class="topbar">
+  <img src="apb-logo.png" alt="APB">
+  <div class="t"><b>Fleet Command</b><span>APB Company Vessels</span></div>
+  <div class="sp"></div>
+  <span class="role-pill" id="rolePill">—</span>
+  <a class="navbtn" href="index.html">⌂ Home</a>
+</header>
+
+<main class="wrap">
+
+  <!-- KPI ribbon -->
+  <div class="kpis">
+    <div class="kpi"><div class="lab"><svg viewBox="0 0 24 24"><path d="M3 18l9-15 9 15"/><path d="M3 18a9 4 0 0 0 18 0"/></svg>Vessels</div><div class="val" id="kVessels">3</div></div>
+    <div class="kpi"><div class="lab"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l3-4 3 3 4-6"/></svg>Avg. completion</div><div class="val" id="kPct">—</div></div>
+    <div class="kpi"><div class="lab"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 7h6M9 12h6M9 16h3"/></svg>Open work items</div><div class="val" id="kOpen">—</div></div>
+    <div class="kpi"><div class="lab"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg>Reviews due</div><div class="val" id="kDue">—</div></div>
+  </div>
+
+  <!-- Vessels -->
+  <div class="sec"><h2>Vessels</h2><span class="sp"></span><span class="hint">Maintenance, refits & records for each company boat</span></div>
+  <div class="vgrid" id="vgrid"></div>
+
+  <!-- Records framework -->
+  <div class="sec"><h2>Vessel records</h2><span class="sp"></span><span class="hint">The standard file set kept for every vessel</span></div>
+  <div class="rgrid" id="rgrid"></div>
+
+  <div class="note">Each vessel keeps the same nine record sections so anyone can find maintenance history, drawings, inspections and logs in one place. Open a vessel to see its current refit progress and what's next.</div>
+</main>
+
+<!-- vessel drawer -->
+<div class="scrim" id="scrim" onclick="closeDrawer()"></div>
+<aside class="drawer" id="drawer">
+  <div class="dhead"><b id="dTitle">Vessel</b><button class="x" onclick="closeDrawer()">✕</button></div>
+  <div class="dbody" id="dBody"></div>
+</aside>
+
+<script>
+document.getElementById('rolePill').textContent = window.APBRoles ? APBRoles.label() : 'Admin';
+
+/* ── Demo data mirrors the real vessel record set + the live refit Gantt.
+   Real source = the company-vessel records library (3 boats, 9 sections each)
+   + the per-vessel refit schedule. Goes live when connected to the shared store. ── */
+var RECORD_SECTIONS = [
+  {n:'01 · Maintenance',     d:'Scheduled & preventive service',  ic:'<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.7 2.7-2-2 2.7-2.7z"/>'},
+  {n:'02 · Repairs',         d:'Corrective work & fixes',         ic:'<path d="M9 7L4 12l5 5M15 7l5 5-5 5"/>'},
+  {n:'03 · Projects & Upgrades', d:'Refits, installs, improvements', ic:'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>'},
+  {n:'04 · Vessel Documents',d:'Registration, title, insurance',  ic:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>'},
+  {n:'05 · Manuals & Drawings', d:'Specs, schematics, OEM manuals', ic:'<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>'},
+  {n:'06 · Inspections & Compliance', d:'Surveys, certs, clearances', ic:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/>'},
+  {n:'07 · Photos',          d:'Condition & progress imagery',    ic:'<path d="M3 9a2 2 0 0 1 2-2h2l1-2h8l1 2h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3"/>'},
+  {n:'08 · Reports & Logs',  d:'Progress reports, run logs',      ic:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M9 13h6M9 17h4M14 2v6h6"/>'},
+  {n:'09 · Schedule',        d:'Work timeline & milestones',      ic:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h3"/>'}
+];
+
+// WYWY work items taken from the live refit schedule (16-week build).
+var WYWY_ITEMS = [
+  {n:'Transom reconstruction for engine mounting',pct:0,d:15},
+  {n:'Fiberglass work for trim tabs',pct:0,d:10},
+  {n:'Preparation for gyroscope mounting',pct:0,d:7},
+  {n:'Mounting base for batteries',pct:0,d:8},
+  {n:'Mounting bases for sensor float',pct:0,d:5},
+  {n:'Bilge pump bases',pct:0,d:6},
+  {n:'Full electrical system design',pct:0,d:24},
+  {n:'Electrical wiring installation',pct:0,d:15},
+  {n:'Steering system installation',pct:0,d:8},
+  {n:'Battery installation',pct:0,d:5},
+  {n:'Console prep for equipment',pct:0,d:16},
+  {n:'VHF radio installation',pct:0,d:2},
+  {n:'Echosounder installation',pct:0,d:3},
+  {n:'Navigation lights installation',pct:0,d:4},
+  {n:'Hatch hardware installation',pct:0,d:10},
+  {n:'Gelcoat in tanks and lids',pct:0,d:10},
+  {n:'Fairing and painting',pct:0,d:20},
+  {n:'Synthetic teak decking',pct:0,d:15},
+  {n:'Trim tabs installation',pct:0,d:5},
+  {n:'Outboard engine mounting',pct:0,d:10},
+  {n:'Sea trial',pct:0,d:5}
+];
+
+var VESSELS = [
+  {
+    tag:'APB 1', name:'Chelsea Rae', sub:'Flagship · in service',
+    status:'svc', statusLabel:'In service', pct:100,
+    next:'Routine maintenance & sea-ready. No active refit.',
+    docs:318, items:[],
+    nextReview:'Annual survey · due Q4'
+  },
+  {
+    tag:'APB 2', name:'WYWY', sub:'Full refit · in progress',
+    status:'active', statusLabel:'Refit in progress', pct:4,
+    next:'Up next: <b>Full electrical system design</b> (24 days) then wiring install.',
+    docs:46, items:WYWY_ITEMS,
+    nextReview:'Sea trial milestone · ~16 wks'
+  },
+  {
+    tag:'APB 3', name:'RedundanSea', sub:'Systems integration',
+    status:'active', statusLabel:'Project active', pct:62,
+    next:'Up next: <b>Progress Report 4</b> + systems commissioning.',
+    docs:120, items:[],
+    nextReview:'Progress review · monthly'
+  }
+];
+
+function pctOf(items){ if(!items.length) return null; var t=0,w=0; items.forEach(function(i){ t+=i.d*i.pct; w+=i.d; }); return w? Math.round(t/w):0; }
+
+function renderVessels(){
+  var g=document.getElementById('vgrid'); g.innerHTML='';
+  var sumPct=0, open=0;
+  VESSELS.forEach(function(v,idx){
+    sumPct += v.pct;
+    open += v.items.filter(function(i){ return i.pct<100; }).length;
+    var bcls = v.status==='active'?'b-active':(v.status==='hold'?'b-hold':'b-svc');
+    var el=document.createElement('div'); el.className='vcard';
+    el.innerHTML =
+      '<div class="vhead"><div class="vtag">'+v.tag+'</div><h3>'+v.name+'</h3><div class="vsub">'+v.sub+'</div></div>'+
+      '<div class="vbody">'+
+        '<div class="statusrow"><span class="badge '+bcls+'">'+v.statusLabel+'</span></div>'+
+        '<div><div class="prog"><i style="width:'+v.pct+'%"></i></div>'+
+          '<div class="progmeta"><span>Completion</span><b style="color:var(--ink)">'+v.pct+'%</b></div></div>'+
+        '<div class="nextrow">'+v.next+'</div>'+
+        '<div class="vstats">'+
+          '<div class="vstat"><b>'+(v.items.length||'—')+'</b>Work items</div>'+
+          '<div class="vstat"><b>'+v.docs+'</b>Records</div>'+
+          '<div class="vstat"><b>9</b>Sections</div>'+
+        '</div>'+
+        '<button class="vbtn" onclick="openVessel('+idx+')">Open vessel →</button>'+
+      '</div>';
+    g.appendChild(el);
+  });
+  document.getElementById('kPct').innerHTML = Math.round(sumPct/VESSELS.length)+'<small>%</small>';
+  document.getElementById('kOpen').textContent = open;
+  document.getElementById('kDue').textContent = VESSELS.filter(function(v){ return v.status==='active'; }).length;
+  document.getElementById('kVessels').textContent = VESSELS.length;
+}
+
+function renderRecords(){
+  var g=document.getElementById('rgrid'); g.innerHTML='';
+  RECORD_SECTIONS.forEach(function(s){
+    var el=document.createElement('div'); el.className='rcard';
+    el.onclick=function(){ openSection(s); };
+    el.innerHTML='<div class="ric"><svg viewBox="0 0 24 24">'+s.ic+'</svg></div><h4>'+s.n+'</h4><p>'+s.d+'</p>';
+    g.appendChild(el);
+  });
+}
+
+function openVessel(idx){
+  var v=VESSELS[idx];
+  document.getElementById('dTitle').textContent=v.tag+' — '+v.name;
+  var b=document.getElementById('dBody');
+  var html='<div class="statusrow"><span class="badge '+(v.status==='active'?'b-active':(v.status==='hold'?'b-hold':'b-svc'))+'">'+v.statusLabel+'</span>'+
+           '<span style="font-family:var(--mono);font-size:12px;color:var(--ink-3)">'+v.pct+'% complete</span></div>';
+  html+='<div class="note" style="margin-top:13px">'+v.next+'<br><span style="color:var(--ink-2)">Next review:</span> '+v.nextReview+'</div>';
+
+  if(v.items.length){
+    html+='<div class="lab">Refit work items</div>';
+    v.items.forEach(function(i){
+      html+='<div class="wi"><div class="wbar"><div class="wname">'+i.n+'</div>'+
+            '<div class="wmeta">'+i.d+' days est.</div>'+
+            '<div class="wmini"><i style="width:'+i.pct+'%"></i></div></div>'+
+            '<div class="wpct">'+i.pct+'%</div></div>';
+    });
+  }
+
+  html+='<div class="lab">Record sections</div>';
+  RECORD_SECTIONS.forEach(function(s){
+    html+='<div class="folderrow"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>'+s.n+'</div>';
+  });
+  b.innerHTML=html;
+  openDrawer();
+}
+
+function openSection(s){
+  document.getElementById('dTitle').textContent=s.n.replace(/^\d+\s·\s/,'');
+  var b=document.getElementById('dBody');
+  var html='<div class="note">'+s.d+'. This section exists for every vessel — open it on a vessel to see that boat\'s files.</div>';
+  html+='<div class="lab">Across the fleet</div>';
+  VESSELS.forEach(function(v){
+    html+='<div class="folderrow"><svg viewBox="0 0 24 24"><path d="M3 18l9-15 9 15"/><path d="M3 18a9 4 0 0 0 18 0"/></svg>'+v.tag+' — '+v.name+
+          '<span class="cnt">'+(v.status==='active'?'active':'kept')+'</span></div>';
+  });
+  b.innerHTML=html;
+  openDrawer();
+}
+
+function openDrawer(){ document.getElementById('scrim').classList.add('open'); document.getElementById('drawer').classList.add('open'); }
+function closeDrawer(){ document.getElementById('scrim').classList.remove('open'); document.getElementById('drawer').classList.remove('open'); }
+document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeDrawer(); });
+
+renderVessels();
+renderRecords();
+</script>
+</body>
+</html>
