@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOP Library · APB</title>
+<script src="apb-roles.js"></script>
+<script src="apb-demo.js"></script>
+<script>APBRoles.guard('pm','SOP Library');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDEEF2;--panel:#fff;--panel-2:#F5F6FA;
+  --ink:#0D1626;--ink-2:#3A4559;--ink-3:#6B7A92;
+  --line:#DDE1E8;--line-2:#E8EBF0;
+  --accent:#2457E6;--accent-2:#1B45B8;--accent-soft:#EAF0FE;
+  --green:#0B9E6A;--green-soft:#E4F5EE;
+  --amber:#B86A00;--amber-soft:#FBF0E2;
+  --red:#C43030;--red-soft:#FBE7E7;
+  --purple:#6B3DBB;--purple-soft:#F0EBFF;
+  --teal:#0A7E8C;--teal-soft:#E2F5F7;
+  --shadow-sm:0 1px 3px rgba(13,22,38,.07);
+  --shadow:0 8px 28px -12px rgba(13,22,38,.14);
+  --shadow-lg:0 20px 56px -12px rgba(13,22,38,.22);
+  --mono:"DM Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:Inter,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;letter-spacing:-.01em;min-height:100vh}
+
+.topbar{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.92);backdrop-filter:saturate(180%) blur(14px);display:flex;align-items:center;gap:14px;padding:0 28px;height:62px;border-bottom:1px solid var(--line)}
+.topbar img{height:36px;width:auto;display:block}
+.topbar .t{border-left:1px solid var(--line);padding-left:14px}
+.topbar .t b{font-size:15px}
+.topbar .t span{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.topbar .sp{flex:1}
+.topbar .now{font-family:var(--mono);font-size:12px;color:var(--ink-3);min-width:150px;text-align:right}
+.navbtn{font-size:12.5px;font-weight:600;color:var(--accent);padding:7px 13px;border:1px solid var(--line);border-radius:8px;background:var(--panel);cursor:pointer;text-decoration:none}
+.navbtn:hover{border-color:var(--accent);background:var(--accent-soft)}
+
+.wrap{max-width:1140px;margin:0 auto;padding:26px 24px 60px}
+
+.hero{position:relative;overflow:hidden;border-radius:20px;color:#fff;padding:34px 36px;margin-bottom:22px;
+  background:radial-gradient(700px 520px at 88% 130%,rgba(10,126,140,.42) 0%,transparent 56%),linear-gradient(160deg,#131a24,#0b0f17,#121820);
+  box-shadow:var(--shadow-lg)}
+.hero::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle at 1px 1px,rgba(255,255,255,.06) 1px,transparent 0);background-size:30px 30px}
+.hero-body{position:relative;z-index:1}
+.hero .eyebrow{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:#5fc2cf;font-weight:700;margin-bottom:10px}
+.hero h1{font-size:32px;font-weight:800;letter-spacing:-.035em;margin:0 0 9px}
+.hero .tagline{color:#adbbd4;font-size:14.5px;line-height:1.55;max-width:600px;margin:0}
+.hero-kpis{display:grid;grid-template-columns:repeat(4,1fr);position:relative;z-index:1;margin-top:26px;border-top:1px solid rgba(255,255,255,.08)}
+.hk{padding:16px 20px;border-right:1px solid rgba(255,255,255,.08)}
+.hk:last-child{border-right:none}
+.hk b{display:block;font-family:var(--mono);font-size:26px;font-weight:500;color:#fff;margin-bottom:3px;font-variant-numeric:tabular-nums}
+.hk span{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:#5e7fb8;font-weight:700}
+
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.add-btn{display:inline-flex;align-items:center;gap:7px;background:var(--accent);color:#fff;border:none;font-size:13.5px;font-weight:600;padding:10px 16px;border-radius:9px;cursor:pointer;box-shadow:0 4px 14px rgba(36,87,230,.4);transition:.13s}
+.add-btn:hover{background:var(--accent-2);transform:translateY(-1px)}
+.add-btn svg{width:15px;height:15px}
+.search{flex:1;min-width:200px;position:relative}
+.search input{width:100%;padding:10px 14px 10px 36px;border:1px solid var(--line);border-radius:9px;font-size:13.5px;font-family:inherit;background:var(--panel)}
+.search input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--ink-3)}
+.fbar{display:flex;gap:5px;background:var(--panel-2);border:1px solid var(--line);border-radius:22px;padding:3px;flex-wrap:wrap}
+.fbtn{font-size:12px;font-weight:600;padding:6px 13px;border-radius:18px;border:1px solid transparent;background:transparent;color:var(--ink-3);cursor:pointer;transition:.12s}
+.fbtn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.fbtn:not(.active):hover{background:var(--accent-soft);color:var(--accent)}
+
+.catsec{margin-bottom:26px}
+.catlabel{display:flex;align-items:center;gap:9px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin:0 2px 13px}
+.catlabel .dot{width:9px;height:9px;border-radius:3px}
+.catlabel .ln{flex:1;height:1px;background:var(--line)}
+.catlabel .ct{font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:0}
+
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}
+
+.sop{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm);overflow:hidden;cursor:pointer;transition:transform .14s,border-color .14s,box-shadow .14s;display:flex;flex-direction:column}
+.sop:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:0 12px 30px -14px rgba(13,22,38,.22)}
+.sop-thumb{position:relative;height:118px;display:grid;place-items:center;overflow:hidden}
+.sop-thumb .play{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.92);display:grid;place-items:center;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:transform .15s}
+.sop:hover .sop-thumb .play{transform:scale(1.12)}
+.sop-thumb .play svg{width:20px;height:20px;color:var(--ink);margin-left:2px}
+.sop-thumb.pending .play{background:rgba(255,255,255,.55)}
+.sop-thumb.pending .play svg{color:var(--ink-2)}
+.vtag{position:absolute;top:9px;right:9px;font-family:var(--mono);font-size:10px;font-weight:500;padding:3px 8px;border-radius:12px;background:rgba(13,22,38,.55);color:#fff;backdrop-filter:blur(4px)}
+.vtag.pending{background:rgba(184,106,0,.85)}
+.vtag.ready{background:rgba(11,158,106,.9)}
+.sop-body{padding:14px 16px 16px;flex:1;display:flex;flex-direction:column;gap:6px}
+.sop-cat{font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+.sop h3{margin:0;font-size:15px;font-weight:700;letter-spacing:-.02em;line-height:1.25}
+.sop p{margin:0;font-size:12.5px;color:var(--ink-3);line-height:1.45}
+.sop .meta{margin-top:auto;padding-top:8px;font-family:var(--mono);font-size:11px;color:var(--ink-3);display:flex;gap:10px;align-items:center}
+
+/* category colors */
+.c-ops .sop-thumb{background:linear-gradient(150deg,#1d3a6b,#0e2547)}
+.c-ops .sop-cat{color:var(--accent)} .c-ops .dot{background:var(--accent)}
+.c-safety .sop-thumb{background:linear-gradient(150deg,#7a2a14,#3d1409)}
+.c-safety .sop-cat{color:var(--red)} .c-safety .dot{background:var(--red)}
+.c-quality .sop-thumb{background:linear-gradient(150deg,#0c5a3d,#062c1f)}
+.c-quality .sop-cat{color:var(--green)} .c-quality .dot{background:var(--green)}
+.c-admin .sop-thumb{background:linear-gradient(150deg,#42307a,#22183f)}
+.c-admin .sop-cat{color:var(--purple)} .c-admin .dot{background:var(--purple)}
+
+.empty{text-align:center;padding:50px 20px;color:var(--ink-3)}
+.empty h3{font-size:17px;color:var(--ink-2);margin:0 0 6px}
+.empty p{font-size:13.5px;margin:0 auto;max-width:380px;line-height:1.5}
+
+/* modals */
+.modal-bg{position:fixed;inset:0;background:rgba(13,22,38,.55);backdrop-filter:blur(3px);z-index:60;display:none;align-items:flex-start;justify-content:center;padding:36px 18px;overflow-y:auto}
+.modal-bg.show{display:flex}
+.modal{background:var(--panel);border-radius:16px;box-shadow:var(--shadow-lg);width:100%;max-width:760px;overflow:hidden}
+.modal.sm{max-width:560px}
+.mhead{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.mhead h2{margin:0;font-size:18px;font-weight:700;letter-spacing:-.02em}
+.mhead .mh-cat{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--ink-3);margin-bottom:3px}
+.mhead .x{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:18px;color:var(--ink-3);line-height:1;display:grid;place-items:center;flex-shrink:0}
+.mhead .x:hover{border-color:var(--red);color:var(--red)}
+
+/* video player area */
+.player{position:relative;width:100%;aspect-ratio:16/9;background:#0b0f17}
+.player iframe,.player video{position:absolute;inset:0;width:100%;height:100%;border:0}
+.player-pending{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#9fb0c9;text-align:center;padding:20px}
+.player-pending svg{width:44px;height:44px;color:#3a4860}
+.player-pending b{color:#cdd9ec;font-size:15px}
+.player-pending span{font-size:12.5px;max-width:340px;line-height:1.5}
+
+.mbody{padding:20px 22px}
+.mbody h4{margin:0 0 8px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.mbody .desc{font-size:14px;line-height:1.6;color:var(--ink-2);margin:0 0 16px}
+.steps{margin:0;padding:0;list-style:none;counter-reset:step}
+.steps li{counter-increment:step;position:relative;padding:8px 0 8px 34px;font-size:13.5px;line-height:1.5;color:var(--ink-2);border-bottom:1px solid var(--line-2)}
+.steps li:last-child{border-bottom:none}
+.steps li::before{content:counter(step);position:absolute;left:0;top:7px;width:23px;height:23px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-family:var(--mono);font-size:12px;font-weight:600;display:grid;place-items:center}
+.sop-section{margin-bottom:15px}
+.sop-section h5{font-size:12.5px;font-weight:800;color:var(--ink);margin:0 0 6px;letter-spacing:-.01em}
+.sop-section ul{margin:0;padding-left:18px}
+.sop-section li{font-size:13px;line-height:1.55;color:var(--ink-2);margin-bottom:3px}
+.mbody .doc-row{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap}
+.doclink{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--accent);text-decoration:none;border:1px solid var(--line);border-radius:9px;padding:8px 14px;background:var(--panel)}
+.doclink:hover{border-color:var(--accent);background:var(--accent-soft)}
+.doclink svg{width:15px;height:15px}
+.edit-link{margin-left:auto;font-size:12px;color:var(--ink-3);cursor:pointer;align-self:center}
+.edit-link:hover{color:var(--accent)}
+
+/* form */
+.mbody.form{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}
+.fld{display:flex;flex-direction:column;gap:5px}
+.fld.full{grid-column:1/-1}
+.fld label{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3)}
+.fld input,.fld select,.fld textarea{padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13.5px;font-family:inherit;background:var(--panel);color:var(--ink)}
+.fld input:focus,.fld select:focus,.fld textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.fld textarea{resize:vertical;min-height:64px}
+.fld .hint{font-size:11px;color:var(--ink-3);font-weight:400;text-transform:none;letter-spacing:0}
+.mfoot{padding:16px 22px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;background:var(--panel-2);align-items:center}
+.btn-ghost{padding:9px 16px;border:1px solid var(--line);border-radius:9px;background:var(--panel);font-size:13.5px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.btn-ghost:hover{border-color:var(--ink-3)}
+.btn-prim{padding:9px 18px;border:none;border-radius:9px;background:var(--accent);color:#fff;font-size:13.5px;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(36,87,230,.4)}
+.btn-prim:hover{background:var(--accent-2)}
+.btn-del{font-size:13px;color:var(--red);background:none;border:none;cursor:pointer;font-weight:600}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:10px;font-size:13.5px;font-weight:500;box-shadow:var(--shadow-lg);opacity:0;transition:.25s;z-index:80;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media(max-width:860px){ .grid{grid-template-columns:1fr 1fr} }
+@media(max-width:600px){
+  .grid{grid-template-columns:1fr}
+  .hero-kpis{grid-template-columns:1fr 1fr}
+  .hk:nth-child(2){border-right:none}
+  .hk:nth-child(3),.hk:nth-child(4){border-top:1px solid rgba(255,255,255,.08)}
+  .hk:nth-child(4){border-right:none}
+  .mbody.form{grid-template-columns:1fr}
+}
+</style>
+<link rel="stylesheet" href="apb-theme.css">
+</head>
+<body>
+
+<header class="topbar">
+  <img src="apb-logo.png" alt="APB">
+  <div class="t"><b>SOP Library</b><span>Procedures &amp; Training</span></div>
+  <div class="sp"></div>
+  <a class="navbtn" href="index.html">⌂ Home</a>
+  <div class="now" id="now"></div>
+</header>
+
+<main class="wrap">
+
+  <section class="hero">
+    <div class="hero-body">
+      <div class="eyebrow">All Points Boats · Standard Operating Procedures</div>
+      <h1>SOP &amp; Training Library</h1>
+      <p class="tagline">How APB does things, the right way, every time. Each procedure plays its walkthrough video right here — no hunting through folders. The backbone of ISO 9001 documented information (clause 7.5).</p>
+    </div>
+    <div class="hero-kpis">
+      <div class="hk"><b id="kTotal">0</b><span>Procedures</span></div>
+      <div class="hk"><b id="kVideo">0</b><span>With Video</span></div>
+      <div class="hk"><b id="kPending">0</b><span>Video Pending</span></div>
+      <div class="hk"><b id="kCats">0</b><span>Categories</span></div>
+    </div>
+  </section>
+
+  <div class="controls">
+    <button class="add-btn" id="addBtn">
+      <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      Add SOP
+    </button>
+    <div class="search">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="q" type="search" placeholder="Search procedures…">
+    </div>
+    <div class="fbar" id="fbar">
+      <button class="fbtn active" data-f="all">All</button>
+      <button class="fbtn" data-f="Operations">Operations</button>
+      <button class="fbtn" data-f="Safety">Safety</button>
+      <button class="fbtn" data-f="Quality">Quality</button>
+      <button class="fbtn" data-f="Admin">Admin</button>
+    </div>
+  </div>
+
+  <div id="list"></div>
+
+</main>
+
+<!-- Viewer modal -->
+<div class="modal-bg" id="viewer">
+  <div class="modal">
+    <div class="mhead">
+      <div>
+        <div class="mh-cat" id="vCat"></div>
+        <h2 id="vTitle"></h2>
+      </div>
+      <button class="x" id="vClose">×</button>
+    </div>
+    <div class="player" id="vPlayer"></div>
+    <div class="mbody">
+      <p class="desc" id="vDesc"></p>
+      <div id="vSections" style="display:none"></div>
+      <div id="vStepsWrap" style="display:none">
+        <h4>Steps</h4>
+        <ol class="steps" id="vSteps"></ol>
+      </div>
+      <div class="doc-row">
+        <a class="doclink" id="vDoc" target="_blank" rel="noopener" style="display:none">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          Full document
+        </a>
+        <span class="edit-link" id="vEdit">✎ Edit this SOP</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit modal -->
+<div class="modal-bg" id="editor">
+  <div class="modal sm">
+    <div class="mhead"><h2 id="eTitle">Add SOP</h2><button class="x" id="eClose">×</button></div>
+    <div class="mbody form">
+      <div class="fld full">
+        <label>Title <span style="color:var(--red)">*</span></label>
+        <input id="e_title" placeholder="e.g. Hot Work / Welding Permit">
+      </div>
+      <div class="fld">
+        <label>Category</label>
+        <select id="e_cat"><option>Operations</option><option>Safety</option><option>Quality</option><option>Admin</option></select>
+      </div>
+      <div class="fld">
+        <label>Est. duration</label>
+        <input id="e_dur" placeholder="e.g. 4 min">
+      </div>
+      <div class="fld full">
+        <label>Short description</label>
+        <textarea id="e_desc" placeholder="One or two lines on what this covers."></textarea>
+      </div>
+      <div class="fld full">
+        <label>Video embed URL <span class="hint">(SharePoint / Stream “Embed” link)</span></label>
+        <input id="e_video" placeholder="https://allpointsboats1.sharepoint.com/.../embed.aspx?UniqueId=…">
+        <span class="hint">Paste the embed link from SharePoint — the video plays inside this page. Leave blank until it's recorded.</span>
+      </div>
+      <div class="fld full">
+        <label>Document link <span class="hint">(optional)</span></label>
+        <input id="e_doc" placeholder="SharePoint URL to the written SOP">
+      </div>
+      <div class="fld full">
+        <label>Steps <span class="hint">(one per line, optional)</span></label>
+        <textarea id="e_steps" placeholder="Pull the hot work permit&#10;Clear the area of combustibles&#10;Post a fire watch…"></textarea>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn-del" id="eDelete" style="display:none">Delete</button>
+      <span style="flex:1"></span>
+      <button class="btn-ghost" id="eCancel">Cancel</button>
+      <button class="btn-prim" id="eSave">Save SOP</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   SOP Library — procedures + training videos, played in-page.
+   Data: localStorage 'apb_sops'. Each SOP can hold a SharePoint
+   embed URL; the video plays in a modal so you never leave the
+   dashboard. Seeded with the core marine-shop procedures (videos
+   pending until recorded). ISO 9001 clause 7.5 (documented info).
+   ============================================================ */
+const G = document.getElementById.bind(document);
+const LS_KEY = 'apb_sops';
+const CATS = ['Operations','Safety','Quality','Admin'];
+const CATCLASS = {Operations:'c-ops',Safety:'c-safety',Quality:'c-quality',Admin:'c-admin'};
+
+const SEED = [
+  // Operations
+  {cat:'Operations',title:'Project Intake & Job Setup',desc:'Turning an approved lead into a live project with folders, facility, and routing.',dur:'',video:'',doc:'',steps:['Approve the lead in the Project Console','Confirm the facility/COI for the location','Let the convert flow build the SharePoint folders','Assign the PM and opening tasks on the Task Board']},
+  {cat:'Operations',title:'Building a Client Proposal',desc:'Using the Proposal Builder to produce a send-ready, legally-termed proposal.',dur:'',video:'',doc:'',steps:['Open the Proposal Builder','Pull the client and scope','Add line items and warranty terms','Generate the PDF and log it as a draft']},
+  {cat:'Operations',title:'Job Close-Out & Client Report',desc:'Closing a project: QC release, client status report, and ready-to-bill handoff.',dur:'',video:'',doc:'',steps:['Confirm all job lines are complete','Run the QC release sign-off','Generate the client completion report','Move status to Ready To Be Billed']},
+  {cat:'Operations',title:'Using the Task Board',desc:'How dispatch works — assigning, starting, and completing tasks.',dur:'',video:'',doc:'',steps:[]},
+  // Safety
+  {cat:'Safety',title:'Hot Work / Welding Permit',desc:'Permit, fire watch, and area prep required before any cutting or welding.',dur:'',video:'',doc:'',steps:['Pull and complete the hot work permit','Clear combustibles within 35 ft','Verify extinguisher and fire watch','Post the permit at the work area']},
+  {cat:'Safety',title:'Confined Space Entry',desc:'Atmosphere testing, attendant, and entry procedure for tanks and voids.',dur:'',video:'',doc:'',steps:['Identify the space and hazards','Test the atmosphere before entry','Assign an attendant and rescue plan','Log entry and exit times']},
+  {cat:'Safety',title:'PPE Requirements',desc:'Required personal protective equipment by task and area.',dur:'',video:'',doc:'',steps:[]},
+  {cat:'Safety',title:'Crane & Rigging Safety',desc:'Safe lifting, rigging inspection, and load limits for yard lifts.',dur:'',video:'',doc:'',steps:[]},
+  // Quality
+  {cat:'Quality',title:'Receiving Material & Logging MTRs',desc:'Checking incoming material against the PO and logging the mill cert in the MTR Hub.',dur:'',video:'',doc:'',steps:['Verify material against the PO and drawing','Record the heat/lot number','Log the MTR in the MTR Hub','File the mill cert PDF to the project folder']},
+  {cat:'Quality',title:'Final QC Inspection & Release',desc:'The inspection and sign-off that authorizes a job for delivery.',dur:'',video:'',doc:'',steps:['Inspect against the drawing and scope','Record measurements and photos','Sign the QC release','Mark the job released for delivery']},
+  {cat:'Quality',title:'Handling a Non-Conformance',desc:'What to do when material or work does not meet spec.',dur:'',video:'',doc:'',steps:['Flag the non-conformance (MTR Hub / NCR)','Quarantine the material if needed','Get engineering disposition','Record the corrective action']},
+  // Admin
+  {cat:'Admin',title:'Submitting a Timecard',desc:'How field techs log hours against the right job.',dur:'',video:'',doc:'',steps:[]},
+  {cat:'Admin',title:'COI / Facility Compliance Check',desc:'Confirming APB has a current COI on file before working at a facility.',dur:'',video:'',doc:'',steps:['Open the Compliance Hub','Find the facility','Confirm GL/WC/Auto are current','Request a new COI if missing or expired']},
+  {cat:'Admin',title:'Tracking Certifications',desc:'Keeping welder WPQs, OSHA cards, and equipment calibrations current.',dur:'',video:'',doc:'',steps:[]},
+];
+
+/* ---- built-in (canonical) SOPs — full written procedures ---- */
+const BUILTINS = [
+  {
+    id:'sop-mtr-trace', cat:'Quality', builtin:true,
+    title:'Material Traceability',
+    desc:'Full traceability of materials from receipt through installation — heat numbers, MTRs, and Class compliance (ABS / LR / RINA). Pairs with the MTR Hub.',
+    dur:'', video:'', doc:'',
+    sections:[
+      {h:'1. Purpose', body:['Ensure all materials used in fabrication and welding are fully traceable from receipt through installation, and that material certification can be verified at any stage.']},
+      {h:'2. Scope', body:['Applies to all Classed work — ABS / LR / RINA / etc.','Structural materials (plate, pipe, extrusions).','Welding consumables (wire / rod).']},
+      {h:'3. Responsibilities', body:['Purchasing Manager — maintains the traceability system and records in coordination with the Project Manager.','Receiving Personnel — verify incoming materials & documentation, request MTRs at time of pick-up, and label material on arrival with MTR / Heat #.','Fabrication / Welders — maintain identification after cutting and before storing excess/drops.','Project Manager — ensure job traceability documentation is complete and materials are assigned to the right project/vessel in the project folder.']},
+      {h:'4.1 Material Receiving', body:['Verify against the Purchase Order: material grade, quantity, dimensions.','Confirm the Mill Test Report (MTR) is provided.','Verify the heat number matches the material marking.','Label material: write heat numbers / MTRs on the material with paint marker.','Records required: receiving log + MTR (filed and backed up).']},
+      {h:'4.2 Material Identification', body:['Clearly identify all material by heat number and grade/series.','Identification method: paint marker.','If marking is unclear → quarantine the material and store it away from identified materials.']},
+      {h:'4.3 Storage & Segregation', body:['Store materials to prevent mixing of grades and loss of identification.','Segregate accepted Class material from non-conforming / rejected material (clearly marked).']},
+      {h:'4.4 Cutting & Traceability Transfer', body:['When material is cut, transfer the heat number to each piece via paint marker.','At no point should material lose traceability.']},
+      {h:'4.5 Job Traveler / Work Order Tracking', body:['Each job must include a traveler linking: boat name / job number, material heat numbers used, MTR reference, welder name, and WPS used.']},
+      {h:'4.6 Welding Consumables', body:['Maintain manufacturer certifications and lot / batch numbers.','Store per manufacturer / WPS requirements.','Record usage if required by the project.']},
+      {h:'4.7 Documentation Control', body:['Maintain organized records: MTRs (by job or material type), receiving logs, traveler / job packages.','Records must be retrievable during an audit.']},
+      {h:'4.8 Non-Conformance', body:['If material lacks an MTR, has a mismatched heat number, or is improperly identified:','Tag as “NO MTR” or “NON-CONFORMING”.','Segregate physically.','Document the issue.','Disposition by the QC Manager.']},
+      {h:'5. Acceptance Criteria', body:['MTR is present and verified.','Heat number matches the material.','Traceability is maintained throughout fabrication.']},
+      {h:'6. Records Required', body:['Material Receiving Log.','MTR files in the project folder.','Job Travelers / Work Orders.','Non-Conformance Reports (if applicable).']},
+    ]
+  }
+];
+
+let SOPS = load();
+let filter = 'all', query = '', editId = null;
+
+function load(){
+  let arr=null;
+  try{ const v=JSON.parse(localStorage.getItem(LS_KEY)); if(Array.isArray(v)) arr=v; }catch(e){}
+  if(!arr) arr = SEED.map((s,i)=>({id:'sop'+i, ...s}));
+  // ensure canonical built-in SOPs are present (added once, by id)
+  BUILTINS.forEach(b=>{ if(!arr.some(x=>x.id===b.id)) arr.unshift(JSON.parse(JSON.stringify(b))); });
+  localStorage.setItem(LS_KEY, JSON.stringify(arr));
+  return arr;
+}
+function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(SOPS)); }catch(e){} }
+function uid(){ return 'sop'+Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function refreshKpis(){
+  G('kTotal').textContent = SOPS.length;
+  G('kVideo').textContent = SOPS.filter(s=>s.video).length;
+  G('kPending').textContent = SOPS.filter(s=>!s.video).length;
+  G('kCats').textContent = new Set(SOPS.map(s=>s.cat)).size;
+}
+
+function visible(){
+  return SOPS.filter(s=>{
+    if(filter!=='all' && s.cat!==filter) return false;
+    if(query){
+      const hay=[s.title,s.desc,s.cat].join(' ').toLowerCase();
+      if(!hay.includes(query)) return false;
+    }
+    return true;
+  });
+}
+
+function render(){
+  refreshKpis();
+  const rows = visible();
+  const el = G('list');
+  if(!rows.length){
+    el.innerHTML = `<div class="empty"><h3>No procedures found</h3><p>Nothing matches your filter or search. Try clearing them, or add a new SOP.</p></div>`;
+    return;
+  }
+  // group by category, in canonical order, only categories present
+  const cats = CATS.filter(c=>rows.some(s=>s.cat===c)).concat([...new Set(rows.map(s=>s.cat))].filter(c=>!CATS.includes(c)));
+  el.innerHTML = cats.map(cat=>{
+    const items = rows.filter(s=>s.cat===cat);
+    const cls = CATCLASS[cat]||'c-ops';
+    return `<div class="catsec ${cls}">
+      <div class="catlabel"><span class="dot"></span>${esc(cat)}<span class="ln"></span><span class="ct">${items.length}</span></div>
+      <div class="grid">
+        ${items.map(s=>cardHtml(s,cls)).join('')}
+      </div>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('[data-open]').forEach(c=> c.onclick=()=>openViewer(c.dataset.open));
+}
+function cardHtml(s,cls){
+  const ready = !!s.video;
+  return `<div class="sop ${cls}" data-open="${s.id}">
+    <div class="sop-thumb${ready?'':' pending'}">
+      <div class="play"><svg fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11-7z"/></svg></div>
+      <span class="vtag ${ready?'ready':'pending'}">${ready?'▶ Video':'Video pending'}</span>
+    </div>
+    <div class="sop-body">
+      <span class="sop-cat">${esc(s.cat)}</span>
+      <h3>${esc(s.title)}</h3>
+      <p>${esc(s.desc||'')}</p>
+      <div class="meta">${s.dur?('⏱ '+esc(s.dur)):''}${s.sections&&s.sections.length?' · Full procedure':(s.steps&&s.steps.length?(' · '+s.steps.length+' steps'):'')}</div>
+    </div>
+  </div>`;
+}
+
+/* viewer */
+function openViewer(id){
+  const s = SOPS.find(x=>x.id===id); if(!s) return;
+  editId = id;
+  G('vCat').textContent = s.cat;
+  G('vTitle').textContent = s.title;
+  G('vDesc').textContent = s.desc||'';
+  const player = G('vPlayer');
+  if(s.video){
+    player.innerHTML = `<iframe src="${esc(s.video)}" allow="autoplay; fullscreen; encrypted-media" allowfullscreen></iframe>`;
+  } else {
+    player.innerHTML = `<div class="player-pending">
+      <svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+      <b>Walkthrough video not recorded yet</b>
+      <span>Once we record it, paste the SharePoint embed link in this SOP and it'll play right here. The written steps below still apply.</span>
+    </div>`;
+  }
+  // rich procedure sections (full SOPs)
+  const secWrap=G('vSections');
+  if(s.sections && s.sections.length){
+    secWrap.innerHTML = s.sections.map(sec=>`<div class="sop-section"><h5>${esc(sec.h)}</h5><ul>${(sec.body||[]).map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>`).join('');
+    secWrap.style.display='';
+  } else { secWrap.innerHTML=''; secWrap.style.display='none'; }
+  const stepsWrap=G('vStepsWrap');
+  if(s.steps && s.steps.length){
+    G('vSteps').innerHTML = s.steps.map(st=>`<li>${esc(st)}</li>`).join('');
+    stepsWrap.style.display='';
+  } else stepsWrap.style.display='none';
+  const doc=G('vDoc');
+  if(s.doc){ doc.href=s.doc; doc.style.display=''; } else doc.style.display='none';
+  G('viewer').classList.add('show');
+}
+function closeViewer(){ G('vPlayer').innerHTML=''; G('viewer').classList.remove('show'); }
+
+/* editor */
+function openEditor(id){
+  editId = id || null;
+  const s = id ? SOPS.find(x=>x.id===id) : null;
+  G('eTitle').textContent = s ? 'Edit SOP' : 'Add SOP';
+  G('e_title').value = s?s.title:'';
+  G('e_cat').value = s?s.cat:'Operations';
+  G('e_dur').value = s?(s.dur||''):'';
+  G('e_desc').value = s?(s.desc||''):'';
+  G('e_video').value = s?(s.video||''):'';
+  G('e_doc').value = s?(s.doc||''):'';
+  G('e_steps').value = s&&s.steps?s.steps.join('\n'):'';
+  G('eDelete').style.display = s?'':'none';
+  G('editor').classList.add('show');
+  setTimeout(()=>G('e_title').focus(),50);
+}
+function closeEditor(){ G('editor').classList.remove('show'); }
+function saveEditor(){
+  const title=G('e_title').value.trim();
+  if(!title){ toast('Title is required'); return; }
+  const rec={
+    title, cat:G('e_cat').value, dur:G('e_dur').value.trim(),
+    desc:G('e_desc').value.trim(), video:G('e_video').value.trim(), doc:G('e_doc').value.trim(),
+    steps:G('e_steps').value.split('\n').map(x=>x.trim()).filter(Boolean)
+  };
+  if(editId && SOPS.some(x=>x.id===editId)){
+    const i=SOPS.findIndex(x=>x.id===editId); SOPS[i]={...SOPS[i],...rec}; toast('SOP updated');
+  } else {
+    rec.id=uid(); SOPS.push(rec); toast('SOP added');
+  }
+  save(); closeEditor(); render();
+}
+function deleteSop(){
+  if(!editId) return;
+  const s=SOPS.find(x=>x.id===editId); if(!s) return;
+  if(!confirm(`Delete "${s.title}"?`)) return;
+  SOPS=SOPS.filter(x=>x.id!==editId); save(); closeEditor(); render(); toast('SOP deleted');
+}
+
+let toastT;
+function toast(msg){ const t=G('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2200); }
+
+/* wire */
+G('addBtn').onclick=()=>openEditor(null);
+G('vClose').onclick=closeViewer;
+G('viewer').onclick=e=>{ if(e.target===G('viewer')) closeViewer(); };
+G('vEdit').onclick=()=>{ const id=editId; closeViewer(); openEditor(id); };
+G('eClose').onclick=closeEditor;
+G('eCancel').onclick=closeEditor;
+G('eSave').onclick=saveEditor;
+G('eDelete').onclick=deleteSop;
+G('editor').onclick=e=>{ if(e.target===G('editor')) closeEditor(); };
+G('q').oninput=e=>{ query=e.target.value.trim().toLowerCase(); render(); };
+G('fbar').querySelectorAll('.fbtn').forEach(b=> b.onclick=()=>{
+  G('fbar').querySelectorAll('.fbtn').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); filter=b.dataset.f; render();
+});
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeViewer(); closeEditor(); } });
+
+(function(){ const n=G('now'); function t(){ n.textContent=new Date().toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); } t(); setInterval(t,30000); })();
+
+render();
+</script>
+</body>
+</html>
