@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accounting · Financial Heartbeat · APB</title>
+<script src="apb-roles.js"></script>
+<script src="apb-demo.js"></script>
+<script>APBRoles.guard(['admin','accounting'],'Accounting');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDEEF2;--panel:#fff;--panel-2:#F5F6FA;
+  --ink:#0D1626;--ink-2:#3A4559;--ink-3:#6B7A92;
+  --line:#DDE1E8;--line-2:#E8EBF0;
+  --accent:#2457E6;--accent-2:#1B45B8;--accent-soft:#EAF0FE;
+  --green:#0B9E6A;--green-soft:#E4F5EE;
+  --amber:#B86A00;--amber-soft:#FBF0E2;
+  --red:#C43030;--red-soft:#FBE7E7;
+  --purple:#6B3DBB;--purple-soft:#F0EBFF;
+  --teal:#0A7E8C;--teal-soft:#E2F5F7;
+  --qb:#2CA01C;--qb-soft:#E4F5E0;
+  --shadow-sm:0 1px 3px rgba(13,22,38,.07);
+  --shadow:0 8px 28px -12px rgba(13,22,38,.14);
+  --shadow-lg:0 20px 56px -12px rgba(13,22,38,.22);
+  --mono:"DM Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:Inter,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;letter-spacing:-.01em;min-height:100vh}
+
+.topbar{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.92);backdrop-filter:saturate(180%) blur(14px);display:flex;align-items:center;gap:14px;padding:0 26px;height:62px;border-bottom:1px solid var(--line)}
+.topbar img{height:36px;width:auto}
+.topbar .t{border-left:1px solid var(--line);padding-left:14px}
+.topbar .t b{font-size:15px}
+.topbar .t span{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.topbar .sp{flex:1}
+.topbar .now{font-family:var(--mono);font-size:12px;color:var(--ink-3);min-width:150px;text-align:right}
+.navbtn{font-size:12.5px;font-weight:600;color:var(--accent);padding:7px 13px;border:1px solid var(--line);border-radius:8px;background:var(--panel);cursor:pointer;text-decoration:none}
+.navbtn:hover{border-color:var(--accent);background:var(--accent-soft)}
+.qb-badge{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--ink-3);padding:5px 11px;border:1px solid var(--line);border-radius:20px;background:var(--panel)}
+.qb-badge.on{color:var(--qb);border-color:#b8e0b0;background:var(--qb-soft)}
+.qb-dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+.wrap{max-width:1160px;margin:0 auto;padding:24px 24px 64px}
+
+/* hero with heartbeat KPIs */
+.hero{position:relative;overflow:hidden;border-radius:20px;color:#fff;padding:30px 34px 0;margin-bottom:22px;
+  background:radial-gradient(720px 540px at 90% 140%,rgba(11,158,106,.34) 0%,transparent 56%),linear-gradient(160deg,#121a22,#0a0e15,#10171e);
+  box-shadow:var(--shadow-lg)}
+.hero::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle at 1px 1px,rgba(255,255,255,.06) 1px,transparent 0);background-size:30px 30px}
+.hero-top{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}
+.hero .eyebrow{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:#5fbf94;font-weight:700;margin-bottom:9px}
+.hero h1{font-size:28px;font-weight:800;letter-spacing:-.035em;margin:0 0 6px}
+.hero .tagline{color:#9fb2b8;font-size:13.5px;line-height:1.5;max-width:420px;margin:0}
+.ekg{width:160px;height:56px;flex-shrink:0;opacity:.9}
+.ekg path{fill:none;stroke:#37C892;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:600;stroke-dashoffset:600;animation:ekg 3.2s linear infinite}
+@keyframes ekg{to{stroke-dashoffset:-600}}
+@media(prefers-reduced-motion:reduce){.ekg path{animation:none;stroke-dashoffset:0}}
+.hero-kpis{position:relative;z-index:1;display:grid;grid-template-columns:repeat(4,1fr);margin-top:24px;border-top:1px solid rgba(255,255,255,.08)}
+.hk{padding:17px 20px 19px;border-right:1px solid rgba(255,255,255,.08)}
+.hk:last-child{border-right:none}
+.hk b{display:block;font-family:var(--mono);font-size:25px;font-weight:500;color:#fff;margin-bottom:3px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.hk b.green{color:#37C892}.hk b.amber{color:#E8B25A}.hk b.dim{color:#7d93a0;font-size:18px}
+.hk span{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:#5e7f8c;font-weight:700}
+.hk small{display:block;font-size:10.5px;color:#6f8893;margin-top:3px;letter-spacing:0;text-transform:none}
+
+.sec{display:flex;align-items:center;gap:12px;margin:30px 2px 16px}
+.sec h2{font-size:17px;font-weight:800;letter-spacing:-.02em;margin:0}
+.sec .ln{flex:1;height:1px;background:var(--line)}
+.sec .act{font-size:12.5px;font-weight:600;color:var(--accent);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.sec .act:hover{border-color:var(--accent);background:var(--accent-soft)}
+.sec .act svg{width:13px;height:13px}
+
+/* ── PIPELINE ── */
+.pipe-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm);padding:22px 24px;margin-bottom:6px}
+.pipe-summary{display:flex;gap:28px;flex-wrap:wrap;align-items:baseline;margin-bottom:20px}
+.psum b{display:block;font-family:var(--mono);font-size:27px;font-weight:500;font-variant-numeric:tabular-nums}
+.psum.open b{color:var(--ink)} .psum.weighted b{color:var(--accent)} .psum.won b{color:var(--green)}
+.psum span{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+
+/* funnel */
+.funnel{display:flex;gap:8px;align-items:flex-end;min-height:170px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px}
+.fcol{flex:1;min-width:78px;display:flex;flex-direction:column;align-items:center;cursor:pointer;border-radius:10px;padding:8px 4px 6px;transition:background .14s}
+.fcol:hover{background:var(--panel-2)}
+.fcol.sel{background:var(--accent-soft)}
+.fcol .fcount{font-family:var(--mono);font-size:13px;font-weight:600;color:#fff;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;margin-bottom:7px;flex-shrink:0}
+.fcol .fbar{width:38px;border-radius:7px 7px 3px 3px;min-height:6px;transition:height .5s cubic-bezier(.4,0,.2,1);box-shadow:inset 0 2px 0 rgba(255,255,255,.25)}
+.fcol .fval{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--ink);margin-top:8px}
+.fcol .fname{font-size:10.5px;color:var(--ink-3);text-align:center;margin-top:3px;line-height:1.25;font-weight:600}
+.fcol.sel .fname{color:var(--accent)}
+
+.pipe-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--line-2)}
+.closed-chips{display:flex;gap:8px;flex-wrap:wrap}
+.cchip{font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:20px;display:inline-flex;align-items:center;gap:6px}
+.cchip.won{background:var(--green-soft);color:var(--green)} .cchip.lost{background:var(--red-soft);color:var(--red)}
+.cchip b{font-family:var(--mono)}
+.filter-note{font-size:12px;color:var(--ink-3)}
+.filter-note button{font-size:12px;color:var(--accent);background:none;border:none;cursor:pointer;text-decoration:underline}
+
+/* deal list */
+.deals{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:14px}
+.deal{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-sm);padding:14px 15px;border-left:3px solid var(--accent);position:relative}
+.deal .d-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.deal .d-proj{font-size:14px;font-weight:700;line-height:1.25}
+.deal .d-val{font-family:var(--mono);font-size:15px;font-weight:600;white-space:nowrap}
+.deal .d-meta{font-size:12px;color:var(--ink-3);margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.deal .d-stage{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border-radius:5px}
+.deal .d-rep{font-family:var(--mono);font-size:11px;color:var(--ink-2);background:var(--panel-2);border:1px solid var(--line);border-radius:5px;padding:1px 6px}
+.deal .d-del{position:absolute;top:10px;right:10px;width:22px;height:22px;border:none;background:none;color:var(--line);cursor:pointer;font-size:16px;line-height:1;border-radius:5px;opacity:0;transition:.12s}
+.deal:hover .d-del{opacity:1}
+.deal .d-del:hover{color:var(--red);background:var(--red-soft)}
+
+/* QB financial panels */
+.fin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
+.fin-box{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px 20px}
+.fin-box .fl{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin-bottom:8px}
+.fin-box .fn{font-family:var(--mono);font-size:26px;font-weight:500;font-variant-numeric:tabular-nums}
+.fin-box .fn.green{color:var(--green)} .fin-box .fn.amber{color:var(--amber)} .fin-box .fn.dim{color:var(--ink-3);font-size:15px}
+.fin-box small{font-size:11.5px;color:var(--ink-3)}
+
+.qb-connect{text-align:center;padding:44px 24px;background:var(--panel);border:1.5px dashed #b8e0b0;border-radius:16px}
+.qb-connect .qb-ic{width:54px;height:54px;border-radius:14px;background:var(--qb-soft);display:grid;place-items:center;margin:0 auto 16px}
+.qb-connect .qb-ic svg{width:26px;height:26px;color:var(--qb)}
+.qb-connect h3{font-size:18px;font-weight:700;margin:0 0 8px}
+.qb-connect p{font-size:13.5px;color:var(--ink-3);line-height:1.55;max-width:460px;margin:0 auto 18px}
+.qb-connect .qb-btn{display:inline-flex;align-items:center;gap:8px;background:var(--qb);color:#fff;border:none;border-radius:9px;padding:11px 20px;font-size:14px;font-weight:600;cursor:pointer;text-decoration:none}
+.qb-connect .qb-btn:hover{background:#26861a}
+.qb-connect .qb-note{font-size:11.5px;color:var(--ink-3);margin-top:14px}
+
+.tbl{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:13px;overflow:hidden;box-shadow:var(--shadow-sm)}
+.tbl th{text-align:left;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:700;padding:11px 14px;background:var(--panel-2);border-bottom:1px solid var(--line)}
+.tbl td{padding:11px 14px;border-bottom:1px solid var(--line-2);font-size:13px}
+.tbl tr:last-child td{border-bottom:none}
+.tbl .num{font-family:var(--mono);text-align:right}
+.loading{text-align:center;padding:36px;color:var(--ink-3);font-size:13.5px}
+.spinner{width:22px;height:22px;border:3px solid var(--accent-soft);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;display:inline-block;vertical-align:middle;margin-right:9px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(13,22,38,.5);backdrop-filter:blur(3px);z-index:60;display:none;align-items:flex-start;justify-content:center;padding:44px 18px;overflow-y:auto}
+.modal-bg.show{display:flex}
+.modal{background:var(--panel);border-radius:16px;box-shadow:var(--shadow-lg);width:100%;max-width:480px;overflow:hidden}
+.mhead{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.mhead h2{margin:0;font-size:18px;font-weight:700}
+.mhead .x{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:18px;color:var(--ink-3);display:grid;place-items:center}
+.mbody{padding:20px 22px;display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}
+.fld{display:flex;flex-direction:column;gap:5px}.fld.full{grid-column:1/-1}
+.fld label{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3)}
+.fld input,.fld select{padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13.5px;font-family:inherit;background:var(--panel);color:var(--ink)}
+.fld input:focus,.fld select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.mfoot{padding:15px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;background:var(--panel-2)}
+.btn-ghost{padding:9px 16px;border:1px solid var(--line);border-radius:9px;background:var(--panel);font-size:13.5px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.btn-prim{padding:9px 18px;border:none;border-radius:9px;background:var(--accent);color:#fff;font-size:13.5px;font-weight:600;cursor:pointer}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:10px;font-size:13.5px;font-weight:500;box-shadow:var(--shadow-lg);opacity:0;transition:.25s;z-index:80;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── Owner status: the "go fishing" reward ── */
+#ownerStatus{margin-bottom:22px}
+.fish-card{position:relative;overflow:hidden;border-radius:18px;height:172px;display:flex;align-items:center;padding:0 30px;background:linear-gradient(180deg,#f4fbff 0%,#eaf7ff 50%,#d2ecfb 70%,#7ec3e6 71%,#2f8fc7 100%);box-shadow:var(--shadow)}
+.fish-card .sun{position:absolute;top:16px;right:42px;font-size:34px}
+.fish-card .cloud{position:absolute;top:18px;font-size:26px;opacity:.85}
+.fish-card .cloud.c2{top:44px;font-size:20px;opacity:.55}
+.fish-card .waves{position:absolute;left:-10%;bottom:0;width:220%;height:42px}
+.fish-card .waves.w2{height:52px;opacity:.7}
+.fish-card .boat{position:absolute;bottom:8px;left:20px;width:116px;transform-origin:50% 94%;filter:drop-shadow(0 6px 5px rgba(0,40,70,.22))}
+.fish-card .boat img{width:100%;height:auto;display:block}
+.fish-card .fish{position:absolute;bottom:34px;left:200px;font-size:22px}
+.fish-msg{position:relative;z-index:2;margin-left:auto;text-align:right;background:rgba(255,255,255,.24);backdrop-filter:blur(3px);border:1px solid rgba(255,255,255,.45);border-radius:13px;padding:12px 17px}
+.fish-msg .fc-eye{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#0a5a82;font-weight:600;margin-bottom:3px}
+.fish-msg h2{font-size:23px;font-weight:800;letter-spacing:-.03em;margin:0 0 3px;color:#05314c}
+.fish-msg p{font-size:12.5px;margin:0;color:#0b466a}
+.attn-card{display:flex;align-items:center;gap:15px;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--amber);border-radius:14px;padding:15px 20px;box-shadow:var(--shadow-sm)}
+.attn-card .ac-ic{font-size:25px;flex-shrink:0}
+.attn-card h3{margin:0 0 5px;font-size:15px;letter-spacing:-.01em}
+.attn-card ul{margin:0;padding-left:18px;font-size:13px;color:var(--ink-2);line-height:1.65}
+.attn-card a{color:var(--accent);font-weight:600;text-decoration:none}
+.attn-card a:hover{text-decoration:underline}
+@media (prefers-reduced-motion: no-preference){
+  .fish-card .sun{animation:sunPulse 4.5s ease-in-out infinite}
+  .fish-card .cloud{animation:drift 30s linear infinite}
+  .fish-card .cloud.c2{animation:drift 44s linear infinite;animation-delay:-12s}
+  .fish-card .waves{animation:waveX 8s linear infinite}
+  .fish-card .waves.w2{animation:waveX 12s linear infinite reverse}
+  .fish-card .boat{animation:bob 3.6s ease-in-out infinite}
+  .fish-card .fish{animation:leap 6.5s ease-in-out infinite}
+}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-7px) rotate(5deg)}}
+@keyframes waveX{from{transform:translateX(0)}to{transform:translateX(-9%)}}
+@keyframes drift{from{transform:translateX(-40px)}to{transform:translateX(720px)}}
+@keyframes sunPulse{0%,100%{filter:drop-shadow(0 0 5px rgba(255,200,60,.5))}50%{filter:drop-shadow(0 0 16px rgba(255,200,60,.9))}}
+@keyframes leap{0%,72%,100%{transform:translateY(42px) rotate(12deg) scale(.7);opacity:0}80%{transform:translateY(-26px) rotate(-18deg) scale(1);opacity:1}86%{transform:translateY(-30px) rotate(-34deg)}93%{transform:translateY(42px) rotate(-64deg) scale(.8);opacity:.35}}
+
+@media(max-width:760px){
+  .hero{padding:26px 22px 0}
+  .hero-kpis{grid-template-columns:1fr 1fr}
+  .hk:nth-child(2){border-right:none}
+  .hk:nth-child(3),.hk:nth-child(4){border-top:1px solid rgba(255,255,255,.08)}
+  .hk:nth-child(4){border-right:none}
+  .fin-grid{grid-template-columns:1fr}
+  .mbody{grid-template-columns:1fr}
+}
+</style>
+<link rel="stylesheet" href="apb-theme.css">
+</head>
+<body>
+
+<header class="topbar">
+  <img src="apb-logo.png" alt="APB">
+  <div class="t"><b>Accounting</b><span>Financial Heartbeat · Admin</span></div>
+  <div class="sp"></div>
+  <div class="qb-badge" id="qbBadge"><div class="qb-dot"></div><span id="qbLabel">Checking QB…</span></div>
+  <a class="navbtn" href="apb-contacts.html">Client Contacts</a>
+  <a class="navbtn" href="https://fullstackflow11.github.io/apb-ops/apb-dashboard.html" target="_blank" rel="noopener">Ops Dashboard ↗</a>
+  <a class="navbtn" href="index.html?hub=1">⊞ All Tools</a>
+  <div class="now" id="now"></div>
+</header>
+
+<main class="wrap">
+
+  <section class="hero">
+    <div class="hero-top">
+      <div>
+        <div class="eyebrow">All Points Boats · Company Financials</div>
+        <h1>Financial Heartbeat</h1>
+        <p class="tagline">Pipeline, receivables, and revenue in one place — the live pulse of where the money is, from quote to paid.</p>
+      </div>
+      <svg class="ekg" viewBox="0 0 160 56" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M0 28 H42 l6 -18 l8 36 l7 -28 l6 14 H92 l5 -22 l8 30 l6 -10 H160"/>
+      </svg>
+    </div>
+    <div class="hero-kpis">
+      <div class="hk"><b id="kOpen">$0</b><span>Open Pipeline</span><small id="kOpenN">0 deals</small></div>
+      <div class="hk"><b class="green" id="kWeighted">$0</b><span>Weighted</span><small>probability-adjusted</small></div>
+      <div class="hk"><b class="amber" id="kAR">—</b><span>AR Outstanding</span><small id="kARsrc">from QuickBooks</small></div>
+      <div class="hk"><b class="dim" id="kRev">—</b><span>Revenue YTD</span><small id="kRevsrc">from QuickBooks</small></div>
+    </div>
+  </section>
+
+  <!-- ════ OWNER STATUS (go fishing reward) ════ -->
+  <div id="ownerStatus"></div>
+
+  <!-- ════ PIPELINE ════ -->
+  <div class="sec">
+    <h2>Sales Pipeline</h2><span class="ln"></span>
+    <button class="act" id="addDeal"><svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Track Deal</button>
+  </div>
+  <div class="pipe-card">
+    <div class="pipe-summary">
+      <div class="psum open"><b id="sumOpen">$0</b><span>Open Pipeline</span></div>
+      <div class="psum weighted"><b id="sumWeighted">$0</b><span>Weighted Value</span></div>
+      <div class="psum won"><b id="sumWon">$0</b><span>Won (Paid)</span></div>
+    </div>
+    <div class="funnel" id="funnel"></div>
+    <div class="pipe-foot">
+      <div class="closed-chips" id="closedChips"></div>
+      <div class="filter-note" id="filterNote"></div>
+    </div>
+  </div>
+  <div class="deals" id="deals"></div>
+
+  <!-- ════ ACTIVE LIST ════ -->
+  <div class="sec"><h2>Active List</h2><span class="ln"></span><a class="act" href="apb-pm.html">Open Console</a></div>
+  <div id="jobsBody"></div>
+
+  <!-- ════ PURCHASING ════ -->
+  <div class="sec"><h2>Purchasing</h2><span class="ln"></span><a class="act" href="apb-purchasing.html">Open Purchasing</a></div>
+  <div id="purchBody"></div>
+
+  <!-- ════ QUICKBOOKS FINANCIALS ════ -->
+  <div class="sec"><h2>QuickBooks Financials</h2><span class="ln"></span></div>
+  <div id="finBody"></div>
+
+</main>
+
+<!-- Track deal modal -->
+<div class="modal-bg" id="dealModal">
+  <div class="modal">
+    <div class="mhead"><h2>Track Deal</h2><button class="x" id="dmClose">×</button></div>
+    <div class="mbody">
+      <div class="fld full"><label>Project / Vessel *</label><input id="d_proj" placeholder="e.g. Sea Ray 350"></div>
+      <div class="fld"><label>Client</label><input id="d_client" placeholder="Client name"></div>
+      <div class="fld"><label>Rep</label><input id="d_rep" placeholder="Initials"></div>
+      <div class="fld"><label>Value ($)</label><input id="d_val" type="number" placeholder="9418"></div>
+      <div class="fld"><label>Stage</label><select id="d_stage"></select></div>
+    </div>
+    <div class="mfoot"><button class="btn-ghost" id="dmCancel">Cancel</button><button class="btn-prim" id="dmSave">Add Deal</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   ACCOUNTING — financial heartbeat.
+   • Pipeline: moved from the Project Console. localStorage
+     'apb_pipeline' (+ seed). Rebuilt as an interactive funnel.
+   • Financials: QuickBooks (/api/qbo/ar, /invoices, /revenue) —
+     connect-state until QB is linked, then live.
+   ============================================================ */
+const G = document.getElementById.bind(document);
+const PIPE_KEY = 'apb_pipeline';
+function money(n){ return '$'+(Math.round(+n||0)).toLocaleString('en-US'); }
+function moneyK(n){ n=+n||0; return n>=1000? '$'+(Math.round(n/100)/10)+'K' : '$'+Math.round(n); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+const PIPELINE_SEED=[
+  {project:"Sea Ray 350 Sundancer", client:"referral", rep:"BW", value:9418, stage:"Approved", date:"2026-05-26"},
+  {project:"Bertram 35 Strut Repair", client:"Poseidon Yacht Solutions", rep:"CC", value:4450, stage:"Paid", date:"2026-06-03"},
+  {project:"Fred Sage Catamaran", client:"Fred Sage", rep:"CC", value:9418, stage:"In Progress", date:"2026-06-11"},
+  {project:"Endless Summer", client:"Tony", rep:"BS", value:38500, stage:"Ready To Be Billed", date:"2026-06-16"},
+  {project:"Siemens Energy", client:"Siemens", rep:"JC", value:42000, stage:"In Progress", date:"2026-05-08"},
+  {project:"M/Y Deztination 140'", client:"OP Yachts", rep:"JM", value:7800, stage:"In Progress", date:"2026-06-10"},
+  {project:"Calypso", client:"John", rep:"BW", value:16200, stage:"Invoice Sent", date:"2026-05-07"},
+  {project:"44 Carver (Rick Thomas)", client:"Rick Thomas", rep:"BW", value:6500, stage:"Proposal Sent", date:"2026-04-28"},
+  {project:"MY CONTESSA — CMC diag", client:"social", rep:"BW", value:2800, stage:"Lead", date:"2026-06-04"},
+  {project:"Dirt Poor — exhaust weld", client:"", rep:"JC/BW", value:1800, stage:"Estimating", date:"2026-05-04"},
+  {project:"Uncle Tony", client:"", rep:"BS", value:5400, stage:"In Progress", date:"2026-05-01"}
+];
+const ORDER=["Lead","Estimating","Proposal Created","Proposal Sent","Approved","PO Sent","In Progress","Ready To Be Billed","Invoice In Review","Invoice Sent","Paid","Complete","Canceled","Lost"];
+const CLR={"Lead":"#2457E6","Estimating":"#B86A00","Proposal Created":"#0A6E99","Proposal Sent":"#0A6E99","Approved":"#0B9E6A","PO Sent":"#0B9E6A","In Progress":"#0A7C42","Ready To Be Billed":"#6B3FD4","Invoice In Review":"#6B3FD4","Invoice Sent":"#6B3FD4","Paid":"#50616F","Complete":"#50616F","Canceled":"#C43030","Lost":"#C43030"};
+const PROB={"Lead":.1,"Estimating":.25,"Proposal Created":.35,"Proposal Sent":.5,"Approved":.8,"PO Sent":.85,"In Progress":.9,"Ready To Be Billed":.95,"Invoice In Review":.97,"Invoice Sent":.98,"Paid":1,"Complete":1,"Canceled":0,"Lost":0};
+const CLOSED=["Paid","Complete","Canceled","Lost"];
+const SHORT={"Ready To Be Billed":"Ready to Bill","Invoice In Review":"Inv. Review","Invoice Sent":"Inv. Sent","Proposal Created":"Prop. Created","Proposal Sent":"Prop. Sent"};
+
+let selStage = null;
+
+function getPipeline(){
+  let local=[]; try{ local=JSON.parse(localStorage.getItem(PIPE_KEY)||"[]"); }catch(e){}
+  const keys=new Set(local.map(r=>r.project+"|"+r.stage));
+  return local.concat(PIPELINE_SEED.filter(r=>!keys.has(r.project+"|"+r.stage)));
+}
+function savePipeLocal(arr){ try{ localStorage.setItem(PIPE_KEY, JSON.stringify(arr.slice(0,300))); }catch(e){} }
+
+function render(){
+  const recs=getPipeline();
+  const byStage={}; recs.forEach(r=>{ (byStage[r.stage]=byStage[r.stage]||[]).push(r); });
+
+  const openRecs = recs.filter(r=>!CLOSED.includes(r.stage));
+  const openTotal = openRecs.reduce((a,r)=>a+(+r.value||0),0);
+  const weighted = openRecs.reduce((a,r)=>a+(+r.value||0)*(PROB[r.stage]??.5),0);
+  const wonTotal = recs.filter(r=>r.stage==='Paid'||r.stage==='Complete').reduce((a,r)=>a+(+r.value||0),0);
+  const lostTotal = recs.filter(r=>r.stage==='Canceled'||r.stage==='Lost').reduce((a,r)=>a+(+r.value||0),0);
+
+  G('kOpen').textContent=money(openTotal); G('kOpenN').textContent=openRecs.length+' deals';
+  G('kWeighted').textContent=money(weighted);
+  G('sumOpen').textContent=money(openTotal); G('sumWeighted').textContent=money(weighted); G('sumWon').textContent=money(wonTotal);
+
+  // funnel = open stages in order, present
+  const openStages = ORDER.filter(s=>!CLOSED.includes(s) && byStage[s]);
+  const maxVal = Math.max(1,...openStages.map(s=>byStage[s].reduce((a,r)=>a+(+r.value||0),0)));
+  G('funnel').innerHTML = openStages.map(s=>{
+    const rs=byStage[s], sum=rs.reduce((a,r)=>a+(+r.value||0),0), clr=CLR[s]||'#2457E6';
+    const h = 20 + Math.round((sum/maxVal)*120);
+    const sel = selStage===s ? ' sel':'';
+    return `<div class="fcol${sel}" data-stage="${esc(s)}">
+      <div class="fcount" style="background:${clr};box-shadow:0 4px 12px ${clr}55">${rs.length}</div>
+      <div class="fbar" style="height:${h}px;background:linear-gradient(180deg,${clr},${clr}cc)"></div>
+      <div class="fval">${moneyK(sum)}</div>
+      <div class="fname">${esc(SHORT[s]||s)}</div>
+    </div>`;
+  }).join('') || '<div class="loading" style="width:100%">No open deals. Click “Track Deal” to add one.</div>';
+
+  G('closedChips').innerHTML =
+    `<span class="cchip won">Won <b>${money(wonTotal)}</b></span>`+
+    (lostTotal?`<span class="cchip lost">Lost <b>${money(lostTotal)}</b></span>`:'');
+
+  G('filterNote').innerHTML = selStage
+    ? `Showing <b>${esc(selStage)}</b> · <button id="clearF">show all</button>`
+    : `Click a stage to filter · ${recs.length} deals total`;
+
+  // deals (filtered by selStage or all open, value-sorted)
+  const list = (selStage ? (byStage[selStage]||[]) : recs.slice()).slice().sort((a,b)=>(b.value||0)-(a.value||0));
+  G('deals').innerHTML = list.map(r=>{
+    const clr=CLR[r.stage]||'#2457E6';
+    return `<div class="deal" style="border-left-color:${clr}">
+      ${r.id?`<button class="d-del" data-del="${esc(r.id)}" title="Remove">×</button>`:''}
+      <div class="d-top"><div class="d-proj">${esc(r.project)}</div><div class="d-val">${money(r.value||0)}</div></div>
+      <div class="d-meta">
+        <span class="d-stage" style="background:${clr}1A;color:${clr}">${esc(SHORT[r.stage]||r.stage)}</span>
+        ${r.client?`<span>${esc(r.client)}</span>`:''}
+        ${r.rep?`<span class="d-rep">${esc(r.rep)}</span>`:''}
+        ${r.date?`<span>${r.date.slice(5)}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+
+  // wire
+  G('funnel').querySelectorAll('[data-stage]').forEach(c=> c.onclick=()=>{ selStage = selStage===c.dataset.stage?null:c.dataset.stage; render(); });
+  const cf=G('clearF'); if(cf) cf.onclick=()=>{ selStage=null; render(); };
+  G('deals').querySelectorAll('[data-del]').forEach(b=> b.onclick=()=>delDeal(b.dataset.del));
+}
+function delDeal(id){
+  let local=[]; try{ local=JSON.parse(localStorage.getItem(PIPE_KEY)||"[]"); }catch(e){}
+  const r=local.find(x=>x.id===id); if(!r){ toast('Seed deals can’t be removed'); return; }
+  if(!confirm('Remove "'+r.project+'" from the pipeline?')) return;
+  savePipeLocal(local.filter(x=>x.id!==id)); render(); toast('Removed');
+}
+
+/* track-deal modal */
+function fillStages(){ G('d_stage').innerHTML = ORDER.map(s=>`<option${s==='Proposal Sent'?' selected':''}>${s}</option>`).join(''); }
+function openDeal(){ G('d_proj').value=''; G('d_client').value=''; G('d_rep').value=''; G('d_val').value=''; fillStages(); G('dealModal').classList.add('show'); setTimeout(()=>G('d_proj').focus(),50); }
+function closeDeal(){ G('dealModal').classList.remove('show'); }
+function saveDeal(){
+  const proj=G('d_proj').value.trim(); if(!proj){ G('d_proj').focus(); return; }
+  const entry={ id:'pipe_'+Date.now(), project:proj, client:G('d_client').value.trim(), rep:G('d_rep').value.trim(),
+    value:parseFloat(G('d_val').value)||0, stage:G('d_stage').value, date:new Date().toISOString().slice(0,10) };
+  let local=[]; try{ local=JSON.parse(localStorage.getItem(PIPE_KEY)||"[]"); }catch(e){}
+  local.unshift(entry); savePipeLocal(local); closeDeal(); render(); toast('Added · '+entry.project+' · '+money(entry.value));
+}
+
+/* ── QuickBooks financials ── */
+let qbConnected=false;
+async function checkQB(){
+  const badge=G('qbBadge'), label=G('qbLabel');
+  try{
+    const s=await fetch('/api/qbo/status',{signal:AbortSignal.timeout(3500)}).then(r=>r.json());
+    qbConnected = !!(s&&s.connected);
+    if(qbConnected){ badge.className='qb-badge on'; label.textContent=s.companyName||'QuickBooks linked'; }
+    else { badge.className='qb-badge'; label.textContent = s&&s.configured?'QB not linked':'QB not set up'; }
+  }catch(e){ qbConnected=false; badge.className='qb-badge'; label.textContent='Server offline'; }
+}
+function qbPanel(){
+  return `<div class="qb-connect">
+    <div class="qb-ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+    <h3>Your financials, live from QuickBooks</h3>
+    <p>Revenue, receivables, and invoices fill in automatically the moment QuickBooks is linked — the same books Christina already keeps, surfaced here as the company's heartbeat.</p>
+    <a class="qb-btn" href="/auth/qbo" target="_blank" rel="noopener"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>Link QuickBooks</a>
+    <div class="qb-note">Connected once — then it stays linked.</div>
+  </div>`;
+}
+async function loadFinancials(){
+  const el=G('finBody');
+  if(!qbConnected){ el.innerHTML=qbPanel(); return; }
+  el.innerHTML=`<div class="loading"><span class="spinner"></span>Pulling the books from QuickBooks…</div>`;
+  let ar=null, invs=[], rev=null;
+  try{ const d=await fetch('/api/qbo/ar').then(r=>r.json()); const rows=d&&d.QueryResponse&&d.QueryResponse.rows; ar = rows&&rows[0]&&rows[0].colData? parseFloat(rows[0].colData[0].value||0):null; }catch(e){}
+  try{ const d=await fetch('/api/qbo/invoices').then(r=>r.json()); invs=(d&&d.QueryResponse&&d.QueryResponse.Invoice)||[]; }catch(e){}
+  try{ const d=await fetch('/api/qbo/revenue').then(r=>r.json()); rev = sumPnLIncome(d); }catch(e){}
+
+  const openInv = invs.filter(i=>(+i.Balance||0)>0);
+  const openInvTotal = openInv.reduce((a,i)=>a+(+i.Balance||0),0);
+  if(ar!=null){ G('kAR').textContent=money(ar); }
+  if(rev!=null){ G('kRev').textContent=money(rev); G('kRev').classList.remove('dim'); }
+
+  el.innerHTML = `
+    <div class="fin-grid">
+      <div class="fin-box"><div class="fl">AR Outstanding</div><div class="fn amber">${ar!=null?money(ar):'—'}</div><small>${openInv.length} open invoice${openInv.length!==1?'s':''}</small></div>
+      <div class="fin-box"><div class="fl">Open Invoice Value</div><div class="fn">${money(openInvTotal)}</div><small>unpaid balances</small></div>
+      <div class="fin-box"><div class="fl">Revenue YTD</div><div class="fn green">${rev!=null?money(rev):'<span class="dim">—</span>'}</div><small>income, year to date</small></div>
+    </div>
+    <div class="sec" style="margin-top:8px"><h2 style="font-size:14px">Recent Invoices</h2><span class="ln"></span></div>
+    ${openInv.length? `<table class="tbl"><thead><tr><th>#</th><th>Customer</th><th>Date</th><th class="num">Total</th><th class="num">Balance</th></tr></thead><tbody>${
+      openInv.slice(0,12).map(i=>`<tr>
+        <td>${esc(i.DocNumber||'')}</td>
+        <td>${esc((i.CustomerRef&&i.CustomerRef.name)||'')}</td>
+        <td>${esc(i.TxnDate||'')}</td>
+        <td class="num">${money(i.TotalAmt||0)}</td>
+        <td class="num">${money(i.Balance||0)}</td>
+      </tr>`).join('')}</tbody></table>` : '<div class="loading">No open invoices.</div>'}`;
+}
+// best-effort: pull total income out of a QBO ProfitAndLoss report
+function sumPnLIncome(d){
+  try{
+    const rows=d&&d.Rows&&d.Rows.Row; if(!rows) return null;
+    function find(r){
+      for(const row of r){
+        if(row.group==='Income' && row.Summary && row.Summary.ColData){
+          const c=row.Summary.ColData; return parseFloat(c[c.length-1].value||0);
+        }
+        if(row.Rows&&row.Rows.Row){ const v=find(row.Rows.Row); if(v!=null) return v; }
+      }
+      return null;
+    }
+    return find(rows);
+  }catch(e){ return null; }
+}
+
+/* ── Active List (jobs) ── */
+const SUPA = { url:"https://aanrxyiocxxndkvkeocv.supabase.co", key:(localStorage.getItem("apb_supabase_key")||"") };
+const JOBS_DEMO = [
+  {engagement:"Endless Summer", job_number:"40.0", job_name:"Engine Room Bottle Shelf", status:"In Progress", pct:35},
+  {engagement:"Endless Summer", job_number:"48.0", job_name:"Engine Battery Mounts", status:"Ready To Be Billed", pct:100},
+  {engagement:"Siemens Energy", job_number:"3.0", job_name:"Waterjet Turbine Parts", status:"In Progress", pct:50},
+  {engagement:"M/Y Deztination 140'", job_number:"3.0", job_name:"Port side door access", status:"In Progress", pct:5},
+  {engagement:"Retriever", job_number:"6.0", job_name:"Engine Room Shelving", status:"In Progress", pct:50},
+  {engagement:"Catskill", job_number:"3.0", job_name:"Waterjet Valve Cradle", status:"Ready To Be Billed", pct:100},
+  {engagement:"Reef Chief", job_number:"1.0", job_name:"Bridge Window Replacement", status:"Ready To Be Billed", pct:100},
+  {engagement:"Jet Ski Chris", job_number:"1.0", job_name:"Cooler Bracket", status:"In Progress", pct:95}
+];
+function jobClr(s){
+  if(/progress/i.test(s)) return 'var(--accent)';
+  if(/ready|approved|paid|complete/i.test(s)) return 'var(--green)';
+  if(/invoice/i.test(s)) return 'var(--purple)';
+  if(/hold/i.test(s)) return 'var(--red)';
+  return 'var(--ink-3)';
+}
+async function loadJobs(){
+  let jobs=[];
+  if(SUPA.key){
+    try{
+      const sel="select=job_number,job_name,status,job_status_pct,apb_engagements(name)&order=updated_at.desc";
+      const r=await fetch(`${SUPA.url}/rest/v1/apb_jobs?${sel}`,{headers:{apikey:SUPA.key,Authorization:"Bearer "+SUPA.key}});
+      const data=await r.json();
+      jobs=(data||[]).map(j=>({engagement:(j.apb_engagements&&j.apb_engagements.name)||'—', job_number:j.job_number||'', job_name:j.job_name||'', status:j.status||'Lead', pct:j.job_status_pct||0}));
+    }catch(e){}
+  }
+  if(!jobs.length) jobs=JOBS_DEMO;
+  _jobs=jobs; ownerStatus();
+  const inProg=jobs.filter(j=>/progress/i.test(j.status)).length;
+  const ready=jobs.filter(j=>/ready/i.test(j.status)).length;
+  G('jobsBody').innerHTML = `
+    <div class="fin-grid">
+      <div class="fin-box"><div class="fl">Active Jobs</div><div class="fn">${jobs.length}</div><small>on the board</small></div>
+      <div class="fin-box"><div class="fl">In Progress</div><div class="fn" style="color:var(--accent)">${inProg}</div><small>being worked</small></div>
+      <div class="fin-box"><div class="fl">Ready to Bill</div><div class="fn green">${ready}</div><small>awaiting invoice</small></div>
+    </div>
+    <table class="tbl"><thead><tr><th>Project</th><th>Job</th><th>Status</th><th class="num">%</th></tr></thead><tbody>${
+      jobs.slice(0,14).map(j=>`<tr>
+        <td><b>${esc(j.engagement)}</b></td>
+        <td>${esc(j.job_name||'')}${j.job_number?` <span style="color:var(--ink-3)">#${esc(j.job_number)}</span>`:''}</td>
+        <td><span style="font-family:var(--mono);font-size:11px;font-weight:500;padding:3px 9px;border-radius:12px;background:${jobClr(j.status)}1A;color:${jobClr(j.status)}">${esc(j.status)}</span></td>
+        <td class="num">${j.pct!=null?j.pct+'%':'—'}</td>
+      </tr>`).join('')
+    }</tbody></table>`;
+}
+
+/* ── Purchasing summary ── */
+function renderPurch(){
+  let reqs=[]; try{ reqs=JSON.parse(localStorage.getItem('apb_purchase_requests')||'[]'); }catch(e){}
+  _reqs=reqs; ownerStatus();
+  const el=G('purchBody');
+  if(!reqs.length){
+    el.innerHTML = `<div class="fin-box" style="text-align:center;color:var(--ink-3)">No purchase requests yet. <a href="apb-purchasing.html" style="color:var(--accent);font-weight:600">Open Purchasing →</a></div>`;
+    return;
+  }
+  const open=reqs.filter(r=>r.status==='new'), ordered=reqs.filter(r=>r.status==='ordered');
+  const recv=reqs.filter(r=>r.status==='received' && (Date.now()-(r.receivedAt||r.createdAt||0)<30*86400000));
+  const list=open.concat(ordered);
+  el.innerHTML = `
+    <div class="fin-grid">
+      <div class="fin-box"><div class="fl">Open Requests</div><div class="fn amber">${open.length}</div><small>awaiting order</small></div>
+      <div class="fin-box"><div class="fl">On Order</div><div class="fn">${ordered.length}</div><small>placed</small></div>
+      <div class="fin-box"><div class="fl">Received (30d)</div><div class="fn green">${recv.length}</div><small>delivered</small></div>
+    </div>
+    ${list.length?`<table class="tbl"><thead><tr><th>Item</th><th>Job</th><th>Qty</th><th>Status</th></tr></thead><tbody>${
+      list.slice(0,12).map(function(r){
+        var isNew=r.status==='new', clr=isNew?'var(--amber)':'var(--accent)', bg=isNew?'var(--amber-soft)':'var(--accent-soft)';
+        return `<tr>
+          <td><b>${esc(r.item)}</b>${r.urgency==='urgent'?' <span style="font-size:9px;font-weight:700;color:var(--red);background:var(--red-soft);padding:1px 5px;border-radius:4px">URGENT</span>':''}</td>
+          <td>${esc(r.job||'—')}${r.jobno?' #'+esc(r.jobno):''}</td>
+          <td>${esc([r.qty,r.unit].filter(Boolean).join(' '))||'—'}</td>
+          <td><span style="font-family:var(--mono);font-size:11px;padding:3px 9px;border-radius:12px;background:${bg};color:${clr}">${isNew?'Requested':'Ordered'}</span></td>
+        </tr>`;
+      }).join('')
+    }</tbody></table>`:''}`;
+}
+
+/* ── Owner status: "go fishing" when nothing's behind ── */
+var _jobs=[], _reqs=[], _arOverdue=0;
+// Fishing is blocked ONLY when serious money is stuck — total over this. A normal
+// amount in flight is fine and the boat still sails. Adjust to taste.
+var STUCK_LIMIT = 50000;
+function ownerStatus(){
+  // What STOPS THE FLOW OF MONEY: proposals not sent, invoices not sent, overdue AR.
+  // (Purchasing, jobs on hold, etc. do NOT block fishing.) Sum the $ stuck; only
+  // raise the flag once it's over STUCK_LIMIT.
+  var pipe = (typeof getPipeline==='function') ? getPipeline() : [];
+  var sum = function(rx){ return pipe.filter(function(r){return rx.test(r.stage||'');}).reduce(function(a,r){return a+(+r.value||0);},0); };
+  var propsAmt = sum(/proposal\s*created/i);
+  var billAmt  = sum(/ready\s*to\s*be\s*billed|invoice\s*in\s*review/i);
+  var arAmt    = _arOverdue || 0;
+  var issues=[];
+  if((propsAmt + billAmt + arAmt) > STUCK_LIMIT){
+    if(billAmt)  issues.push({t:money(billAmt)+' ready to bill — invoices not sent yet', href:'apb-pm.html'});
+    if(propsAmt) issues.push({t:money(propsAmt)+' in proposals still to go out', href:'apb-proposal.html'});
+    if(arAmt)    issues.push({t:money(arAmt)+' in receivables overdue', href:'apb-contacts.html'});
+  }
+  var el=G('ownerStatus'); if(!el) return;
+  el.innerHTML = issues.length ? attnCard(issues) : fishingCard();
+}
+function fishingCard(){
+  return `<div class="fish-card">
+    <span class="sun">☀️</span>
+    <span class="cloud" style="left:32%">☁️</span>
+    <span class="cloud c2" style="left:56%">☁️</span>
+    <svg class="waves" viewBox="0 0 1200 46" preserveAspectRatio="none"><path d="M0,26 C150,46 350,8 600,26 C850,44 1050,8 1200,26 L1200,46 L0,46 Z" fill="rgba(255,255,255,.30)"/></svg>
+    <svg class="waves w2" viewBox="0 0 1200 58" preserveAspectRatio="none"><path d="M0,32 C200,58 400,12 600,32 C800,54 1000,12 1200,32 L1200,58 L0,58 Z" fill="rgba(255,255,255,.22)"/></svg>
+    <span class="boat">
+      <img src="assets/chelsea-rae.png" alt="Chelsea Rae" onerror="this.closest('.boat').style.display='none'">
+    </span>
+    <span class="fish">🐟</span>
+    <div class="fish-msg">
+      <div class="fc-eye">Captain's Status</div>
+      <h2>All clear — go fishing 🎣</h2>
+      <p>Nothing overdue, nothing stuck. The yard's running itself today.</p>
+    </div>
+  </div>`;
+}
+function attnCard(issues){
+  return `<div class="attn-card">
+    <span class="ac-ic">🧭</span>
+    <div class="ac-body">
+      <h3>${issues.length} thing${issues.length>1?'s':''} holding up the cash flow — clear ${issues.length>1?'these':'this'} and grab your rod 🎣</h3>
+      <ul>${issues.map(function(i){return '<li><a href="'+i.href+'">'+esc(i.t)+'</a></li>';}).join('')}</ul>
+    </div>
+  </div>`;
+}
+
+let toastT;
+function toast(m){ const t=G('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2200); }
+
+/* wire */
+G('addDeal').onclick=openDeal;
+G('dmClose').onclick=closeDeal; G('dmCancel').onclick=closeDeal; G('dmSave').onclick=saveDeal;
+G('dealModal').onclick=e=>{ if(e.target===G('dealModal')) closeDeal(); };
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeDeal(); });
+(function(){ const n=G('now'); function t(){ n.textContent=new Date().toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); } t(); setInterval(t,30000); })();
+
+/* init */
+render();
+loadJobs();
+renderPurch();
+checkQB().then(loadFinancials);
+</script>
+</body>
+</html>
