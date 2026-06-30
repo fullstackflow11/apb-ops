@@ -324,7 +324,6 @@ body {
 </header>
 
 <main class="wrap">
-
   <!-- ── Business KPIs ── -->
   <div class="section-head"><h2>Business Overview</h2><div class="rule"></div></div>
   <div class="kpi-row">
@@ -351,22 +350,6 @@ body {
     <a class="tile" href="https://teams.microsoft.com" target="_blank"><span class="ico">💬</span><span class="name">Teams</span><span class="sub">Chat & calls</span></a>
   </div>
 
-  <div class="section-head" style="margin-top:20px;margin-bottom:10px"><h2>Social Media</h2><div class="rule"></div></div>
-  <div class="tile-grid">
-    <a class="tile" href="https://www.facebook.com/allpointsboats/" target="_blank"><span class="ico">📘</span><span class="name">Facebook</span><span class="sub">@allpointsboats</span></a>
-    <a class="tile" href="https://www.instagram.com/allpointsboats/" target="_blank"><span class="ico">📸</span><span class="name">Instagram</span><span class="sub">@allpointsboats</span></a>
-    <a class="tile" href="https://www.linkedin.com/company/all-points-boats" target="_blank"><span class="ico">💼</span><span class="name">LinkedIn</span><span class="sub">Company page</span></a>
-    <a class="tile" href="https://www.youtube.com/results?search_query=all+points+boats+fort+lauderdale" target="_blank"><span class="ico">▶️</span><span class="name">YouTube</span><span class="sub">Channel</span></a>
-  </div>
-
-  <div class="section-head" style="margin-top:20px;margin-bottom:10px"><h2>Marine & Weather</h2><div class="rule"></div></div>
-  <div class="tile-grid">
-    <a class="tile" href="https://www.marinetraffic.com/en/ais/home/centerx:-80.14/centery:26.12/zoom:11" target="_blank"><span class="ico">🚢</span><span class="name">MarineTraffic</span><span class="sub">Live vessel map</span></a>
-    <a class="tile" href="https://forecast.weather.gov/MapClick.php?lat=26.12&lon=-80.14" target="_blank"><span class="ico">🌊</span><span class="name">Marine Forecast</span><span class="sub">NWS Miami</span></a>
-    <a class="tile" href="https://www.windy.com/?26.122,-80.137,11" target="_blank"><span class="ico">💨</span><span class="name">Windy</span><span class="sub">Wind & waves</span></a>
-    <a class="tile" href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722956" target="_blank"><span class="ico">🌙</span><span class="name">Tides</span><span class="sub">NOAA Ft Lauderdale</span></a>
-  </div>
-
   <div class="section-head" style="margin-top:20px;margin-bottom:10px"><h2>Tools & Files</h2><div class="rule"></div></div>
   <div class="tile-grid">
     <a class="tile" href="https://quickbooks.intuit.com" target="_blank"><span class="ico">💰</span><span class="name">QuickBooks</span><span class="sub">Invoices & A/R</span></a>
@@ -379,124 +362,7 @@ body {
     <a class="tile" href="https://supabase.com/dashboard/project/aanrxyiocxxndkvkeocv/editor" target="_blank"><span class="ico">🗄️</span><span class="name">Database</span><span class="sub">Supabase</span></a>
   </div>
 
-  <!-- ── Live Maps ── -->
-  <div class="section-head" style="margin-top:28px"><h2>Live</h2><div class="rule"></div></div>
-  <div class="widget-grid">
-    <div class="dash-panel">
-      <div class="dash-panel-header"><span class="dash-panel-title">Marine Traffic — Ft Lauderdale</span></div>
-      <div><iframe class="embed" height="340" src="https://www.marinetraffic.com/en/ais/embed/zoom:11/centery:26.12/centerx:-80.14/maptype:4/shownames:true/mmsi:0/shipid:0/fleet:/fleet_id:/vtypes:/showmenu:false/remember:false" allowfullscreen></iframe></div>
-    </div>
-    <div class="dash-panel">
-      <div class="dash-panel-header"><span class="dash-panel-title">Wind & Sea — Windy</span></div>
-      <div><iframe class="embed" height="340" src="https://embed.windy.com/embed2.html?lat=26.122&lon=-80.137&detailLat=26.122&detailLon=-80.137&width=650&height=360&zoom=10&level=surface&overlay=wind&menu=&message=&marker=&calendar=12&pressure=&type=map&location=coordinates&detail=&metricWind=mph&metricTemp=%C2%B0F&radarRange=-1"></iframe></div>
-    </div>
-  </div>
-  <div class="widget-grid" style="margin-top:12px">
-    <div class="dash-panel">
-      <div class="dash-panel-header"><span class="dash-panel-title">Marine Forecast</span><a class="dash-panel-count" href="https://forecast.weather.gov/MapClick.php?lat=26.12&lon=-80.14" target="_blank">NWS ↗</a></div>
-      <div class="dash-panel-body pad" id="marineForecast"><div class="spinner-sm"></div></div>
-    </div>
-    <div class="dash-panel">
-      <div class="dash-panel-header"><span class="dash-panel-title">Tides — Ft Lauderdale</span><a class="dash-panel-count" href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722956" target="_blank">NOAA ↗</a></div>
-      <div class="dash-panel-body pad" id="tideInfo"><div class="spinner-sm"></div></div>
-    </div>
-  </div>
-
-  <!-- ── My Day ── -->
-  <div class="section-head" style="margin-top:28px"><h2>My Day</h2><div class="rule"></div></div>
-  <div class="widget-grid">
-    <div class="dash-panel">
-      <div class="dash-panel-header"><span class="dash-panel-title">To-Do</span><span class="dash-panel-count" id="todoCount">0</span></div>
-      <div class="todo-input-row">
-        <input class="todo-input" id="todoInput" placeholder="Add a task..." onkeydown="if(event.key==='Enter')addTodo()">
-        <button class="todo-add" onclick="addTodo()">+</button>
-      </div>
-      <div class="dash-panel-body" id="todoList"></div>
-    </div>
-    <div class="dash-panel">
-      <div class="dash-panel-header"><span class="dash-panel-title">Calendar</span></div>
-      <div class="dash-panel-body">
-        <div class="calendar-placeholder"><div class="big">📅</div>Outlook calendar not connected yet.<br><a href="https://outlook.office.com/calendar/" target="_blank" style="color:var(--accent);font-size:12px;font-weight:600">Open Outlook Calendar →</a></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── Jobs ── -->
-  <div class="section-head" style="margin-top:28px"><h2>Jobs</h2><div class="rule"></div></div>
-  <div class="widget-grid">
-    <div class="dash-panel">
-      <div class="dash-panel-header"><span class="dash-panel-title">Pipeline</span><span class="dash-panel-count" id="pipelineTotal">—</span></div>
-      <div class="pipeline-chart" id="pipelineChart"></div>
-    </div>
-    <div class="dash-panel">
-      <div class="dash-panel-header"><span class="dash-panel-title">Ready To Bill</span><span class="dash-panel-count amber" id="billCount">—</span></div>
-      <div class="dash-panel-body" id="billList"><div class="spinner-sm"></div></div>
-    </div>
-  </div>
-  <div class="widget-grid" style="margin-top:12px">
-    <div class="dash-panel">
-      <div class="dash-panel-header"><span class="dash-panel-title">In Progress</span><span class="dash-panel-count" id="ipCount">—</span></div>
-      <div class="dash-panel-body" id="ipList"><div class="spinner-sm"></div></div>
-    </div>
-    <div class="dash-panel">
-      <div class="dash-panel-header"><span class="dash-panel-title">Recent Timesheets</span><span class="dash-panel-count" id="tsCount">—</span></div>
-      <div class="dash-panel-body" id="tsList"><div class="spinner-sm"></div></div>
-    </div>
-  </div>
-
-  <!-- ── R&D ── -->
-  <div class="section-head" id="rdSection" style="margin-top:28px"><h2>R&D Review</h2><div class="rule"></div></div>
-  <div class="dash-panel">
-    <div class="dash-panel-header"><span class="dash-panel-title">Flagged Items</span><span class="dash-panel-count amber" id="rdPendingCount">—</span></div>
-    <div class="dash-panel-body" id="rdList"><div class="spinner-sm"></div></div>
-  </div>
-
-
-  <!-- ── Live stats ── -->
-  <div class="section-head"><h2>Today</h2><div class="rule"></div></div>
-  <div class="grid g4" id="statsRow">
-    <div class="stat-card">
-      <div class="stat-label">Techs on Clock</div>
-      <div class="stat-value" id="techsActive">—</div>
-      <div class="stat-sub" id="techsDate">Loading...</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Hours Logged Today</div>
-      <div class="stat-value" id="hoursToday">—</div>
-      <div class="stat-sub">Regular + OT</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Entries Pending Review</div>
-      <div class="stat-value" id="pendingReview">—</div>
-      <div class="stat-sub" id="pendingLink"><a href="apb-admin-review.html" style="color:var(--accent);font-size:12px;font-weight:600;">Review now →</a></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Active Jobs</div>
-      <div class="stat-value" id="activeJobs">—</div>
-      <div class="stat-sub"><a href="apb-admin-jobs.html" style="color:var(--accent);font-size:12px;font-weight:600;">View all →</a></div>
-    </div>
-  </div>
-
-  <!-- ── Timesheet snapshot ── -->
-  <div class="grid" style="margin-top:12px;">
-    <div class="wide-card">
-      <div class="wide-card-head">
-        <div class="card-icon icon-blue">⏱</div>
-        <h3>Today's Timesheets</h3>
-        <div class="spacer"></div>
-        <a href="apb-admin-review.html">Full review screen →</a>
-      </div>
-      <table class="ts-table">
-        <thead><tr>
-          <th>Tech</th><th>Vessel / Job</th><th>Hours</th><th>Status</th>
-        </tr></thead>
-        <tbody id="tsBody"><tr><td colspan="4" class="ts-loading">Loading timesheets...</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- ── Operations ── -->
-  <div class="section-head"><h2>Operations</h2><div class="rule"></div></div>
+<div class="section-head"><h2>Operations</h2><div class="rule"></div></div>
   <div class="grid g3">
     <a class="nav-card blue" href="apb-tech-portal.html">
       <div class="card-icon icon-blue">🔧</div>
@@ -663,6 +529,141 @@ body {
       <div class="card-arrow">↗</div>
     </a>
   </div>
+
+</main>
+  <!-- ── Jobs ── -->
+  <div class="section-head" style="margin-top:28px"><h2>Jobs</h2><div class="rule"></div></div>
+  <div class="widget-grid">
+    <div class="dash-panel">
+      <div class="dash-panel-header"><span class="dash-panel-title">Pipeline</span><span class="dash-panel-count" id="pipelineTotal">—</span></div>
+      <div class="pipeline-chart" id="pipelineChart"></div>
+    </div>
+    <div class="dash-panel">
+      <div class="dash-panel-header"><span class="dash-panel-title">Ready To Bill</span><span class="dash-panel-count amber" id="billCount">—</span></div>
+      <div class="dash-panel-body" id="billList"><div class="spinner-sm"></div></div>
+    </div>
+  </div>
+  <div class="widget-grid" style="margin-top:12px">
+    <div class="dash-panel">
+      <div class="dash-panel-header"><span class="dash-panel-title">In Progress</span><span class="dash-panel-count" id="ipCount">—</span></div>
+      <div class="dash-panel-body" id="ipList"><div class="spinner-sm"></div></div>
+    </div>
+    <div class="dash-panel">
+      <div class="dash-panel-header"><span class="dash-panel-title">Recent Timesheets</span><span class="dash-panel-count" id="tsCount">—</span></div>
+      <div class="dash-panel-body" id="tsList"><div class="spinner-sm"></div></div>
+    </div>
+  </div>
+
+  <!-- ── My Day ── -->
+  <div class="section-head" style="margin-top:28px"><h2>My Day</h2><div class="rule"></div></div>
+  <div class="widget-grid">
+    <div class="dash-panel">
+      <div class="dash-panel-header"><span class="dash-panel-title">To-Do</span><span class="dash-panel-count" id="todoCount">0</span></div>
+      <div class="todo-input-row">
+        <input class="todo-input" id="todoInput" placeholder="Add a task..." onkeydown="if(event.key==='Enter')addTodo()">
+        <button class="todo-add" onclick="addTodo()">+</button>
+      </div>
+      <div class="dash-panel-body" id="todoList"></div>
+    </div>
+    <div class="dash-panel">
+      <div class="dash-panel-header"><span class="dash-panel-title">Calendar</span></div>
+      <div class="dash-panel-body">
+        <div class="calendar-placeholder"><div class="big">📅</div>Outlook calendar not connected yet.<br><a href="https://outlook.office.com/calendar/" target="_blank" style="color:var(--accent);font-size:12px;font-weight:600">Open Outlook Calendar →</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── R&D ── -->
+  <div class="section-head" id="rdSection" style="margin-top:28px"><h2>R&D Review</h2><div class="rule"></div></div>
+  <div class="dash-panel">
+    <div class="dash-panel-header"><span class="dash-panel-title">Flagged Items</span><span class="dash-panel-count amber" id="rdPendingCount">—</span></div>
+    <div class="dash-panel-body" id="rdList"><div class="spinner-sm"></div></div>
+  </div>
+
+
+  <!-- ── Live stats ── -->
+  <div class="section-head"><h2>Today</h2><div class="rule"></div></div>
+  <div class="grid g4" id="statsRow">
+    <div class="stat-card">
+      <div class="stat-label">Techs on Clock</div>
+      <div class="stat-value" id="techsActive">—</div>
+      <div class="stat-sub" id="techsDate">Loading...</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Hours Logged Today</div>
+      <div class="stat-value" id="hoursToday">—</div>
+      <div class="stat-sub">Regular + OT</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Entries Pending Review</div>
+      <div class="stat-value" id="pendingReview">—</div>
+      <div class="stat-sub" id="pendingLink"><a href="apb-admin-review.html" style="color:var(--accent);font-size:12px;font-weight:600;">Review now →</a></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Active Jobs</div>
+      <div class="stat-value" id="activeJobs">—</div>
+      <div class="stat-sub"><a href="apb-admin-jobs.html" style="color:var(--accent);font-size:12px;font-weight:600;">View all →</a></div>
+    </div>
+  </div>
+
+  <!-- ── Timesheet snapshot ── -->
+  <div class="grid" style="margin-top:12px;">
+    <div class="wide-card">
+      <div class="wide-card-head">
+        <div class="card-icon icon-blue">⏱</div>
+        <h3>Today's Timesheets</h3>
+        <div class="spacer"></div>
+        <a href="apb-admin-review.html">Full review screen →</a>
+      </div>
+      <table class="ts-table">
+        <thead><tr>
+          <th>Tech</th><th>Vessel / Job</th><th>Hours</th><th>Status</th>
+        </tr></thead>
+        <tbody id="tsBody"><tr><td colspan="4" class="ts-loading">Loading timesheets...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Operations ── -->
+    <div class="section-head" style="margin-top:20px;margin-bottom:10px"><h2>Social Media</h2><div class="rule"></div></div>
+  <div class="tile-grid">
+    <a class="tile" href="https://www.facebook.com/allpointsboats/" target="_blank"><span class="ico">📘</span><span class="name">Facebook</span><span class="sub">@allpointsboats</span></a>
+    <a class="tile" href="https://www.instagram.com/allpointsboats/" target="_blank"><span class="ico">📸</span><span class="name">Instagram</span><span class="sub">@allpointsboats</span></a>
+    <a class="tile" href="https://www.linkedin.com/company/all-points-boats" target="_blank"><span class="ico">💼</span><span class="name">LinkedIn</span><span class="sub">Company page</span></a>
+    <a class="tile" href="https://www.youtube.com/results?search_query=all+points+boats+fort+lauderdale" target="_blank"><span class="ico">▶️</span><span class="name">YouTube</span><span class="sub">Channel</span></a>
+  </div>
+
+  <div class="section-head" style="margin-top:20px;margin-bottom:10px"><h2>Marine & Weather</h2><div class="rule"></div></div>
+  <div class="tile-grid">
+    <a class="tile" href="https://www.marinetraffic.com/en/ais/home/centerx:-80.14/centery:26.12/zoom:11" target="_blank"><span class="ico">🚢</span><span class="name">MarineTraffic</span><span class="sub">Live vessel map</span></a>
+    <a class="tile" href="https://forecast.weather.gov/MapClick.php?lat=26.12&lon=-80.14" target="_blank"><span class="ico">🌊</span><span class="name">Marine Forecast</span><span class="sub">NWS Miami</span></a>
+    <a class="tile" href="https://www.windy.com/?26.122,-80.137,11" target="_blank"><span class="ico">💨</span><span class="name">Windy</span><span class="sub">Wind & waves</span></a>
+    <a class="tile" href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722956" target="_blank"><span class="ico">🌙</span><span class="name">Tides</span><span class="sub">NOAA Ft Lauderdale</span></a>
+  </div>
+
+  <!-- ── Live Maps ── -->
+  <div class="section-head" style="margin-top:28px"><h2>Live</h2><div class="rule"></div></div>
+  <div class="widget-grid">
+    <div class="dash-panel">
+      <div class="dash-panel-header"><span class="dash-panel-title">Marine Traffic — Ft Lauderdale</span></div>
+      <div><iframe class="embed" height="340" src="https://www.marinetraffic.com/en/ais/embed/zoom:11/centery:26.12/centerx:-80.14/maptype:4/shownames:true/mmsi:0/shipid:0/fleet:/fleet_id:/vtypes:/showmenu:false/remember:false" allowfullscreen></iframe></div>
+    </div>
+    <div class="dash-panel">
+      <div class="dash-panel-header"><span class="dash-panel-title">Wind & Sea — Windy</span></div>
+      <div><iframe class="embed" height="340" src="https://embed.windy.com/embed2.html?lat=26.122&lon=-80.137&detailLat=26.122&detailLon=-80.137&width=650&height=360&zoom=10&level=surface&overlay=wind&menu=&message=&marker=&calendar=12&pressure=&type=map&location=coordinates&detail=&metricWind=mph&metricTemp=%C2%B0F&radarRange=-1"></iframe></div>
+    </div>
+  </div>
+  <div class="widget-grid" style="margin-top:12px">
+    <div class="dash-panel">
+      <div class="dash-panel-header"><span class="dash-panel-title">Marine Forecast</span><a class="dash-panel-count" href="https://forecast.weather.gov/MapClick.php?lat=26.12&lon=-80.14" target="_blank">NWS ↗</a></div>
+      <div class="dash-panel-body pad" id="marineForecast"><div class="spinner-sm"></div></div>
+    </div>
+    <div class="dash-panel">
+      <div class="dash-panel-header"><span class="dash-panel-title">Tides — Ft Lauderdale</span><a class="dash-panel-count" href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722956" target="_blank">NOAA ↗</a></div>
+      <div class="dash-panel-body pad" id="tideInfo"><div class="spinner-sm"></div></div>
+    </div>
+  </div>
+
 
 </main>
 
