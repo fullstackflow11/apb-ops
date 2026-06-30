@@ -985,8 +985,11 @@ async function loadMarineForecast(){
 async function loadTides(){
   try{
     const today = new Date().toISOString().split('T')[0].replace(/-/g,'');
-    const url = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&application=apb&begin_date=${today}&end_date=${today}&datum=MLLW&station=8722956&time_zone=lst_ldt&units=english&interval=hilo&format=json`;
-    const r = await fetch(url); const d = await r.json();
+    const noaaUrl = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&application=apb&begin_date=${today}&end_date=${today}&datum=MLLW&station=8722956&time_zone=lst_ldt&units=english&interval=hilo&format=json`;
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(noaaUrl)}`;
+    const r = await fetch(proxyUrl);
+    const wrapper = await r.json();
+    const d = JSON.parse(wrapper.contents);
     const preds = d.predictions||[];
     if(!preds.length){document.getElementById('tideInfo').innerHTML='<div class="empty-state">Tide data unavailable</div>';return;}
     document.getElementById('tideInfo').innerHTML = preds.map(p=>{
