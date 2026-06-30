@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MTR Hub · Material Traceability</title>
+<script src="apb-roles.js"></script>
+<script src="apb-demo.js"></script>
+<script>APBRoles.guard(['admin','pm','purchasing'],'MTR Hub');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDEEF2;--panel:#fff;--panel-2:#F5F6FA;
+  --ink:#0D1626;--ink-2:#3A4559;--ink-3:#6B7A92;
+  --line:#DDE1E8;--line-2:#E8EBF0;
+  --accent:#2457E6;--accent-2:#1B45B8;--accent-soft:#EAF0FE;
+  --green:#0B9E6A;--green-soft:#E4F5EE;
+  --amber:#B86A00;--amber-soft:#FBF0E2;
+  --red:#C43030;--red-soft:#FBE7E7;
+  --purple:#6B3DBB;--purple-soft:#F0EBFF;
+  --teal:#0A7E8C;--teal-soft:#E2F5F7;
+  --shadow-sm:0 1px 3px rgba(13,22,38,.07);
+  --shadow:0 8px 28px -12px rgba(13,22,38,.14);
+  --shadow-lg:0 20px 56px -12px rgba(13,22,38,.22);
+  --mono:"DM Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:Inter,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;letter-spacing:-.01em;min-height:100vh}
+
+/* topbar */
+.topbar{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.92);backdrop-filter:saturate(180%) blur(14px);display:flex;align-items:center;gap:14px;padding:0 28px;height:62px;border-bottom:1px solid var(--line)}
+.topbar img{height:36px;width:auto;display:block}
+.topbar .t{border-left:1px solid var(--line);padding-left:14px}
+.topbar .t b{font-size:15px}
+.topbar .t span{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.topbar .sp{flex:1}
+.topbar .now{font-family:var(--mono);font-size:12px;color:var(--ink-3);min-width:150px;text-align:right}
+.navbtn{font-size:12.5px;font-weight:600;color:var(--accent);padding:7px 13px;border:1px solid var(--line);border-radius:8px;background:var(--panel);cursor:pointer;text-decoration:none;transition:.12s}
+.navbtn:hover{border-color:var(--accent);background:var(--accent-soft)}
+.srv-badge{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--ink-3);padding:5px 11px;border:1px solid var(--line);border-radius:20px;background:var(--panel)}
+.srv-badge.live{color:var(--green);border-color:#c5ead8;background:#f5fef9}
+.srv-badge.demo{color:var(--amber);border-color:#f0dcc0;background:#fdf8f0}
+.srv-dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+.wrap{max-width:1140px;margin:0 auto;padding:26px 24px 60px}
+
+/* hero */
+.hero{position:relative;overflow:hidden;border-radius:20px;color:#fff;padding:34px 36px;margin-bottom:22px;
+  background:radial-gradient(700px 520px at 88% 130%,rgba(36,87,230,.45) 0%,transparent 56%),linear-gradient(160deg,#131a24,#0b0f17,#121820);
+  box-shadow:var(--shadow-lg)}
+.hero::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle at 1px 1px,rgba(255,255,255,.06) 1px,transparent 0);background-size:30px 30px}
+.hero-body{position:relative;z-index:1}
+.hero .eyebrow{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:#6a90d0;font-weight:700;margin-bottom:10px}
+.hero h1{font-size:32px;font-weight:800;letter-spacing:-.035em;margin:0 0 9px}
+.hero .tagline{color:#adbbd4;font-size:14.5px;line-height:1.55;max-width:600px;margin:0}
+.hero-kpis{display:grid;grid-template-columns:repeat(4,1fr);position:relative;z-index:1;margin-top:26px;border-top:1px solid rgba(255,255,255,.08)}
+.hk{padding:16px 20px;border-right:1px solid rgba(255,255,255,.08)}
+.hk:last-child{border-right:none}
+.hk b{display:block;font-family:var(--mono);font-size:26px;font-weight:500;color:#fff;margin-bottom:3px;font-variant-numeric:tabular-nums}
+.hk b.green{color:#37C892}.hk b.amber{color:#E8B25A}.hk b.red{color:#F2877F}
+.hk span{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:#5e7fb8;font-weight:700}
+
+/* controls */
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.add-btn{display:inline-flex;align-items:center;gap:7px;background:var(--accent);color:#fff;border:none;font-size:13.5px;font-weight:600;padding:10px 16px;border-radius:9px;cursor:pointer;box-shadow:0 4px 14px rgba(36,87,230,.4);transition:.13s}
+.add-btn:hover{background:var(--accent-2);transform:translateY(-1px)}
+.add-btn svg{width:15px;height:15px}
+.search{flex:1;min-width:200px;position:relative}
+.search input{width:100%;padding:10px 14px 10px 36px;border:1px solid var(--line);border-radius:9px;font-size:13.5px;font-family:inherit;background:var(--panel)}
+.search input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--ink-3)}
+.fbar{display:flex;gap:5px;background:var(--panel-2);border:1px solid var(--line);border-radius:22px;padding:3px}
+.fbtn{font-size:12px;font-weight:600;padding:6px 13px;border-radius:18px;border:1px solid transparent;background:transparent;color:var(--ink-3);cursor:pointer;transition:.12s}
+.fbtn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.fbtn:not(.active):hover{background:var(--accent-soft);color:var(--accent)}
+
+/* ISO note */
+.iso-note{display:flex;align-items:flex-start;gap:11px;background:linear-gradient(90deg,var(--accent-soft),#f6f9ff);border:1px solid #cfe0fb;border-radius:12px;padding:13px 16px;margin-bottom:20px;font-size:12.5px;color:var(--ink-2);line-height:1.55}
+.iso-note svg{flex-shrink:0;margin-top:1px;color:var(--accent)}
+.iso-note b{color:var(--ink)}
+.iso-note a{color:var(--accent);font-weight:600;text-decoration:none}
+
+/* project group */
+.pgroup{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm);margin-bottom:14px;overflow:hidden}
+.pghead{display:flex;align-items:center;gap:12px;padding:15px 18px;cursor:pointer;user-select:none;transition:background .12s}
+.pghead:hover{background:var(--panel-2)}
+.pghead .chev{width:16px;height:16px;color:var(--ink-3);transition:transform .18s;flex-shrink:0}
+.pgroup.open .pghead .chev{transform:rotate(90deg)}
+.pghead .vessel{font-size:16px;font-weight:700;letter-spacing:-.02em}
+.pghead .meta{font-size:12px;color:var(--ink-3);font-family:var(--mono)}
+.pghead .sp{flex:1}
+.pgcount{display:flex;gap:6px;align-items:center}
+.dot-pill{font-family:var(--mono);font-size:11px;font-weight:500;padding:3px 9px;border-radius:14px;display:inline-flex;align-items:center;gap:5px}
+.dot-pill.g{background:var(--green-soft);color:var(--green)}
+.dot-pill.a{background:var(--amber-soft);color:var(--amber)}
+.dot-pill.r{background:var(--red-soft);color:var(--red)}
+.pgbody{display:none;border-top:1px solid var(--line-2)}
+.pgroup.open .pgbody{display:block}
+
+/* mtr table */
+.mtr-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.mtr-tbl th{text-align:left;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:700;padding:10px 14px;background:var(--panel-2);border-bottom:1px solid var(--line)}
+.mtr-tbl td{padding:11px 14px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+.mtr-tbl tr:last-child td{border-bottom:none}
+.mtr-tbl tr:hover td{background:rgba(36,87,230,.03)}
+.heat{font-family:var(--mono);font-weight:500;color:var(--ink)}
+.spec{font-weight:600}
+.sub{font-size:11.5px;color:var(--ink-3)}
+.st-pill{font-family:var(--mono);font-size:11px;font-weight:500;padding:3px 10px;border-radius:14px;white-space:nowrap}
+.st-pill.approved{background:var(--green-soft);color:var(--green)}
+.st-pill.pending{background:var(--amber-soft);color:var(--amber)}
+.st-pill.nc{background:var(--red-soft);color:var(--red)}
+.doc-link{color:var(--accent);font-weight:600;text-decoration:none;font-size:12px}
+.doc-link::after{content:" ↗";font-size:10px}
+.no-doc{color:var(--ink-3);font-size:12px;font-style:italic}
+.row-actions{display:flex;gap:6px;justify-content:flex-end}
+.icon-btn{width:28px;height:28px;border-radius:7px;border:1px solid var(--line);background:var(--panel);cursor:pointer;display:grid;place-items:center;color:var(--ink-3);transition:.12s}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent)}
+.icon-btn.del:hover{border-color:var(--red);color:var(--red)}
+.icon-btn svg{width:14px;height:14px}
+
+.empty{text-align:center;padding:60px 20px;color:var(--ink-3)}
+.empty svg{width:46px;height:46px;color:var(--line);margin-bottom:14px}
+.empty h3{font-size:17px;color:var(--ink-2);margin:0 0 6px}
+.empty p{font-size:13.5px;margin:0 auto;max-width:380px;line-height:1.5}
+
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(13,22,38,.5);backdrop-filter:blur(3px);z-index:60;display:none;align-items:flex-start;justify-content:center;padding:40px 18px;overflow-y:auto}
+.modal-bg.show{display:flex}
+.modal{background:var(--panel);border-radius:16px;box-shadow:var(--shadow-lg);width:100%;max-width:560px;padding:0;overflow:hidden}
+.mhead{padding:20px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.mhead h2{margin:0;font-size:19px;font-weight:700;letter-spacing:-.02em}
+.mhead .x{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:18px;color:var(--ink-3);line-height:1;display:grid;place-items:center}
+.mhead .x:hover{border-color:var(--red);color:var(--red)}
+.mbody{padding:22px 24px;display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}
+.fld{display:flex;flex-direction:column;gap:5px}
+.fld.full{grid-column:1/-1}
+.fld label{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3)}
+.fld label .req{color:var(--red)}
+.fld input,.fld select,.fld textarea{padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13.5px;font-family:inherit;background:var(--panel);color:var(--ink)}
+.fld input:focus,.fld select:focus,.fld textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.fld textarea{resize:vertical;min-height:58px}
+.fld .hint{font-size:11px;color:var(--ink-3);font-weight:400;text-transform:none;letter-spacing:0}
+.mfoot{padding:16px 24px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;background:var(--panel-2)}
+.btn-ghost{padding:9px 16px;border:1px solid var(--line);border-radius:9px;background:var(--panel);font-size:13.5px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.btn-ghost:hover{border-color:var(--ink-3)}
+.btn-prim{padding:9px 18px;border:none;border-radius:9px;background:var(--accent);color:#fff;font-size:13.5px;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(36,87,230,.4)}
+.btn-prim:hover{background:var(--accent-2)}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:10px;font-size:13.5px;font-weight:500;box-shadow:var(--shadow-lg);opacity:0;transition:.25s;z-index:80;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* scan-to-fill zone */
+.scan-zone{border:1.5px dashed var(--accent);border-radius:12px;background:var(--accent-soft);padding:14px 16px;transition:.15s}
+.scan-zone.drag{background:#dce8fe;border-color:var(--accent-2)}
+.scan-idle{display:flex;align-items:center;gap:13px}
+.scan-idle .si-ic{width:30px;height:30px;color:var(--accent);flex-shrink:0}
+.scan-idle b{display:block;font-size:13.5px;color:var(--ink)}
+.scan-idle span{font-size:12px;color:var(--ink-2);line-height:1.4}
+.scan-idle .scan-txt{flex:1;min-width:0}
+.scan-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.scan-btn:hover{background:var(--accent-2)}
+.scan-busy{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--ink-2)}
+.spinner{width:22px;height:22px;border:3px solid var(--accent-soft);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.scan-done{display:flex;align-items:center;gap:10px;font-size:13px}
+.scan-done .sd-ic{width:20px;height:20px;flex-shrink:0;color:var(--green)}
+.scan-done span{color:var(--ink-2)}
+.scan-link{margin-left:auto;font-size:12px;color:var(--accent);background:none;border:none;cursor:pointer;text-decoration:underline;flex-shrink:0;white-space:nowrap}
+.scan-text{display:none;white-space:pre-wrap;font-family:var(--mono);font-size:11px;color:var(--ink-2);background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:10px;max-height:160px;overflow:auto;margin:8px 0 0}
+.fld input.from-scan,.fld select.from-scan{border-color:var(--green);background:#f4fdf9;box-shadow:0 0 0 3px var(--green-soft)}
+
+/* material lifecycle state pills */
+.state-pill{font-family:var(--mono);font-size:11px;font-weight:500;padding:3px 9px;border-radius:14px;white-space:nowrap;display:inline-block}
+.state-pill.in_stock{background:var(--accent-soft);color:var(--accent)}
+.state-pill.partial{background:var(--amber-soft);color:var(--amber)}
+.state-pill.remnant{background:var(--teal-soft);color:var(--teal)}
+.state-pill.consumed{background:#ECEFF3;color:var(--ink-3)}
+.remnant-note{font-size:11.5px;color:var(--teal);margin-top:2px}
+
+/* tabs */
+.mtabs{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:20px}
+.mtab{font-size:14px;font-weight:600;padding:10px 4px;margin-right:22px;border:none;background:none;color:var(--ink-3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:7px}
+.mtab:hover{color:var(--ink-2)}
+.mtab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.mtab .cnt{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:1px 7px;color:var(--ink-3)}
+.fbar.states{margin:-4px 0 16px}
+
+/* traveler cards */
+.tcard{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow-sm);margin-bottom:13px;overflow:hidden}
+.tchead{display:flex;align-items:center;gap:12px;padding:14px 17px;border-bottom:1px solid var(--line-2)}
+.tchead .tj{font-size:15px;font-weight:700;letter-spacing:-.02em}
+.tchead .tmeta{font-family:var(--mono);font-size:11.5px;color:var(--ink-3)}
+.tchead .sp{flex:1}
+.tcbody{padding:13px 17px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:13px}
+.tfield .tl{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin-bottom:4px}
+.tfield .tv{color:var(--ink);font-weight:600;font-size:13px}
+.heat-chips{display:flex;flex-wrap:wrap;gap:5px}
+.heat-chip{font-family:var(--mono);font-size:11px;background:var(--accent-soft);color:var(--accent);border-radius:6px;padding:2px 8px}
+.cons-line{font-size:12.5px;color:var(--ink-2);line-height:1.5}
+
+/* consumable + heat-pick in traveler modal */
+.cons-row{display:flex;gap:7px;align-items:center;margin-bottom:7px}
+.cons-row select,.cons-row input{padding:8px 10px;border:1px solid var(--line);border-radius:7px;font-size:13px;font-family:inherit;background:var(--panel)}
+.cons-row select{flex:0 0 90px}.cons-row input{flex:1;min-width:0}
+.cons-row .xc{width:30px;height:34px;border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--ink-3);cursor:pointer;flex-shrink:0;font-size:15px}
+.cons-row .xc:hover{border-color:var(--red);color:var(--red)}
+.add-cons{font-size:12.5px;color:var(--accent);background:none;border:1px dashed var(--line);border-radius:7px;padding:8px 12px;cursor:pointer;width:100%;font-weight:600}
+.add-cons:hover{border-color:var(--accent);background:var(--accent-soft)}
+.heat-pick{display:flex;flex-wrap:wrap;gap:6px;max-height:130px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:9px;background:var(--panel)}
+.heat-opt{font-family:var(--mono);font-size:12px;border:1px solid var(--line);border-radius:7px;padding:5px 10px;cursor:pointer;background:var(--panel);color:var(--ink-2);transition:.1s}
+.heat-opt:hover{border-color:var(--accent)}
+.heat-opt.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.heat-opt .hs{opacity:.7;font-size:10px}
+.heat-empty{font-size:12px;color:var(--ink-3);font-style:italic}
+
+@media(max-width:720px){
+  .hero-kpis{grid-template-columns:1fr 1fr}
+  .hk:nth-child(2){border-right:none}
+  .hk:nth-child(3),.hk:nth-child(4){border-top:1px solid rgba(255,255,255,.08)}
+  .hk:nth-child(4){border-right:none}
+  .mbody{grid-template-columns:1fr}
+  .mtr-tbl thead{display:none}
+  .mtr-tbl,.mtr-tbl tbody,.mtr-tbl tr,.mtr-tbl td{display:block;width:100%}
+  .mtr-tbl tr{border-bottom:1px solid var(--line);padding:8px 0}
+  .mtr-tbl td{border:none;padding:5px 14px}
+  .mtr-tbl td::before{content:attr(data-l);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);font-weight:700;display:block;margin-bottom:2px}
+}
+</style>
+<link rel="stylesheet" href="apb-theme.css">
+</head>
+<body>
+
+<header class="topbar">
+  <img src="apb-logo.png" alt="APB">
+  <div class="t"><b>MTR Hub</b><span>Material Traceability</span></div>
+  <div class="sp"></div>
+  <div class="srv-badge" id="srvBadge"><div class="srv-dot"></div><span id="srvLabel">Loading…</span></div>
+  <a class="navbtn" href="index.html">⌂ Home</a>
+  <div class="now" id="now"></div>
+</header>
+
+<main class="wrap">
+
+  <section class="hero">
+    <div class="hero-body">
+      <div class="eyebrow">All Points Boats · Quality Records</div>
+      <h1>Material Test Reports</h1>
+      <p class="tagline">Every heat number, mill cert, and material spec — traced to the job it was used on. The backbone of ISO 9001 traceability and class-society audits.</p>
+    </div>
+    <div class="hero-kpis">
+      <div class="hk"><b id="kTotal">0</b><span>Total MTRs</span></div>
+      <div class="hk"><b class="green" id="kAppr">0</b><span>Approved</span></div>
+      <div class="hk"><b class="amber" id="kPend">0</b><span>Pending Review</span></div>
+      <div class="hk"><b class="red" id="kNC">0</b><span>Non-Conformance</span></div>
+    </div>
+  </section>
+
+  <div class="iso-note">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+    <div><b>ISO 9001 · Clause 8.5.2 — Identification &amp; Traceability.</b> Material is traced to its job by heat/lot number and mill cert. Log every MTR here as material is received, review it, and link the PDF stored in the project's SharePoint folder. <a href="apb-iso.html">See full ISO readiness →</a></div>
+  </div>
+
+  <div class="mtabs">
+    <button class="mtab active" data-view="materials">Materials <span class="cnt" id="tabMatCnt">0</span></button>
+    <button class="mtab" data-view="travelers">Job Travelers <span class="cnt" id="tabTrvCnt">0</span></button>
+  </div>
+
+  <!-- ════ MATERIALS VIEW (the heat register) ════ -->
+  <div class="view" id="view-materials">
+    <div class="controls">
+      <button class="add-btn" id="addBtn">
+        <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Log MTR
+      </button>
+      <div class="search">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="q" type="search" placeholder="Search heat #, spec, supplier, PO…">
+      </div>
+      <div class="fbar" id="fbar">
+        <button class="fbtn active" data-f="all">All</button>
+        <button class="fbtn" data-f="approved">Approved</button>
+        <button class="fbtn" data-f="pending">Pending</button>
+        <button class="fbtn" data-f="nc">Non-Conf.</button>
+      </div>
+    </div>
+    <div class="fbar states" id="fbarState">
+      <button class="fbtn active" data-s="all">All states</button>
+      <button class="fbtn" data-s="in_stock">In Stock</button>
+      <button class="fbtn" data-s="partial">Partially Used</button>
+      <button class="fbtn" data-s="remnant">Remnant</button>
+      <button class="fbtn" data-s="consumed">Consumed</button>
+    </div>
+    <div id="list"></div>
+  </div>
+
+  <!-- ════ JOB TRAVELERS VIEW (consumption record · SOP 4.5/4.6) ════ -->
+  <div class="view" id="view-travelers" style="display:none">
+    <div class="controls">
+      <button class="add-btn" id="addTrvBtn">
+        <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        New Traveler
+      </button>
+      <div class="search">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="tq" type="search" placeholder="Search vessel, welder, WPS, heat #…">
+      </div>
+    </div>
+    <div class="iso-note" style="margin-bottom:18px">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <div><b>SOP §4.5 / §4.6 — Job Traveler.</b> Each job links its vessel, welder, and WPS to the heat numbers used, plus welding consumables (wire/rod lot #). This is the trail an ABS / Lloyd's / RINA surveyor follows.</div>
+    </div>
+    <div id="tlist"></div>
+  </div>
+
+</main>
+
+<!-- Add / Edit modal -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <div class="mhead">
+      <h2 id="mTitle">Log MTR</h2>
+      <button class="x" id="mClose">×</button>
+    </div>
+    <div class="mbody">
+      <div class="fld full">
+        <div class="scan-zone" id="scanZone">
+          <input type="file" id="scanFile" accept="image/*,.pdf,application/pdf" hidden>
+          <div class="scan-idle" id="scanIdle">
+            <svg class="si-ic" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M3 12h18"/></svg>
+            <div class="scan-txt"><b>Scan the MTR document</b><span>Snap or upload the mill cert — we'll read it and pull the heat #, spec, supplier &amp; PO for you to confirm.</span></div>
+            <button type="button" class="scan-btn" id="scanPick">Choose file</button>
+          </div>
+          <div class="scan-busy" id="scanBusy" style="display:none">
+            <div class="spinner"></div><div id="scanMsg">Reading…</div>
+          </div>
+          <div class="scan-done" id="scanDone" style="display:none">
+            <svg class="sd-ic" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+            <span id="scanDoneMsg">Pulled fields from the scan — review &amp; correct below, then save.</span>
+            <button type="button" class="scan-link" id="scanTextToggle">view scanned text</button>
+          </div>
+        </div>
+        <pre class="scan-text" id="scanText"></pre>
+      </div>
+      <div class="fld full">
+        <label>Project / Vessel <span class="req">*</span></label>
+        <input id="f_project" list="projList" placeholder="Start typing or pick a project…" autocomplete="off">
+        <datalist id="projList"></datalist>
+        <span class="hint">Ties this MTR to the job. Pulls from the active project list.</span>
+      </div>
+      <div class="fld">
+        <label>Job # <span class="hint">(optional)</span></label>
+        <input id="f_job" placeholder="e.g. 48.0">
+      </div>
+      <div class="fld">
+        <label>Component / Location</label>
+        <input id="f_component" placeholder="e.g. Engine room shelf">
+      </div>
+      <div class="fld">
+        <label>Form &amp; Size</label>
+        <input id="f_size" placeholder="e.g. 1/4&quot; plate 4×8">
+      </div>
+      <div class="fld">
+        <label>Heat / Lot # <span class="req">*</span></label>
+        <input id="f_heat" placeholder="e.g. H-44821">
+      </div>
+      <div class="fld">
+        <label>Material Spec <span class="req">*</span></label>
+        <input id="f_spec" placeholder="e.g. ASTM A240 316L">
+      </div>
+      <div class="fld">
+        <label>Supplier / Mill</label>
+        <input id="f_supplier" placeholder="e.g. Ryerson / Outokumpu">
+      </div>
+      <div class="fld">
+        <label>PO #</label>
+        <input id="f_po" placeholder="e.g. PO-2026-118">
+      </div>
+      <div class="fld">
+        <label>Date Received</label>
+        <input id="f_received" type="date">
+      </div>
+      <div class="fld">
+        <label>Reviewed By</label>
+        <input id="f_reviewer" placeholder="Initials / name">
+      </div>
+      <div class="fld">
+        <label>MTR Status</label>
+        <select id="f_status">
+          <option value="pending">Pending Review</option>
+          <option value="approved">Approved</option>
+          <option value="nc">Non-Conformance</option>
+        </select>
+      </div>
+      <div class="fld">
+        <label>Material State</label>
+        <select id="f_state">
+          <option value="in_stock">In Stock</option>
+          <option value="partial">Partially Used</option>
+          <option value="remnant">Remnant (drop on rack)</option>
+          <option value="consumed">Consumed</option>
+        </select>
+      </div>
+      <div class="fld full">
+        <label>Remnant location / size <span class="hint">(if a drop is kept)</span></label>
+        <input id="f_remnant" placeholder="e.g. ~2×3 piece, Rack A — still heat-marked">
+        <span class="hint">Keeps the leftover traceable to this heat so it can be reused. The heat # stays with the drop.</span>
+      </div>
+      <div class="fld full">
+        <label>MTR Document Link</label>
+        <input id="f_doc" placeholder="SharePoint URL to the MTR PDF">
+        <span class="hint">Paste the link to the PDF in the project's /MTRs/ SharePoint folder.</span>
+      </div>
+      <div class="fld full">
+        <label>Notes</label>
+        <textarea id="f_notes" placeholder="Non-conformance detail, disposition, special notes…"></textarea>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn-ghost" id="mCancel">Cancel</button>
+      <button class="btn-prim" id="mSave">Save MTR</button>
+    </div>
+  </div>
+</div>
+
+<!-- Job Traveler modal -->
+<div class="modal-bg" id="tmodal">
+  <div class="modal">
+    <div class="mhead">
+      <h2 id="tmTitle">New Job Traveler</h2>
+      <button class="x" id="tmClose">×</button>
+    </div>
+    <div class="mbody">
+      <div class="fld full">
+        <label>Project / Vessel <span class="req">*</span></label>
+        <input id="t_project" list="projList" placeholder="Pick a project…" autocomplete="off">
+      </div>
+      <div class="fld">
+        <label>Job #</label>
+        <input id="t_job" placeholder="e.g. 40.0">
+      </div>
+      <div class="fld">
+        <label>Date</label>
+        <input id="t_date" type="date">
+      </div>
+      <div class="fld">
+        <label>Welder</label>
+        <input id="t_welder" placeholder="Name / stamp #">
+      </div>
+      <div class="fld">
+        <label>WPS Used</label>
+        <input id="t_wps" placeholder="e.g. AWS D1.1 / WPS-12">
+      </div>
+      <div class="fld full">
+        <label>Heat numbers used <span class="req">*</span></label>
+        <div class="heat-pick" id="t_heatPick"></div>
+        <span class="hint">Tap the heats consumed on this job. Pulls from logged materials — add the material first if it's not here.</span>
+      </div>
+      <div class="fld full">
+        <label>Welding consumables <span class="hint">(wire / rod · SOP 4.6)</span></label>
+        <div id="t_consRows"></div>
+        <button type="button" class="add-cons" id="t_addCons">+ Add consumable lot</button>
+      </div>
+      <div class="fld full">
+        <label>Notes</label>
+        <textarea id="t_notes" placeholder="Anything notable about the material use, fit-up, or disposition…"></textarea>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn-ghost" id="tmCancel">Cancel</button>
+      <button class="btn-prim" id="tmSave">Save Traveler</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   MTR Hub — material test report tracking, connected to projects
+   Data: localStorage 'apb_mtrs' (standalone-first; SharePoint/Supabase
+   wiring is the next phase). Project list pulls live from Supabase
+   apb_jobs when a key is present, else demo vessels.
+   ============================================================ */
+const G = document.getElementById.bind(document);
+const LS_KEY = 'apb_mtrs';
+
+const SUPA = {
+  url: "https://aanrxyiocxxndkvkeocv.supabase.co",
+  key: (window.localStorage && localStorage.getItem("apb_supabase_key")) || ""
+};
+
+/* demo vessels mirror the Project Console fallback so the dropdown is never empty */
+const DEMO_PROJECTS = [
+  "Endless Summer","Siemens Energy","M/Y Deztination 140'","Retriever","Catskill",
+  "Reef Chief","Jet Ski Chris","Fred Sage","High Seas","MY CONTESSA","Playpen (James Southgate)"
+];
+
+/* seed examples so the page demonstrates the structure on first open */
+const SEED = [
+  {id:'s1',project:"Endless Summer",job:"40.0",component:"Engine Room Bottle Shelf",heat:"H-44821",spec:"ASTM A240 316L",size:'1/4" plate 4×8',supplier:"Ryerson / Outokumpu",po:"PO-2026-104",received:"2026-05-18",reviewer:"BS",status:"approved",state:"remnant",remnant:"~2×3 drop, Rack A — heat-marked",doc:"",notes:""},
+  {id:'s2',project:"Endless Summer",job:"48.0",component:"Engine Battery Mounts",heat:"H-44907",spec:"ASTM A36 plate",size:'3/8" plate',supplier:"Ryerson",po:"PO-2026-104",received:"2026-05-18",reviewer:"BS",status:"approved",state:"consumed",remnant:"",doc:"",notes:""},
+  {id:'s3',project:"Siemens Energy",job:"3.0",component:"Waterjet Turbine Parts",heat:"INC-7741",spec:"Inconel 625 bar",size:'2" round bar',supplier:"TW Metals",po:"PO-2026-091",received:"2026-06-02",reviewer:"JC",status:"pending",state:"in_stock",remnant:"",doc:"",notes:"Awaiting mill cert PDF from supplier."},
+  {id:'s4',project:"Retriever",job:"5.0",component:"SS Protector Plates",heat:"H-45120",spec:"ASTM A240 304",size:'1/8" sheet',supplier:"Metals Depot",po:"PO-2026-112",received:"2026-06-10",reviewer:"BW",status:"nc",state:"in_stock",remnant:"",doc:"",notes:"Cert shows 304 — drawing calls for 316L. Quarantined; hold for engineering disposition."}
+];
+
+/* seed travelers — demonstrate the SOP 4.5/4.6 consumption record */
+const TRV_SEED = [
+  {id:'t1',project:"Endless Summer",job:"40.0",date:"2026-05-22",welder:"Jerry Clark",wps:"AWS D1.6 / WPS-SS-3",heats:["H-44821"],consumables:[{kind:"Wire",maker:"Lincoln",lot:"ER308L-LN-7741"}],notes:"316L shelf fab — drop returned to Rack A."}
+];
+
+const TRV_KEY = 'apb_travelers';
+
+let MTRS = load();
+let TRAVELERS = loadTrv();
+let projectList = DEMO_PROJECTS.slice();
+let filter = 'all', stateFilter = 'all', query = '', editId = null;
+let tquery = '', trvEditId = null;
+const openGroups = new Set();
+
+function load(){
+  let arr=null;
+  try{ const v = JSON.parse(localStorage.getItem(LS_KEY)); if(Array.isArray(v)) arr=v; }catch(e){}
+  if(!arr){ arr = SEED.slice(); localStorage.setItem(LS_KEY, JSON.stringify(arr)); }
+  arr.forEach(m=>{ if(!m.state) m.state='in_stock'; });   // backward-compat
+  return arr;
+}
+function loadTrv(){
+  try{ const v = JSON.parse(localStorage.getItem(TRV_KEY)); if(Array.isArray(v)) return v; }catch(e){}
+  localStorage.setItem(TRV_KEY, JSON.stringify(TRV_SEED));
+  return TRV_SEED.slice();
+}
+function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(MTRS)); }catch(e){} }
+function saveTrv(){ try{ localStorage.setItem(TRV_KEY, JSON.stringify(TRAVELERS)); }catch(e){} }
+function uid(){ return 'm'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+const STLABEL = {approved:'Approved',pending:'Pending Review',nc:'Non-Conformance'};
+const STATELABEL = {in_stock:'In Stock',partial:'Partially Used',remnant:'Remnant',consumed:'Consumed'};
+
+/* ---- pull live project list from Supabase (best-effort) ---- */
+async function loadProjects(){
+  const badge = G('srvBadge'), label = G('srvLabel');
+  if(SUPA.key){
+    try{
+      const sel = "select=apb_engagements(name)&order=updated_at.desc";
+      const r = await fetch(`${SUPA.url}/rest/v1/apb_jobs?${sel}`,{headers:{apikey:SUPA.key,Authorization:"Bearer "+SUPA.key}});
+      const data = await r.json();
+      const names = [...new Set(data.map(j=>j.apb_engagements&&j.apb_engagements.name).filter(Boolean))];
+      if(names.length){ projectList = names; }
+      badge.className='srv-badge live'; label.textContent='Live · Supabase';
+    }catch(e){
+      badge.className='srv-badge demo'; label.textContent='Demo projects';
+    }
+  } else {
+    badge.className='srv-badge demo'; label.textContent='Demo projects';
+  }
+  // include any projects already referenced by existing MTRs
+  MTRS.forEach(m=>{ if(m.project && !projectList.includes(m.project)) projectList.push(m.project); });
+  fillProjectDatalist();
+}
+function fillProjectDatalist(){
+  G('projList').innerHTML = projectList.slice().sort().map(p=>`<option value="${esc(p)}">`).join('');
+}
+
+/* ---- KPIs ---- */
+function refreshKpis(){
+  G('kTotal').textContent = MTRS.length;
+  G('kAppr').textContent  = MTRS.filter(m=>m.status==='approved').length;
+  G('kPend').textContent  = MTRS.filter(m=>m.status==='pending').length;
+  G('kNC').textContent    = MTRS.filter(m=>m.status==='nc').length;
+  G('tabMatCnt').textContent = MTRS.length;
+  G('tabTrvCnt').textContent = TRAVELERS.length;
+}
+
+/* ---- render project-grouped list ---- */
+function visible(){
+  return MTRS.filter(m=>{
+    if(filter!=='all' && m.status!==filter) return false;
+    if(stateFilter!=='all' && (m.state||'in_stock')!==stateFilter) return false;
+    if(query){
+      const hay = [m.heat,m.spec,m.supplier,m.po,m.project,m.component,m.job,m.size].join(' ').toLowerCase();
+      if(!hay.includes(query)) return false;
+    }
+    return true;
+  });
+}
+function render(){
+  refreshKpis();
+  const rows = visible();
+  const el = G('list');
+  if(!MTRS.length){
+    el.innerHTML = emptyState('No MTRs logged yet','Click “Log MTR” to record your first material test report. Tie it to a project, enter the heat number and spec, and link the mill cert.');
+    return;
+  }
+  if(!rows.length){
+    el.innerHTML = emptyState('No matches','Nothing matches your filter or search. Try clearing them.');
+    return;
+  }
+  // group by project
+  const groups = {};
+  rows.forEach(m=>{ (groups[m.project||'— Unassigned —'] ||= []).push(m); });
+  const names = Object.keys(groups).sort();
+  el.innerHTML = names.map(name=>{
+    const items = groups[name];
+    const g = items.filter(m=>m.status==='approved').length;
+    const a = items.filter(m=>m.status==='pending').length;
+    const r = items.filter(m=>m.status==='nc').length;
+    const isOpen = openGroups.has(name) || query || filter!=='all';
+    const pills = [
+      g?`<span class="dot-pill g">${g} appr</span>`:'',
+      a?`<span class="dot-pill a">${a} pend</span>`:'',
+      r?`<span class="dot-pill r">${r} N/C</span>`:''
+    ].join('');
+    return `<div class="pgroup${isOpen?' open':''}" data-name="${esc(name)}">
+      <div class="pghead" data-toggle="${esc(name)}">
+        <svg class="chev" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        <div>
+          <div class="vessel">${esc(name)}</div>
+          <div class="meta">${items.length} MTR${items.length!==1?'s':''}</div>
+        </div>
+        <div class="sp"></div>
+        <div class="pgcount">${pills}</div>
+      </div>
+      <div class="pgbody">
+        <table class="mtr-tbl"><thead><tr>
+          <th>Heat / Lot</th><th>Material Spec</th><th>Supplier · PO</th><th>Received</th><th>MTR Status</th><th>State</th><th>Cert</th><th></th>
+        </tr></thead><tbody>
+        ${items.map(m=>rowHtml(m)).join('')}
+        </tbody></table>
+      </div>
+    </div>`;
+  }).join('');
+
+  // wire toggles
+  el.querySelectorAll('[data-toggle]').forEach(h=>{
+    h.onclick = ()=>{ const n=h.dataset.toggle; if(openGroups.has(n)) openGroups.delete(n); else openGroups.add(n); render(); };
+  });
+  el.querySelectorAll('[data-edit]').forEach(b=> b.onclick = e=>{ e.stopPropagation(); openModal(b.dataset.edit); });
+  el.querySelectorAll('[data-del]').forEach(b=> b.onclick = e=>{ e.stopPropagation(); delMtr(b.dataset.del); });
+}
+function rowHtml(m){
+  const comp = m.component ? `<div class="sub">${esc(m.component)}${m.job?' · #'+esc(m.job):''}</div>` : (m.job?`<div class="sub">#${esc(m.job)}</div>`:'');
+  const sizeLine = m.size ? `<div class="sub">${esc(m.size)}</div>` : '';
+  const sup = [m.supplier,m.po].filter(Boolean).map(esc).join(' · ') || '—';
+  const rec = m.received ? new Date(m.received+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+  const doc = m.doc ? `<a class="doc-link" href="${esc(m.doc)}" target="_blank" rel="noopener">PDF</a>` : `<span class="no-doc">none</span>`;
+  const state = m.state||'in_stock';
+  const remN = (state==='remnant'||state==='partial') && m.remnant ? `<div class="remnant-note">↳ ${esc(m.remnant)}</div>` : '';
+  return `<tr>
+    <td data-l="Heat / Lot"><span class="heat">${esc(m.heat)}</span></td>
+    <td data-l="Spec"><span class="spec">${esc(m.spec)}</span>${sizeLine}${comp}</td>
+    <td data-l="Supplier · PO">${sup}</td>
+    <td data-l="Received">${rec}</td>
+    <td data-l="MTR Status"><span class="st-pill ${m.status}">${STLABEL[m.status]}</span></td>
+    <td data-l="State"><span class="state-pill ${state}">${STATELABEL[state]}</span>${remN}</td>
+    <td data-l="Cert">${doc}</td>
+    <td><div class="row-actions">
+      <button class="icon-btn" data-edit="${m.id}" title="Edit"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+      <button class="icon-btn del" data-del="${m.id}" title="Delete"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
+    </div></td>
+  </tr>`;
+}
+function emptyState(h,p){
+  return `<div class="empty">
+    <svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>
+    <h3>${h}</h3><p>${p}</p></div>`;
+}
+
+/* ---- modal ---- */
+function openModal(id){
+  editId = id || null;
+  const m = id ? MTRS.find(x=>x.id===id) : null;
+  resetScan();
+  G('mTitle').textContent = m ? 'Edit MTR' : 'Log MTR';
+  G('f_project').value   = m?m.project:'';
+  G('f_job').value       = m?m.job:'';
+  G('f_component').value = m?m.component:'';
+  G('f_size').value      = m?(m.size||''):'';
+  G('f_heat').value      = m?m.heat:'';
+  G('f_spec').value      = m?m.spec:'';
+  G('f_supplier').value  = m?m.supplier:'';
+  G('f_po').value        = m?m.po:'';
+  G('f_received').value  = m?m.received:'';
+  G('f_reviewer').value  = m?m.reviewer:'';
+  G('f_status').value    = m?m.status:'pending';
+  G('f_state').value     = m?(m.state||'in_stock'):'in_stock';
+  G('f_remnant').value   = m?(m.remnant||''):'';
+  G('f_doc').value       = m?m.doc:'';
+  G('f_notes').value     = m?m.notes:'';
+  G('modal').classList.add('show');
+  setTimeout(()=>G('f_project').focus(),50);
+}
+function closeModal(){ G('modal').classList.remove('show'); editId=null; }
+function saveModal(){
+  const project = G('f_project').value.trim();
+  const heat = G('f_heat').value.trim();
+  const spec = G('f_spec').value.trim();
+  if(!project || !heat || !spec){ toast('Project, Heat # and Spec are required'); return; }
+  const rec = {
+    project, job:G('f_job').value.trim(), component:G('f_component').value.trim(),
+    size:G('f_size').value.trim(),
+    heat, spec, supplier:G('f_supplier').value.trim(), po:G('f_po').value.trim(),
+    received:G('f_received').value, reviewer:G('f_reviewer').value.trim(),
+    status:G('f_status').value, state:G('f_state').value, remnant:G('f_remnant').value.trim(),
+    doc:G('f_doc').value.trim(), notes:G('f_notes').value.trim()
+  };
+  if(editId){ const i=MTRS.findIndex(x=>x.id===editId); if(i>=0) MTRS[i]={...MTRS[i],...rec}; toast('MTR updated'); }
+  else { rec.id=uid(); rec.createdAt=new Date().toISOString(); MTRS.unshift(rec); toast('MTR logged'); }
+  if(!projectList.includes(project)){ projectList.push(project); fillProjectDatalist(); }
+  openGroups.add(project);
+  save(); closeModal(); render();
+}
+function delMtr(id){
+  const m = MTRS.find(x=>x.id===id); if(!m) return;
+  if(!confirm(`Delete MTR ${m.heat} (${m.spec})?\nThis removes the traceability record.`)) return;
+  MTRS = MTRS.filter(x=>x.id!==id); save(); render(); toast('MTR deleted');
+}
+
+/* ============================================================
+   JOB TRAVELERS — consumption record (SOP 4.5 / 4.6)
+   ============================================================ */
+function renderTravelers(){
+  const el = G('tlist');
+  if(!TRAVELERS.length){
+    el.innerHTML = emptyState('No job travelers yet','Click “New Traveler” to record the heats, welder, WPS and consumables used on a job.');
+    return;
+  }
+  let rows = TRAVELERS.filter(t=>{
+    if(!tquery) return true;
+    const hay=[t.project,t.job,t.welder,t.wps,(t.heats||[]).join(' '),(t.consumables||[]).map(c=>(c.maker||'')+' '+(c.lot||'')).join(' ')].join(' ').toLowerCase();
+    return hay.includes(tquery);
+  });
+  if(!rows.length){ el.innerHTML = emptyState('No matches','Nothing matches your search.'); return; }
+  rows = rows.slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+  el.innerHTML = rows.map(t=>{
+    const d = t.date ? new Date(t.date+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+    const heats = (t.heats||[]).length ? `<div class="heat-chips">${t.heats.map(h=>`<span class="heat-chip">${esc(h)}</span>`).join('')}</div>` : '<span class="sub">—</span>';
+    const cons = (t.consumables||[]).length ? t.consumables.map(c=>`${esc(c.kind||'')} · ${esc(c.maker||'')} ${esc(c.lot||'')}`).join('<br>') : '—';
+    return `<div class="tcard">
+      <div class="tchead">
+        <div><div class="tj">${esc(t.project)}${t.job?' · #'+esc(t.job):''}</div><div class="tmeta">${d}</div></div>
+        <div class="sp"></div>
+        <button class="icon-btn" data-tedit="${t.id}" title="Edit"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+        <button class="icon-btn del" data-tdel="${t.id}" title="Delete"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
+      </div>
+      <div class="tcbody">
+        <div class="tfield"><div class="tl">Welder</div><div class="tv">${esc(t.welder||'—')}</div></div>
+        <div class="tfield"><div class="tl">WPS</div><div class="tv">${esc(t.wps||'—')}</div></div>
+        <div class="tfield"><div class="tl">Heats Used</div>${heats}</div>
+        <div class="tfield"><div class="tl">Consumables</div><div class="cons-line">${cons}</div></div>
+        ${t.notes?`<div class="tfield" style="grid-column:1/-1"><div class="tl">Notes</div><div class="cons-line">${esc(t.notes)}</div></div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('[data-tedit]').forEach(b=> b.onclick=()=>openTrv(b.dataset.tedit));
+  el.querySelectorAll('[data-tdel]').forEach(b=> b.onclick=()=>delTrv(b.dataset.tdel));
+}
+
+let trvHeats = [];
+function renderHeatPick(){
+  const el = G('t_heatPick');
+  const heats = [...new Set(MTRS.map(m=>m.heat).filter(Boolean))];
+  if(!heats.length){ el.innerHTML = '<span class="heat-empty">No materials logged yet — add an MTR first.</span>'; return; }
+  el.innerHTML = heats.map(h=>{
+    const m = MTRS.find(x=>x.heat===h);
+    const on = trvHeats.includes(h);
+    return `<div class="heat-opt${on?' on':''}" data-h="${esc(h)}">${esc(h)}${m&&m.spec?` <span class="hs">${esc(m.spec)}</span>`:''}</div>`;
+  }).join('');
+  el.querySelectorAll('[data-h]').forEach(o=> o.onclick=()=>{
+    const h=o.dataset.h;
+    if(trvHeats.includes(h)) trvHeats=trvHeats.filter(x=>x!==h); else trvHeats.push(h);
+    renderHeatPick();
+  });
+}
+function consRowHtml(c){
+  c=c||{kind:'Wire',maker:'',lot:''};
+  return `<div class="cons-row">
+    <select class="c_kind"><option${c.kind==='Wire'?' selected':''}>Wire</option><option${c.kind==='Rod'?' selected':''}>Rod</option><option${c.kind==='Flux'?' selected':''}>Flux</option></select>
+    <input class="c_maker" placeholder="Manufacturer" value="${esc(c.maker||'')}">
+    <input class="c_lot" placeholder="Lot / batch #" value="${esc(c.lot||'')}">
+    <button type="button" class="xc" onclick="this.closest('.cons-row').remove()">×</button>
+  </div>`;
+}
+function addConsRow(c){ G('t_consRows').insertAdjacentHTML('beforeend', consRowHtml(c)); }
+
+function openTrv(id){
+  trvEditId = id||null;
+  const t = id ? TRAVELERS.find(x=>x.id===id) : null;
+  G('tmTitle').textContent = t ? 'Edit Job Traveler' : 'New Job Traveler';
+  G('t_project').value = t?t.project:'';
+  G('t_job').value = t?(t.job||''):'';
+  G('t_date').value = t?(t.date||''):'';
+  G('t_welder').value = t?(t.welder||''):'';
+  G('t_wps').value = t?(t.wps||''):'';
+  trvHeats = t&&t.heats?t.heats.slice():[];
+  renderHeatPick();
+  G('t_consRows').innerHTML='';
+  (t&&t.consumables?t.consumables:[]).forEach(c=>addConsRow(c));
+  G('t_notes').value = t?(t.notes||''):'';
+  G('tmodal').classList.add('show');
+  setTimeout(()=>G('t_project').focus(),50);
+}
+function closeTrv(){ G('tmodal').classList.remove('show'); trvEditId=null; }
+function saveTrvModal(){
+  const project = G('t_project').value.trim();
+  if(!project){ toast('Project is required'); return; }
+  if(!trvHeats.length){ toast('Pick at least one heat number used'); return; }
+  const cons = Array.from(G('t_consRows').querySelectorAll('.cons-row')).map(r=>({
+    kind:r.querySelector('.c_kind').value, maker:r.querySelector('.c_maker').value.trim(), lot:r.querySelector('.c_lot').value.trim()
+  })).filter(c=>c.maker||c.lot);
+  const rec = {
+    project, job:G('t_job').value.trim(), date:G('t_date').value, welder:G('t_welder').value.trim(),
+    wps:G('t_wps').value.trim(), heats:trvHeats.slice(), consumables:cons, notes:G('t_notes').value.trim()
+  };
+  if(trvEditId){ const i=TRAVELERS.findIndex(x=>x.id===trvEditId); if(i>=0) TRAVELERS[i]={...TRAVELERS[i],...rec}; toast('Traveler updated'); }
+  else { rec.id='t'+Date.now().toString(36); rec.createdAt=new Date().toISOString(); TRAVELERS.unshift(rec); toast('Traveler saved'); }
+  if(!projectList.includes(project)){ projectList.push(project); fillProjectDatalist(); }
+  saveTrv(); closeTrv(); renderTravelers(); refreshKpis();
+}
+function delTrv(id){
+  const t=TRAVELERS.find(x=>x.id===id); if(!t) return;
+  if(!confirm(`Delete the traveler for ${t.project}${t.job?' #'+t.job:''}?`)) return;
+  TRAVELERS=TRAVELERS.filter(x=>x.id!==id); saveTrv(); renderTravelers(); refreshKpis(); toast('Traveler deleted');
+}
+
+function switchView(v){
+  document.querySelectorAll('.mtab').forEach(b=>b.classList.toggle('active', b.dataset.view===v));
+  G('view-materials').style.display = v==='materials'?'':'none';
+  G('view-travelers').style.display = v==='travelers'?'':'none';
+  if(v==='travelers') renderTravelers();
+}
+
+/* ============================================================
+   SCAN MTR → auto-fill. In-browser OCR (Tesseract.js) + pdf.js,
+   lazy-loaded on first use. No API key, no per-scan cost. The
+   receiver verifies the pulled fields before saving (ISO 4.1).
+   ============================================================ */
+function setScanState(s){
+  G('scanIdle').style.display = s==='idle'?'flex':'none';
+  G('scanBusy').style.display = s==='busy'?'flex':'none';
+  G('scanDone').style.display = s==='done'?'flex':'none';
+}
+function resetScan(){
+  setScanState('idle');
+  const t=G('scanText'); t.style.display='none'; t.textContent='';
+  document.querySelectorAll('.from-scan').forEach(el=>el.classList.remove('from-scan'));
+}
+function loadScript(src){
+  return new Promise((res,rej)=>{
+    if([...document.scripts].some(s=>s.src===src)) return res();
+    const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=()=>rej(new Error('load '+src));
+    document.head.appendChild(s);
+  });
+}
+async function ensureScanLibs(forPdf){
+  if(typeof Tesseract==='undefined') await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
+  if(forPdf && typeof pdfjsLib==='undefined'){
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+    if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+}
+async function fileToSource(file, isPdf){
+  if(isPdf){
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({data:buf}).promise;
+    const page = await pdf.getPage(1);
+    const viewport = page.getViewport({scale:2});
+    const canvas = document.createElement('canvas');
+    canvas.width=viewport.width; canvas.height=viewport.height;
+    await page.render({canvasContext:canvas.getContext('2d'), viewport}).promise;
+    return canvas;
+  }
+  return URL.createObjectURL(file);
+}
+async function runScan(file){
+  if(!file) return;
+  const isPdf = file.type==='application/pdf' || /\.pdf$/i.test(file.name);
+  setScanState('busy'); G('scanMsg').textContent='Loading scanner…';
+  try{
+    await ensureScanLibs(isPdf);
+    G('scanMsg').textContent='Preparing the document…';
+    const src = await fileToSource(file, isPdf);
+    G('scanMsg').textContent='Reading the mill cert…';
+    const result = await Tesseract.recognize(src, 'eng', { logger:m=>{
+      if(m.status==='recognizing text') G('scanMsg').textContent='Reading… '+Math.round((m.progress||0)*100)+'%';
+    }});
+    const text = (result && result.data && result.data.text) || '';
+    G('scanText').textContent = text;
+    const fields = extractMtr(text);
+    const got = applyScanFields(fields);
+    G('scanDoneMsg').textContent = got
+      ? `Pulled ${got} field${got!==1?'s':''} from the scan — review & correct, then save.`
+      : 'Scan read, but couldn’t confidently pull fields. Check the text and fill manually.';
+    setScanState('done');
+  }catch(e){
+    setScanState('idle');
+    toast('Couldn’t read that file — try a clearer photo or enter manually');
+  }
+}
+function extractMtr(text){
+  const T = String(text||'').replace(/\r/g,'');
+  const up = T.toUpperCase();
+  const out = {heat:'',spec:'',supplier:'',po:'',received:''};
+  // heat / lot / charge / cast number
+  let m = up.match(/HEAT\s*(?:NO|NUMBER|#|\/?\s*LOT)?\.?\s*[:#\-]?\s*([A-Z0-9][A-Z0-9\-\/]{3,})/)
+       || up.match(/(?:CHARGE|CAST)\s*(?:NO|#)?\.?\s*[:#\-]?\s*([A-Z0-9][A-Z0-9\-\/]{3,})/);
+  if(m) out.heat = m[1].trim();
+  // spec + grade
+  const bits=[];
+  const sm = up.match(/\b((?:ASTM|ASME|AISI|SA|EN)\s?-?\s?A?\d{1,4}[A-Z0-9\-\/]*)/);
+  if(sm) bits.push(sm[1].replace(/\s+/g,' ').trim());
+  const gm = up.match(/\b(304L?|316L?|321|347|2205|6061|5086|5083|A36|625|718|17-?4)\b/);
+  if(gm && !bits.join(' ').includes(gm[1])) bits.push(gm[1]);
+  out.spec = bits.join(' ').trim();
+  // PO
+  const pm = up.match(/P\.?\s?O\.?\s*(?:NO|NUMBER|#)?\.?\s*[:#\-]?\s*([A-Z0-9][A-Z0-9\-]{2,})/)
+          || up.match(/PURCHASE\s*ORDER\s*(?:NO|#)?\.?\s*[:#\-]?\s*([A-Z0-9][A-Z0-9\-]{2,})/);
+  if(pm) out.po = pm[1].trim();
+  // supplier / mill — explicit field label first, else first company-looking line
+  let sup='';
+  const supm = T.match(/(?:MANUFACTURER|SUPPLIER|SOLD\s*BY|MILL\s*NAME)\s*[:\-]\s*(.+)/i);
+  if(supm) sup = supm[1].split(/\s{2,}|\|/)[0].trim();
+  if(!sup){
+    const lines = T.split('\n').map(s=>s.trim()).filter(s=>s.length>3);
+    sup = (lines.find(l=>/\b(LLC|INC|CORP|CO\.|COMPANY|STAINLESS|METALS?|STEEL|ALLOY|INDUSTR|RYERSON|OUTOKUMPU)/i.test(l)) || lines[0] || '').trim();
+  }
+  out.supplier = sup.slice(0,60);
+  // date
+  const dm = T.match(/(\d{4}-\d{2}-\d{2})/) || T.match(/(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})/);
+  if(dm) out.received = normDate(dm[1]);
+  return out;
+}
+function normDate(s){
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
+  if(m){ let mo=m[1].padStart(2,'0'), d=m[2].padStart(2,'0'), y=m[3]; if(y.length===2) y='20'+y; return `${y}-${mo}-${d}`; }
+  return '';
+}
+function applyScanFields(f){
+  const map = {heat:'f_heat',spec:'f_spec',supplier:'f_supplier',po:'f_po',received:'f_received'};
+  let n=0;
+  Object.keys(map).forEach(k=>{
+    if(f[k]){ const el=G(map[k]); el.value=f[k]; el.classList.add('from-scan');
+      el.addEventListener('input',()=>el.classList.remove('from-scan'),{once:true}); n++; }
+  });
+  return n;
+}
+
+let toastT;
+function toast(msg){ const t=G('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2200); }
+
+/* ---- wire ---- */
+G('addBtn').onclick = ()=>openModal(null);
+G('mClose').onclick = closeModal;
+G('mCancel').onclick = closeModal;
+G('mSave').onclick = saveModal;
+G('modal').onclick = e=>{ if(e.target===G('modal')) closeModal(); };
+// scan-to-fill
+G('scanPick').onclick = ()=>G('scanFile').click();
+G('scanFile').onchange = e=>{ const f=e.target.files[0]; if(f) runScan(f); e.target.value=''; };
+G('scanTextToggle').onclick = ()=>{ const t=G('scanText'); t.style.display = t.style.display==='none'?'block':'none'; };
+(function(){
+  const sz=G('scanZone');
+  ['dragover','dragenter'].forEach(ev=>sz.addEventListener(ev,e=>{e.preventDefault();sz.classList.add('drag');}));
+  ['dragleave','dragend'].forEach(ev=>sz.addEventListener(ev,e=>{e.preventDefault();sz.classList.remove('drag');}));
+  sz.addEventListener('drop',e=>{ e.preventDefault(); sz.classList.remove('drag'); const f=e.dataTransfer.files[0]; if(f) runScan(f); });
+})();
+G('q').oninput = e=>{ query=e.target.value.trim().toLowerCase(); render(); };
+G('fbar').querySelectorAll('.fbtn').forEach(b=> b.onclick = ()=>{
+  G('fbar').querySelectorAll('.fbtn').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); filter=b.dataset.f; render();
+});
+G('fbarState').querySelectorAll('.fbtn').forEach(b=> b.onclick = ()=>{
+  G('fbarState').querySelectorAll('.fbtn').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); stateFilter=b.dataset.s; render();
+});
+// tabs
+document.querySelectorAll('.mtab').forEach(b=> b.onclick=()=>switchView(b.dataset.view));
+// traveler modal
+G('addTrvBtn').onclick = ()=>openTrv(null);
+G('tmClose').onclick = closeTrv;
+G('tmCancel').onclick = closeTrv;
+G('tmSave').onclick = saveTrvModal;
+G('tmodal').onclick = e=>{ if(e.target===G('tmodal')) closeTrv(); };
+G('t_addCons').onclick = ()=>addConsRow();
+G('tq').oninput = e=>{ tquery=e.target.value.trim().toLowerCase(); renderTravelers(); };
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeModal(); closeTrv(); } });
+
+/* clock */
+(function(){ const n=G('now'); function t(){ n.textContent=new Date().toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); } t(); setInterval(t,30000); })();
+
+/* init */
+render();
+loadProjects();
+</script>
+</body>
+</html>
