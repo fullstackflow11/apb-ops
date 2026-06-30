@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APB · Quick Estimate</title>
+<script src="apb-roles.js"></script>
+<script src="apb-demo.js"></script>
+<script>APBRoles.guard('pm','Quick Estimate');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDEEF2;--panel:#fff;--ink:#0D1626;--ink-2:#3A4559;--ink-3:#6B7A92;
+  --line:#DDE1E8;--accent:#2457E6;--accent-2:#1B45B8;--accent-soft:#EAF0FE;
+  --green:#0B9E6A;--green-soft:#E4F5EE;
+  --amber:#B86A00;--amber-2:#994F00;--amber-soft:#FBF0E2;--amber-line:#F0D5A8;
+  --red:#C43030;
+  --shadow:0 8px 28px -12px rgba(13,22,38,.14);
+  --shadow-sm:0 1px 3px rgba(13,22,38,.07);
+  --mono:"DM Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:Inter,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;letter-spacing:-.01em;min-height:100vh}
+
+/* ── Topbar (frosted glass, same pattern as all APB hub pages) ── */
+.topbar{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.90);backdrop-filter:saturate(180%) blur(14px);display:flex;align-items:center;gap:12px;padding:0 24px;height:62px;border-bottom:1px solid var(--line)}
+.topbar img{height:38px;width:auto;display:block}
+.topbar .t{border-left:1px solid var(--line);padding-left:13px}
+.topbar .t b{font-size:15px;color:var(--ink)}
+.topbar .t span{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.topbar .sp{flex:1}
+.tbtn{display:inline-flex;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--line);color:var(--ink-2);border-radius:9px;padding:8px 13px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;box-shadow:var(--shadow-sm);transition:.12s}
+.tbtn:hover{border-color:var(--accent);color:var(--accent)}
+.tbtn svg{width:15px;height:15px;flex-shrink:0;stroke-width:2}
+
+/* ── Sticky action bar (dark, below topbar) ── */
+.actionbar{position:sticky;top:62px;z-index:20;background:#11151C;display:flex;align-items:center;gap:10px;padding:10px 24px;border-bottom:2px solid #2a2f38}
+.actionbar .alabel{font-size:11.5px;font-weight:700;color:#8A97AE;letter-spacing:.08em;text-transform:uppercase}
+.actionbar .abadge{font-size:11px;font-weight:700;color:#F0A830;background:rgba(240,168,48,.12);border:1px solid rgba(240,168,48,.25);padding:2px 10px;border-radius:20px;letter-spacing:.04em;text-transform:uppercase;margin-left:6px}
+.actionbar .sp{flex:1}
+.actionbar .upgrade{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#6B9AFF;text-decoration:none;padding:7px 13px;border:1px solid rgba(107,154,255,.25);border-radius:8px;transition:.12s}
+.actionbar .upgrade:hover{color:#93B8FF;border-color:rgba(107,154,255,.5);background:rgba(107,154,255,.06)}
+.actionbar .upgrade svg{width:13px;height:13px;stroke-width:2.2;flex-shrink:0}
+.abtn{display:inline-flex;align-items:center;gap:7px;font:inherit;font-size:13px;font-weight:700;padding:8px 16px;border-radius:8px;cursor:pointer;border:none;transition:.12s}
+.abtn.ghost{background:rgba(255,255,255,.07);color:#C8D4E8;border:1px solid rgba(255,255,255,.12)}
+.abtn.ghost:hover{background:rgba(255,255,255,.13);color:#fff}
+.abtn.amber{background:#B86A00;color:#fff}
+.abtn.amber:hover{background:#994F00}
+.abtn svg{width:14px;height:14px;stroke-width:2.2;flex-shrink:0}
+
+/* ── Draft restore banner ── */
+.draft-banner{display:none;align-items:center;gap:10px;background:#FFF8EC;border:1px solid var(--amber-line);border-radius:10px;padding:10px 16px;font-size:13px;color:var(--ink-2);margin:20px auto 0;max-width:820px}
+.draft-banner.show{display:flex}
+.draft-banner .sp{flex:1}
+.draft-banner button{font:inherit;font-size:12.5px;font-weight:700;padding:6px 13px;border-radius:7px;cursor:pointer}
+.draft-banner .restore{background:var(--amber);color:#fff;border:none}
+.draft-banner .restore:hover{background:var(--amber-2)}
+.draft-banner .fresh{background:#fff;color:var(--ink-2);border:1px solid var(--line)}
+.draft-banner .fresh:hover{border-color:var(--ink-3)}
+
+/* ── Main layout ── */
+.wrap{max-width:820px;margin:0 auto;padding:20px 20px 80px}
+
+/* ── Document card (the estimate itself) ── */
+.doc{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:36px 40px;margin-top:20px}
+
+/* header row */
+.doc-hd{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:24px;border-bottom:2px solid var(--ink);margin-bottom:24px}
+.doc-hd img{height:52px;width:auto;display:block}
+.doc-hd .est-meta{text-align:right}
+.doc-hd .est-badge{display:inline-block;font-size:22px;font-weight:800;letter-spacing:-.03em;color:var(--amber);background:var(--amber-soft);border:1.5px solid var(--amber-line);padding:4px 18px;border-radius:8px;margin-bottom:8px}
+.doc-hd .est-num{font-family:var(--mono);font-size:12.5px;color:var(--ink-3);margin-bottom:6px}
+.doc-hd .est-num span{color:var(--ink-2);font-weight:600}
+.doc-hd .date-row{display:flex;align-items:center;gap:8px;justify-content:flex-end;font-size:12px;color:var(--ink-3)}
+.doc-hd .date-row input[type=date]{font:inherit;font-family:var(--mono);font-size:12.5px;color:var(--ink-2);border:1px solid var(--line);border-radius:6px;padding:5px 8px;background:#fff;cursor:pointer}
+.doc-hd .date-row input[type=date]:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-soft)}
+
+/* info grid */
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:22px}
+.info-col{padding:16px 18px}
+.info-col:first-child{border-right:1px solid var(--line)}
+.info-col .col-label{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin-bottom:10px}
+.info-field{margin-bottom:10px}
+.info-field:last-child{margin-bottom:0}
+.info-field label{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin-bottom:4px}
+.info-field input{width:100%;font:inherit;font-size:13.5px;color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:7px 10px;background:#fff;transition:.1s}
+.info-field input:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-soft)}
+.info-field input::placeholder{color:var(--ink-3)}
+
+/* section headers inside doc */
+.sec-label{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin:0 0 8px}
+
+/* scope */
+.scope-box{width:100%;min-height:80px;font:inherit;font-size:14px;color:var(--ink);line-height:1.6;border:1px solid var(--line);border-radius:9px;padding:12px 14px;resize:vertical;transition:.1s;margin-bottom:22px}
+.scope-box:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-soft)}
+.scope-box:empty:before{content:attr(data-ph);color:var(--ink-3);pointer-events:none}
+
+/* line items table */
+.items-table{width:100%;border-collapse:collapse;margin-bottom:4px;font-size:13.5px}
+.items-table thead th{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:700;padding:6px 8px;border-bottom:2px solid var(--ink);text-align:left}
+.items-table thead th:last-child,.items-table thead th:nth-child(2),.items-table thead th:nth-child(3){text-align:right}
+.items-table tbody tr{border-bottom:1px solid var(--line)}
+.items-table tbody tr:last-child{border-bottom:none}
+.items-table td{padding:6px 4px;vertical-align:middle}
+.items-table td input{font:inherit;font-size:13.5px;color:var(--ink);border:1px solid transparent;border-radius:6px;padding:7px 9px;background:transparent;width:100%;transition:.1s}
+.items-table td input:focus{outline:none;border-color:var(--amber);background:#fff;box-shadow:0 0 0 3px var(--amber-soft)}
+.items-table td input::placeholder{color:var(--ink-3)}
+.items-table td input.right{text-align:right}
+.items-table td.total-cell{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--ink-2);text-align:right;padding-right:9px;white-space:nowrap;min-width:90px}
+.items-table td.rm-cell{width:36px}
+.rm-btn{width:28px;height:28px;border:1px solid #f0caca;background:#fff;color:var(--red);border-radius:6px;cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.1s}
+.rm-btn:hover{background:#fdf0f0;border-color:var(--red)}
+.add-row-btn{width:100%;border:1.5px dashed #C7CED9;background:#FAFBFD;color:var(--ink-2);border-radius:8px;padding:9px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:14px;transition:.12s}
+.add-row-btn:hover{border-color:var(--amber);color:var(--amber)}
+
+/* totals */
+.totals{border-top:1px solid var(--line);padding-top:10px;margin-bottom:22px}
+.tot-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13.5px;color:var(--ink-2)}
+.tot-row .v{font-family:var(--mono);font-weight:500}
+.tot-row.total{border-top:2px solid var(--ink);margin-top:6px;padding-top:10px;font-size:16px;font-weight:700;color:var(--ink)}
+.tot-row.total .v{font-family:var(--mono);font-size:22px;font-weight:500;color:var(--ink)}
+.split-note{font-size:11.5px;color:var(--ink-3);margin-bottom:2px;padding:6px 0}
+.split-note input{font:inherit;font-size:11.5px;color:var(--ink-3);border:none;border-bottom:1px dashed var(--line);background:transparent;width:340px;padding:2px 4px}
+.split-note input:focus{outline:none;border-bottom-color:var(--amber);color:var(--ink-2)}
+.split-note input::placeholder{color:var(--ink-3)}
+
+/* disclaimer */
+.disclaimer{border:2px solid var(--amber-line);background:var(--amber-soft);border-radius:10px;padding:14px 18px;margin-bottom:22px}
+.disclaimer .dlabel{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber-2);font-weight:800;margin-bottom:6px}
+.disclaimer p{margin:0;font-size:13px;color:#5C3A00;line-height:1.6}
+.disclaimer p b{color:#3D2600}
+
+/* signature area */
+.sig-row{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-bottom:22px}
+.sig-box{padding:18px;border:1px solid var(--line);border-radius:10px;background:#FAFBFD}
+.sig-box .sig-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-3);margin-bottom:4px}
+.sig-box .sig-note{font-size:11px;color:var(--ink-3);font-style:italic;margin-bottom:14px;line-height:1.4}
+.sig-line{border-bottom:1.5px solid var(--ink);height:44px;margin-bottom:6px}
+.sig-sub{font-size:10.5px;color:var(--ink-3);margin-bottom:12px}
+.sig-date-row{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink-3)}
+.sig-date-row .sig-line-sm{flex:1;border-bottom:1px solid var(--ink-3);height:28px}
+
+/* doc footer strip */
+.doc-foot{border-top:1px solid var(--line);padding-top:14px;text-align:center;font-size:11px;color:var(--ink-3);line-height:1.6}
+
+/* toast */
+.toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(14px);opacity:0;background:#11151C;color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;box-shadow:var(--shadow);transition:.22s;z-index:80;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%)}
+
+/* ── Print styles ── */
+@page{margin:16mm 18mm;size:letter portrait}
+@media print{
+  .topbar,.actionbar,.draft-banner,.add-row-btn,.rm-btn,.toast{display:none!important}
+  body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .wrap{padding:0;max-width:100%;width:100%}
+  .doc{border:none;box-shadow:none;border-radius:0;padding:0;margin:0;width:100%}
+  .doc-hd{page-break-inside:avoid}
+  .info-grid{page-break-inside:avoid}
+  .items-table tr{page-break-inside:avoid}
+  .totals{page-break-inside:avoid}
+  .disclaimer{page-break-inside:avoid;border-color:#E0C070;background:#FFFBF0}
+  .sig-row{page-break-inside:avoid}
+  .doc-foot{page-break-inside:avoid}
+  .info-field input,.scope-box,.items-table td input{border-color:transparent!important;box-shadow:none!important;background:transparent!important;padding-left:0}
+  .sig-line,.sig-date-row .sig-line-sm{border-color:#777}
+  .scope-box{resize:none;min-height:unset}
+}
+
+@media(max-width:640px){
+  .info-grid{grid-template-columns:1fr}
+  .info-col:first-child{border-right:none;border-bottom:1px solid var(--line)}
+  .sig-row{grid-template-columns:1fr}
+  .doc{padding:22px 18px}
+  .actionbar{flex-wrap:wrap;gap:7px}
+  .actionbar .alabel{font-size:10.5px}
+  .split-note input{width:100%}
+}
+</style>
+<link rel="stylesheet" href="apb-theme.css">
+</head>
+<body>
+
+<!-- ── Topbar ── -->
+<header class="topbar">
+  <img src="apb-logo.png" alt="APB">
+  <div class="t"><b>Quick Estimate</b><span>All Points Boats</span></div>
+  <div class="sp"></div>
+  <button class="tbtn" onclick="history.back()">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button>
+  <a class="tbtn" href="index.html" title="Home">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg>Home</a>
+</header>
+
+<!-- ── Sticky action bar ── -->
+<div class="actionbar">
+  <span class="alabel">Quick Estimate</span>
+  <span class="abadge">Not a binding contract</span>
+  <div class="sp"></div>
+  <a class="upgrade" href="apb-proposal.html">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg>
+    Upgrade to Full Proposal →
+  </a>
+  <button class="abtn ghost" id="btnSave">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+    Save Draft
+  </button>
+  <button class="abtn amber" id="btnPrint">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
+    Print / Save PDF
+  </button>
+</div>
+
+<!-- ── Draft restore banner ── -->
+<div id="draftBanner" class="draft-banner">
+  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+  <span>Draft found — restore where you left off?</span>
+  <div class="sp"></div>
+  <button class="restore" id="btnRestore">Restore</button>
+  <button class="fresh" id="btnFresh">Start Fresh</button>
+</div>
+
+<!-- ── Main document ── -->
+<main class="wrap">
+<div class="doc" id="estimateDoc">
+
+  <!-- Header -->
+  <div class="doc-hd">
+    <img src="apb-logo.png" alt="All Points Boats">
+    <div class="est-meta">
+      <div class="est-badge">ESTIMATE</div>
+      <div class="est-num">No. <span id="estNumDisplay">EST-2026-0001</span></div>
+      <div class="date-row">
+        <label for="estDate" style="margin:0">Date:</label>
+        <input type="date" id="estDate">
+      </div>
+    </div>
+  </div>
+
+  <!-- Client / Job info -->
+  <div class="info-grid">
+    <div class="info-col">
+      <div class="col-label">Client &amp; Vessel</div>
+      <div class="info-field">
+        <label for="clientName">Client Name</label>
+        <input type="text" id="clientName" placeholder="Company or owner name">
+      </div>
+      <div class="info-field">
+        <label for="vesselName">Vessel Name</label>
+        <input type="text" id="vesselName" placeholder="M/V Name or TBD">
+      </div>
+      <div class="info-field">
+        <label for="vesselType">Vessel Type</label>
+        <input type="text" id="vesselType" placeholder="e.g. 65' Motor Yacht">
+      </div>
+    </div>
+    <div class="info-col">
+      <div class="col-label">Estimate Details</div>
+      <div class="info-field">
+        <label for="preparedBy">Prepared By</label>
+        <input type="text" id="preparedBy" placeholder="Christopher Collins">
+      </div>
+      <div class="info-field">
+        <label for="validUntil">Valid Until</label>
+        <input type="date" id="validUntil">
+      </div>
+      <div class="info-field">
+        <label for="contactInfo">Contact</label>
+        <input type="text" id="contactInfo" placeholder="Phone or email">
+      </div>
+    </div>
+  </div>
+
+  <!-- Scope -->
+  <div class="sec-label">Scope of Work</div>
+  <div
+    class="scope-box"
+    id="scopeBox"
+    contenteditable="true"
+    data-ph="Describe the work scope being estimated…"
+    role="textbox"
+    aria-multiline="true"
+    aria-label="Scope of work"
+  ></div>
+
+  <!-- Line items -->
+  <div class="sec-label">Line Items</div>
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th style="width:52%">Description</th>
+        <th style="width:10%;text-align:right">Qty</th>
+        <th style="width:16%;text-align:right">Unit Price</th>
+        <th style="width:15%;text-align:right">Total</th>
+        <th style="width:7%"></th>
+      </tr>
+    </thead>
+    <tbody id="lineItems"></tbody>
+  </table>
+  <button class="add-row-btn" id="btnAddRow">+ Add Line Item</button>
+
+  <!-- Totals -->
+  <div class="totals">
+    <div class="tot-row">
+      <span>Subtotal</span>
+      <span class="v" id="subtotal">$0.00</span>
+    </div>
+    <div class="split-note">
+      <input type="text" id="splitNote" placeholder="Optional: note on labor/materials breakdown (e.g. Est. labor $2,400 · Est. materials $800)">
+    </div>
+    <div class="tot-row total">
+      <span>TOTAL (ESTIMATE)</span>
+      <span class="v" id="grandTotal">$0.00</span>
+    </div>
+  </div>
+
+  <!-- Disclaimer (cannot be removed) -->
+  <div class="disclaimer">
+    <div class="dlabel">Estimate Only</div>
+    <p><b>ESTIMATE ONLY</b> — This document is not a binding contract or purchase order. Pricing may vary based on actual scope, material costs, and field conditions discovered during work. A formal Proposal with terms, conditions, and warranty will be issued before work begins.</p>
+  </div>
+
+  <!-- Signature area -->
+  <div class="sig-row">
+    <div class="sig-box">
+      <div class="sig-title">Acknowledged by (Client)</div>
+      <div class="sig-note">Acknowledgment of estimate only — not an authorization to proceed</div>
+      <div class="sig-line"></div>
+      <div class="sig-sub">Signature</div>
+      <div class="sig-line"></div>
+      <div class="sig-sub">Printed Name</div>
+      <div class="sig-date-row"><span>Date:</span><div class="sig-line-sm"></div></div>
+    </div>
+    <div class="sig-box">
+      <div class="sig-title">Prepared by (APB)</div>
+      <div class="sig-note">Issued by All Points Boats, Inc.</div>
+      <div class="sig-line"></div>
+      <div class="sig-sub">Signature</div>
+      <div class="sig-line"></div>
+      <div class="sig-sub">Printed Name</div>
+      <div class="sig-date-row"><span>Date:</span><div class="sig-line-sm"></div></div>
+    </div>
+  </div>
+
+  <!-- Doc footer -->
+  <div class="doc-foot">
+    All Points Boats, Inc. &nbsp;·&nbsp; 900 SW 21st Terrace, Fort Lauderdale, FL 33312 &nbsp;·&nbsp; (954) 767-8255 &nbsp;·&nbsp; info@apb1.com
+  </div>
+
+</div><!-- /.doc -->
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ── Utilities ── */
+const $ = id => document.getElementById(id);
+
+function money(n) {
+  return "$" + (isNaN(n) ? 0 : n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function parseNum(v) {
+  const n = parseFloat(String(v).replace(/[^0-9.\-]/g, ""));
+  return isNaN(n) ? 0 : n;
+}
+
+let toastTimer = null;
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2400);
+}
+
+/* ── Estimate number (auto-incremented from localStorage) ── */
+function genEstNum() {
+  const seq = parseInt(localStorage.getItem("apb_est_seq") || "0", 10) + 1;
+  localStorage.setItem("apb_est_seq", String(seq));
+  const year = new Date().getFullYear();
+  return "EST-" + year + "-" + String(seq).padStart(4, "0");
+}
+
+/* Set today's date and default valid-until (+30 days) */
+(function initDates() {
+  const today = new Date();
+  const pad = n => String(n).padStart(2, "0");
+  const fmt = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  $("estDate").value = fmt(today);
+  const validUntil = new Date(today);
+  validUntil.setDate(today.getDate() + 30);
+  $("validUntil").value = fmt(validUntil);
+})();
+
+/* ── Line items ── */
+let rows = [];
+
+function addRow(data) {
+  rows.push(data || { desc: "", qty: "1", price: "", total: 0 });
+  renderRows();
+}
+
+function renderRows() {
+  const tbody = $("lineItems");
+  tbody.innerHTML = rows.map((r, i) => `
+    <tr data-i="${i}">
+      <td><input class="desc" type="text" value="${esc(r.desc)}" placeholder="Line item description"></td>
+      <td><input class="qty right" type="number" value="${esc(r.qty)}" min="0" step="any" style="width:70px;text-align:right"></td>
+      <td><input class="price right" type="text" value="${esc(r.price)}" placeholder="0.00" style="text-align:right"></td>
+      <td class="total-cell" data-idx="${i}">${r.total > 0 ? money(r.total) : "—"}</td>
+      <td class="rm-cell"><button class="rm-btn" data-rm="${i}" title="Remove row">×</button></td>
+    </tr>`).join("");
+
+  /* attach events */
+  tbody.querySelectorAll("tr").forEach(tr => {
+    const i = +tr.dataset.i;
+    tr.querySelector(".desc").addEventListener("input", e => { rows[i].desc = e.target.value; });
+    tr.querySelector(".qty").addEventListener("input", e => { rows[i].qty = e.target.value; calcRow(i); });
+    tr.querySelector(".price").addEventListener("input", e => { rows[i].price = e.target.value; calcRow(i); });
+    tr.querySelector(".rm-btn").addEventListener("click", () => { rows.splice(i, 1); renderRows(); });
+  });
+
+  updateTotals();
+}
+
+function calcRow(i) {
+  const r = rows[i];
+  const q = parseNum(r.qty);
+  const p = parseNum(r.price);
+  r.total = (q && p) ? q * p : 0;
+  /* update just the total cell for this row without re-rendering */
+  const cell = document.querySelector(`[data-idx="${i}"]`);
+  if (cell) cell.textContent = r.total > 0 ? money(r.total) : "—";
+  updateTotals();
+}
+
+function updateTotals() {
+  const sub = rows.reduce((a, r) => a + (r.total || 0), 0);
+  $("subtotal").textContent = money(sub);
+  $("grandTotal").textContent = money(sub);
+}
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+
+/* seed with three blank rows */
+addRow(); addRow(); addRow();
+
+$("btnAddRow").addEventListener("click", () => addRow());
+
+/* ── Draft save / restore ── */
+const DRAFT_KEY = "apb_draft_estimate";
+
+function collectState() {
+  return {
+    estDate: $("estDate").value,
+    estNum: $("estNumDisplay").textContent,
+    clientName: $("clientName").value,
+    vesselName: $("vesselName").value,
+    vesselType: $("vesselType").value,
+    preparedBy: $("preparedBy").value,
+    validUntil: $("validUntil").value,
+    contactInfo: $("contactInfo").value,
+    scope: $("scopeBox").innerHTML,
+    splitNote: $("splitNote").value,
+    rows: rows.map(r => ({ desc: r.desc, qty: r.qty, price: r.price, total: r.total })),
+    savedAt: new Date().toISOString()
+  };
+}
+
+function applyState(s) {
+  if (s.estDate) $("estDate").value = s.estDate;
+  if (s.estNum) $("estNumDisplay").textContent = s.estNum;
+  if (s.clientName != null) $("clientName").value = s.clientName;
+  if (s.vesselName != null) $("vesselName").value = s.vesselName;
+  if (s.vesselType != null) $("vesselType").value = s.vesselType;
+  if (s.preparedBy != null) $("preparedBy").value = s.preparedBy;
+  if (s.validUntil) $("validUntil").value = s.validUntil;
+  if (s.contactInfo != null) $("contactInfo").value = s.contactInfo;
+  if (s.scope != null) $("scopeBox").innerHTML = s.scope;
+  if (s.splitNote != null) $("splitNote").value = s.splitNote;
+  if (s.rows && s.rows.length) {
+    rows = s.rows.map(r => ({ desc: r.desc || "", qty: r.qty || "1", price: r.price || "", total: r.total || 0 }));
+    renderRows();
+  }
+}
+
+function saveDraft() {
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(collectState()));
+    toast("Draft saved.");
+  } catch (e) {
+    toast("Could not save draft.");
+  }
+}
+
+$("btnSave").addEventListener("click", saveDraft);
+$("btnPrint").addEventListener("click", () => window.print());
+
+/* ── Check for existing draft on load ── */
+(function checkDraft() {
+  let draft = null;
+  try { draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch (e) {}
+  if (!draft) {
+    /* No draft — generate a fresh estimate number */
+    $("estNumDisplay").textContent = genEstNum();
+    return;
+  }
+  /* Show restore banner */
+  const banner = $("draftBanner");
+  banner.classList.add("show");
+
+  $("btnRestore").addEventListener("click", () => {
+    applyState(draft);
+    banner.classList.remove("show");
+    toast("Draft restored.");
+  });
+
+  $("btnFresh").addEventListener("click", () => {
+    localStorage.removeItem(DRAFT_KEY);
+    banner.classList.remove("show");
+    $("estNumDisplay").textContent = genEstNum();
+    toast("Starting fresh.");
+  });
+})();
+</script>
+</body>
+</html>
