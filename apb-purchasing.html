@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Purchasing &amp; Inventory · APB</title>
+<script src="apb-roles.js"></script>
+<script src="apb-demo.js"></script>
+<script>APBRoles.guard(['admin','pm','purchasing','accounting'],'Purchasing');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDEEF2;--panel:#fff;--panel-2:#F5F6FA;
+  --ink:#0D1626;--ink-2:#3A4559;--ink-3:#6B7A92;
+  --line:#DDE1E8;--line-2:#E8EBF0;
+  --accent:#2457E6;--accent-2:#1B45B8;--accent-soft:#EAF0FE;
+  --green:#0B9E6A;--green-soft:#E4F5EE;
+  --amber:#B86A00;--amber-soft:#FBF0E2;
+  --red:#C43030;--red-soft:#FBE7E7;
+  --purple:#6B3DBB;--purple-soft:#F0EBFF;
+  --teal:#0A7E8C;--teal-soft:#E2F5F7;
+  --qb:#2CA01C;--qb-soft:#E4F5E0;
+  --shadow-sm:0 1px 3px rgba(13,22,38,.07);
+  --shadow:0 8px 28px -12px rgba(13,22,38,.14);
+  --shadow-lg:0 20px 56px -12px rgba(13,22,38,.22);
+  --mono:"DM Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:Inter,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;letter-spacing:-.01em;min-height:100vh}
+
+.topbar{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.92);backdrop-filter:saturate(180%) blur(14px);display:flex;align-items:center;gap:14px;padding:0 26px;height:62px;border-bottom:1px solid var(--line)}
+.topbar img{height:36px;width:auto}
+.topbar .t{border-left:1px solid var(--line);padding-left:14px}
+.topbar .t b{font-size:15px}
+.topbar .t span{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.topbar .sp{flex:1}
+.topbar .now{font-family:var(--mono);font-size:12px;color:var(--ink-3);min-width:150px;text-align:right}
+.navbtn{font-size:12.5px;font-weight:600;color:var(--accent);padding:7px 13px;border:1px solid var(--line);border-radius:8px;background:var(--panel);cursor:pointer;text-decoration:none}
+.navbtn:hover{border-color:var(--accent);background:var(--accent-soft)}
+.qb-badge{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--ink-3);padding:5px 11px;border:1px solid var(--line);border-radius:20px;background:var(--panel)}
+.qb-badge.on{color:var(--qb);border-color:#b8e0b0;background:var(--qb-soft)}
+.qb-dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+.wrap{max-width:1140px;margin:0 auto;padding:26px 24px 60px}
+
+.hero{position:relative;overflow:hidden;border-radius:20px;color:#fff;padding:34px 36px;margin-bottom:20px;
+  background:radial-gradient(700px 520px at 88% 130%,rgba(36,87,230,.42) 0%,transparent 56%),linear-gradient(160deg,#131a24,#0b0f17,#121820);
+  box-shadow:var(--shadow-lg)}
+.hero::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle at 1px 1px,rgba(255,255,255,.06) 1px,transparent 0);background-size:30px 30px}
+.hero-body{position:relative;z-index:1}
+.hero .eyebrow{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:#6a90d0;font-weight:700;margin-bottom:10px}
+.hero h1{font-size:31px;font-weight:800;letter-spacing:-.035em;margin:0 0 9px}
+.hero .tagline{color:#adbbd4;font-size:14.5px;line-height:1.55;max-width:600px;margin:0}
+.hero-kpis{display:grid;grid-template-columns:repeat(4,1fr);position:relative;z-index:1;margin-top:24px;border-top:1px solid rgba(255,255,255,.08)}
+.hk{padding:16px 20px;border-right:1px solid rgba(255,255,255,.08)}
+.hk:last-child{border-right:none}
+.hk b{display:block;font-family:var(--mono);font-size:24px;font-weight:500;color:#fff;margin-bottom:3px;font-variant-numeric:tabular-nums}
+.hk b.amber{color:#E8B25A}.hk b.green{color:#37C892}
+.hk span{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:#5e7fb8;font-weight:700}
+
+/* tabs */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:22px;flex-wrap:wrap}
+.tab{font-size:14px;font-weight:600;padding:10px 4px;margin-right:22px;border:none;background:none;color:var(--ink-3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:7px}
+.tab:hover{color:var(--ink-2)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab .cnt{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:1px 7px;color:var(--ink-3)}
+.tab .qbtag{font-family:var(--mono);font-size:9.5px;letter-spacing:.04em;background:var(--qb-soft);color:var(--qb);border-radius:5px;padding:1px 5px}
+.pane{display:none}.pane.active{display:block}
+
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.add-btn{display:inline-flex;align-items:center;gap:7px;background:var(--accent);color:#fff;border:none;font-size:13.5px;font-weight:600;padding:10px 16px;border-radius:9px;cursor:pointer;box-shadow:0 4px 14px rgba(36,87,230,.4)}
+.add-btn:hover{background:var(--accent-2)}
+.add-btn svg{width:15px;height:15px}
+.search{flex:1;min-width:200px;position:relative}
+.search input{width:100%;padding:10px 14px 10px 36px;border:1px solid var(--line);border-radius:9px;font-size:13.5px;font-family:inherit;background:var(--panel)}
+.search input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--ink-3)}
+.fbar{display:flex;gap:5px;background:var(--panel-2);border:1px solid var(--line);border-radius:22px;padding:3px}
+.fbtn{font-size:12px;font-weight:600;padding:6px 13px;border-radius:18px;border:1px solid transparent;background:transparent;color:var(--ink-3);cursor:pointer}
+.fbtn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.fbtn:not(.active):hover{background:var(--accent-soft);color:var(--accent)}
+
+/* request cards (kanban-ish columns) */
+.req-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.req-col{background:var(--panel-2);border:1px solid var(--line);border-radius:13px;display:flex;flex-direction:column;min-height:220px}
+.rc-head{padding:13px 15px 10px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.rc-head .rc-dot{width:9px;height:9px;border-radius:50%}
+.rc-head.new .rc-dot{background:var(--amber)} .rc-head.ordered .rc-dot{background:var(--accent)} .rc-head.received .rc-dot{background:var(--green)}
+.rc-head .rc-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2);flex:1}
+.rc-head .rc-n{font-family:var(--mono);font-size:11px;background:var(--line);color:var(--ink-3);padding:1px 7px;border-radius:10px}
+.rc-cards{padding:11px;display:flex;flex-direction:column;gap:9px;flex:1}
+.rcard{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 12px;box-shadow:var(--shadow-sm)}
+.rcard.urgent{border-left:3px solid var(--red)}
+.rcard .ri-top{display:flex;align-items:flex-start;gap:8px}
+.rcard .ri-item{font-size:13.5px;font-weight:700;flex:1;line-height:1.3}
+.rcard .ri-qty{font-family:var(--mono);font-size:12px;color:var(--ink-2);white-space:nowrap}
+.rcard .ri-meta{font-size:11.5px;color:var(--ink-3);margin-top:5px;line-height:1.45}
+.rcard .ri-job{color:var(--accent);font-weight:600}
+.rcard .ri-urgent{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--red);background:var(--red-soft);padding:1px 6px;border-radius:4px;margin-top:6px}
+.rcard .ri-actions{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+.ri-btn{font-size:11.5px;font-weight:600;padding:5px 9px;border-radius:7px;border:1px solid var(--line);background:var(--panel);cursor:pointer;color:var(--ink-2)}
+.ri-btn.go{border-color:var(--accent);color:var(--accent)}.ri-btn.go:hover{background:var(--accent-soft)}
+.ri-btn.done{border-color:var(--green);color:var(--green)}.ri-btn.done:hover{background:var(--green-soft)}
+.ri-btn.del{margin-left:auto;color:var(--ink-3)}.ri-btn.del:hover{border-color:var(--red);color:var(--red)}
+.rc-empty{font-size:12px;color:var(--ink-3);text-align:center;padding:20px 10px;font-style:italic}
+
+/* QB-powered panels */
+.qb-connect{text-align:center;padding:48px 24px;background:var(--panel);border:1.5px dashed #b8e0b0;border-radius:16px}
+.qb-connect .qb-ic{width:54px;height:54px;border-radius:14px;background:var(--qb-soft);display:grid;place-items:center;margin:0 auto 16px}
+.qb-connect .qb-ic svg{width:26px;height:26px;color:var(--qb)}
+.qb-connect h3{font-size:18px;font-weight:700;margin:0 0 8px}
+.qb-connect p{font-size:13.5px;color:var(--ink-3);line-height:1.55;max-width:440px;margin:0 auto 18px}
+.qb-connect .qb-btn{display:inline-flex;align-items:center;gap:8px;background:var(--qb);color:#fff;border:none;border-radius:9px;padding:11px 20px;font-size:14px;font-weight:600;cursor:pointer;text-decoration:none}
+.qb-connect .qb-btn:hover{background:#26861a}
+.qb-connect .qb-note{font-size:11.5px;color:var(--ink-3);margin-top:14px}
+
+.tbl{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:13px;overflow:hidden;box-shadow:var(--shadow-sm)}
+.tbl th{text-align:left;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:700;padding:11px 14px;background:var(--panel-2);border-bottom:1px solid var(--line)}
+.tbl td{padding:11px 14px;border-bottom:1px solid var(--line-2);font-size:13px}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:rgba(36,87,230,.03)}
+.tbl .num{font-family:var(--mono);text-align:right}
+
+.loading{text-align:center;padding:40px;color:var(--ink-3);font-size:13.5px}
+.spinner{width:22px;height:22px;border:3px solid var(--accent-soft);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;display:inline-block;vertical-align:middle;margin-right:9px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(13,22,38,.5);backdrop-filter:blur(3px);z-index:60;display:none;align-items:flex-start;justify-content:center;padding:40px 18px;overflow-y:auto}
+.modal-bg.show{display:flex}
+.modal{background:var(--panel);border-radius:16px;box-shadow:var(--shadow-lg);width:100%;max-width:540px;overflow:hidden}
+.mhead{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.mhead h2{margin:0;font-size:18px;font-weight:700}
+.mhead .x{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:18px;color:var(--ink-3);display:grid;place-items:center}
+.mhead .x:hover{border-color:var(--red);color:var(--red)}
+.mbody{padding:20px 22px;display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}
+.fld{display:flex;flex-direction:column;gap:5px}
+.fld.full{grid-column:1/-1}
+.fld label{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3)}
+.fld label .req{color:var(--red)}
+.fld input,.fld select,.fld textarea{padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13.5px;font-family:inherit;background:var(--panel);color:var(--ink)}
+.fld input:focus,.fld select:focus,.fld textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.fld textarea{resize:vertical;min-height:56px}
+.fld .hint{font-size:11px;color:var(--ink-3);font-weight:400;text-transform:none;letter-spacing:0}
+.mfoot{padding:16px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;background:var(--panel-2)}
+.btn-ghost{padding:9px 16px;border:1px solid var(--line);border-radius:9px;background:var(--panel);font-size:13.5px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.btn-prim{padding:9px 18px;border:none;border-radius:9px;background:var(--accent);color:#fff;font-size:13.5px;font-weight:600;cursor:pointer}
+.btn-prim:hover{background:var(--accent-2)}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:10px;font-size:13.5px;font-weight:500;box-shadow:var(--shadow-lg);opacity:0;transition:.25s;z-index:80;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media(max-width:760px){
+  .hero-kpis{grid-template-columns:1fr 1fr}
+  .hk:nth-child(2){border-right:none}
+  .hk:nth-child(3),.hk:nth-child(4){border-top:1px solid rgba(255,255,255,.08)}
+  .hk:nth-child(4){border-right:none}
+  .req-cols{grid-template-columns:1fr}
+  .mbody{grid-template-columns:1fr}
+}
+</style>
+<link rel="stylesheet" href="apb-theme.css">
+</head>
+<body>
+
+<header class="topbar">
+  <img src="apb-logo.png" alt="APB">
+  <div class="t"><b>Purchasing</b><span>Requests · Consumables · Vendors</span></div>
+  <div class="sp"></div>
+  <div class="qb-badge" id="qbBadge"><div class="qb-dot"></div><span id="qbLabel">Checking QB…</span></div>
+  <a class="navbtn" href="index.html">⌂ Home</a>
+  <div class="now" id="now"></div>
+</header>
+
+<main class="wrap">
+
+  <section class="hero">
+    <div class="hero-body">
+      <div class="eyebrow">All Points Boats · Purchasing Department</div>
+      <h1>Purchasing &amp; Inventory</h1>
+      <p class="tagline">The clipboard, digitized — techs request what they need, purchasing orders it and books it to the job in QuickBooks. Consumables &amp; vendors pull straight from QuickBooks.</p>
+    </div>
+    <div class="hero-kpis">
+      <div class="hk"><b class="amber" id="kNew">0</b><span>Open Requests</span></div>
+      <div class="hk"><b id="kOrdered">0</b><span>On Order</span></div>
+      <div class="hk"><b class="green" id="kRecv">0</b><span>Received (30d)</span></div>
+      <div class="hk"><b id="kItems">—</b><span>QB Catalog Items</span></div>
+    </div>
+  </section>
+
+  <div class="tabs">
+    <button class="tab active" data-pane="requests">Requests <span class="cnt" id="tabReqCnt">0</span></button>
+    <button class="tab" data-pane="consumables">Consumables <span class="qbtag">QB</span></button>
+    <button class="tab" data-pane="vendors">Vendors <span class="qbtag">QB</span></button>
+  </div>
+
+  <!-- ════ REQUESTS (the digitized clipboard) ════ -->
+  <div class="pane active" id="pane-requests">
+    <div class="controls">
+      <button class="add-btn" id="addReq">
+        <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        New Request
+      </button>
+      <div class="search">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="rq" type="search" placeholder="Search item, job, requester…">
+      </div>
+    </div>
+    <div class="req-cols">
+      <div class="req-col">
+        <div class="rc-head new"><span class="rc-dot"></span><span class="rc-title">Requested</span><span class="rc-n" id="cNew">0</span></div>
+        <div class="rc-cards" id="col-new"></div>
+      </div>
+      <div class="req-col">
+        <div class="rc-head ordered"><span class="rc-dot"></span><span class="rc-title">Ordered</span><span class="rc-n" id="cOrdered">0</span></div>
+        <div class="rc-cards" id="col-ordered"></div>
+      </div>
+      <div class="req-col">
+        <div class="rc-head received"><span class="rc-dot"></span><span class="rc-title">Received</span><span class="rc-n" id="cReceived">0</span></div>
+        <div class="rc-cards" id="col-received"></div>
+      </div>
+    </div>
+    <p class="note" style="font-size:12px;color:var(--ink-3);margin-top:14px;line-height:1.5">Purchasing orders the request, then books it in QuickBooks under the job — the QB entry stays the source of truth for spend. This board just replaces the paper.</p>
+  </div>
+
+  <!-- ════ CONSUMABLES (QuickBooks) ════ -->
+  <div class="pane" id="pane-consumables">
+    <div id="consBody"></div>
+  </div>
+
+  <!-- ════ VENDORS (QuickBooks) ════ -->
+  <div class="pane" id="pane-vendors">
+    <div id="vendBody"></div>
+  </div>
+
+</main>
+
+<!-- New request modal -->
+<div class="modal-bg" id="reqModal">
+  <div class="modal">
+    <div class="mhead"><h2 id="rmTitle">New Request</h2><button class="x" id="rmClose">×</button></div>
+    <div class="mbody">
+      <div class="fld full">
+        <label>Item needed <span class="req">*</span></label>
+        <input id="r_item" placeholder="e.g. 2&quot; masking tape">
+      </div>
+      <div class="fld">
+        <label>Qty</label>
+        <input id="r_qty" placeholder="e.g. 4">
+      </div>
+      <div class="fld">
+        <label>Unit</label>
+        <input id="r_unit" placeholder="rolls, ea, box…">
+      </div>
+      <div class="fld">
+        <label>Project / Vessel</label>
+        <input id="r_job" list="projList" placeholder="Book to which job?">
+        <datalist id="projList"></datalist>
+      </div>
+      <div class="fld">
+        <label>Job #</label>
+        <input id="r_jobno" placeholder="e.g. 40.0">
+      </div>
+      <div class="fld">
+        <label>Requested by</label>
+        <input id="r_by" placeholder="Tech name">
+      </div>
+      <div class="fld">
+        <label>Urgency</label>
+        <select id="r_urgency"><option value="normal">Normal</option><option value="urgent">Urgent</option></select>
+      </div>
+      <div class="fld full">
+        <label>Notes</label>
+        <textarea id="r_notes" placeholder="Spec, preferred vendor, where it's needed…"></textarea>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn-ghost" id="rmCancel">Cancel</button>
+      <button class="btn-prim" id="rmSave">Submit Request</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   PURCHASING & INVENTORY — the face.
+   • Requests: localStorage 'apb_purchase_requests' (the digitized
+     clipboard). Works standalone today.
+   • Consumables + Vendors: pre-wired to the existing QuickBooks
+     endpoints (/api/qbo/items, /api/qbo/vendors). They sit in a
+     "connect QuickBooks" state until Christina links QB, then
+     populate automatically — no code change needed.
+   ============================================================ */
+const G = document.getElementById.bind(document);
+const LS_KEY = 'apb_purchase_requests';
+
+const SUPA = { url:"https://aanrxyiocxxndkvkeocv.supabase.co", key:(localStorage.getItem("apb_supabase_key")||"") };
+const DEMO_PROJECTS = ["Endless Summer","Siemens Energy","M/Y Deztination 140'","Retriever","Catskill","Reef Chief","Fred Sage","High Seas"];
+
+const SEED = [
+  {id:'r1',item:'2" masking tape',qty:'4',unit:'rolls',job:'Endless Summer',jobno:'40.0',by:'Jerry C.',urgency:'normal',status:'new',notes:'',createdAt:Date.now()-86400000},
+  {id:'r2',item:'Cutting wheels 4.5"',qty:'1',unit:'box',job:'Retriever',jobno:'5.0',by:'Tommy B.',urgency:'urgent',status:'new',notes:'Down to last one.',createdAt:Date.now()-43200000},
+  {id:'r3',item:'Argon bottle',qty:'1',unit:'ea',job:'Siemens Energy',jobno:'3.0',by:'Jared S.',urgency:'normal',status:'ordered',vendor:'Airgas',qbRef:'',notes:'',createdAt:Date.now()-172800000}
+];
+
+let REQS = load();
+let rquery = '', editId = null, qbConnected = false;
+let consLoaded = false, vendLoaded = false;
+let projectList = DEMO_PROJECTS.slice();
+
+function load(){
+  try{ const v=JSON.parse(localStorage.getItem(LS_KEY)); if(Array.isArray(v)) return v; }catch(e){}
+  localStorage.setItem(LS_KEY, JSON.stringify(SEED)); return SEED.slice();
+}
+function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(REQS)); }catch(e){} }
+function uid(){ return 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function money(n){ return '$'+new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}).format(+n||0); }
+
+/* ---- KPIs + counts ---- */
+function refreshKpis(){
+  const recentRecv = REQS.filter(r=>r.status==='received' && (Date.now()-(r.receivedAt||r.createdAt||0) < 30*86400000)).length;
+  G('kNew').textContent = REQS.filter(r=>r.status==='new').length;
+  G('kOrdered').textContent = REQS.filter(r=>r.status==='ordered').length;
+  G('kRecv').textContent = recentRecv;
+  G('tabReqCnt').textContent = REQS.length;
+}
+
+/* ---- requests board ---- */
+function renderReqs(){
+  refreshKpis();
+  const cols = {new:[],ordered:[],received:[]};
+  REQS.filter(r=>{
+    if(!rquery) return true;
+    return [r.item,r.job,r.jobno,r.by,r.notes].join(' ').toLowerCase().includes(rquery);
+  }).forEach(r=>{ (cols[r.status]||cols.new).push(r); });
+  ['new','ordered','received'].forEach(st=>{
+    const el = G('col-'+st);
+    G('c'+st.charAt(0).toUpperCase()+st.slice(1)).textContent = cols[st].length;
+    if(!cols[st].length){ el.innerHTML = `<div class="rc-empty">Nothing here</div>`; return; }
+    el.innerHTML = cols[st].sort((a,b)=>(b.urgency==='urgent')-(a.urgency==='urgent') || (b.createdAt||0)-(a.createdAt||0)).map(r=>reqCard(r)).join('');
+  });
+  document.querySelectorAll('[data-adv]').forEach(b=> b.onclick=()=>advance(b.dataset.adv));
+  document.querySelectorAll('[data-edit]').forEach(b=> b.onclick=()=>openReq(b.dataset.edit));
+  document.querySelectorAll('[data-del]').forEach(b=> b.onclick=()=>delReq(b.dataset.del));
+}
+function reqCard(r){
+  const qty = [r.qty,r.unit].filter(Boolean).map(esc).join(' ');
+  const job = r.job ? `<span class="ri-job">${esc(r.job)}${r.jobno?' · #'+esc(r.jobno):''}</span>` : '<span style="color:var(--ink-3)">no job</span>';
+  const adv = r.status==='new' ? `<button class="ri-btn go" data-adv="${r.id}">Mark ordered →</button>`
+            : r.status==='ordered' ? `<button class="ri-btn done" data-adv="${r.id}">Mark received ✓</button>` : '';
+  const vend = r.vendor ? ` · ${esc(r.vendor)}` : '';
+  return `<div class="rcard${r.urgency==='urgent'?' urgent':''}">
+    <div class="ri-top"><div class="ri-item">${esc(r.item)}</div><div class="ri-qty">${qty}</div></div>
+    <div class="ri-meta">${job}${vend}${r.by?` · ${esc(r.by)}`:''}</div>
+    ${r.notes?`<div class="ri-meta">${esc(r.notes)}</div>`:''}
+    ${r.urgency==='urgent'&&r.status!=='received'?`<div class="ri-urgent">Urgent</div>`:''}
+    <div class="ri-actions">
+      ${adv}
+      <button class="ri-btn" data-edit="${r.id}">Edit</button>
+      <button class="ri-btn del" data-del="${r.id}">Delete</button>
+    </div>
+  </div>`;
+}
+function advance(id){
+  const r = REQS.find(x=>x.id===id); if(!r) return;
+  if(r.status==='new'){
+    const v = prompt('Marking ordered. Vendor (optional) — and remember to book it in QuickBooks under the job:', r.vendor||'');
+    if(v===null) return;
+    r.vendor = v.trim(); r.status='ordered'; r.orderedAt=Date.now();
+  } else if(r.status==='ordered'){ r.status='received'; r.receivedAt=Date.now(); }
+  save(); renderReqs(); toast('Request updated');
+}
+
+/* ---- request modal ---- */
+function openReq(id){
+  editId = id||null;
+  const r = id ? REQS.find(x=>x.id===id) : null;
+  G('rmTitle').textContent = r ? 'Edit Request' : 'New Request';
+  G('r_item').value=r?r.item:''; G('r_qty').value=r?(r.qty||''):''; G('r_unit').value=r?(r.unit||''):'';
+  G('r_job').value=r?(r.job||''):''; G('r_jobno').value=r?(r.jobno||''):''; G('r_by').value=r?(r.by||''):'';
+  G('r_urgency').value=r?(r.urgency||'normal'):'normal'; G('r_notes').value=r?(r.notes||''):'';
+  G('reqModal').classList.add('show'); setTimeout(()=>G('r_item').focus(),50);
+}
+function closeReq(){ G('reqModal').classList.remove('show'); editId=null; }
+function saveReq(){
+  const item = G('r_item').value.trim();
+  if(!item){ toast('Item is required'); return; }
+  const rec = { item, qty:G('r_qty').value.trim(), unit:G('r_unit').value.trim(), job:G('r_job').value.trim(),
+    jobno:G('r_jobno').value.trim(), by:G('r_by').value.trim(), urgency:G('r_urgency').value, notes:G('r_notes').value.trim() };
+  if(editId){ const i=REQS.findIndex(x=>x.id===editId); REQS[i]={...REQS[i],...rec}; toast('Request updated'); }
+  else { rec.id=uid(); rec.status='new'; rec.createdAt=Date.now(); REQS.unshift(rec); toast('Request submitted'); }
+  save(); closeReq(); renderReqs();
+}
+function delReq(id){
+  const r=REQS.find(x=>x.id===id); if(!r) return;
+  if(!confirm(`Delete request for "${r.item}"?`)) return;
+  REQS=REQS.filter(x=>x.id!==id); save(); renderReqs(); toast('Deleted');
+}
+
+/* ---- QuickBooks status + panels ---- */
+async function checkQB(){
+  const badge=G('qbBadge'), label=G('qbLabel');
+  try{
+    const s = await fetch('/api/qbo/status',{signal:AbortSignal.timeout(3500)}).then(r=>r.json());
+    if(s && s.connected){
+      qbConnected=true; badge.className='qb-badge on'; label.textContent = s.companyName || 'QuickBooks linked';
+    } else {
+      qbConnected=false; badge.className='qb-badge'; label.textContent = s && s.configured ? 'QB not linked' : 'QB not set up';
+    }
+  }catch(e){ qbConnected=false; badge.className='qb-badge'; label.textContent='Server offline'; }
+}
+function qbConnectPanel(what){
+  return `<div class="qb-connect">
+    <div class="qb-ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 12h6M12 9v6"/></svg></div>
+    <h3>${what} live from QuickBooks</h3>
+    <p>This panel fills in automatically the moment QuickBooks is linked. ${what} — and the spend booked to each job — come straight from QuickBooks, so nothing is entered twice.</p>
+    <a class="qb-btn" href="/auth/qbo" target="_blank" rel="noopener">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+      Link QuickBooks
+    </a>
+    <div class="qb-note">Christina connects this once — then it stays linked.</div>
+  </div>`;
+}
+async function loadConsumables(){
+  const el=G('consBody');
+  if(!qbConnected){ el.innerHTML = qbConnectPanel('Your consumables catalog'); return; }
+  el.innerHTML = `<div class="loading"><span class="spinner"></span>Pulling items from QuickBooks…</div>`;
+  try{
+    const d = await fetch('/api/qbo/items').then(r=>r.json());
+    const items = (d && d.QueryResponse && d.QueryResponse.Item) || [];
+    G('kItems').textContent = items.length || '0';
+    if(!items.length){ el.innerHTML = `<div class="loading">No items in QuickBooks yet.</div>`; return; }
+    el.innerHTML = `<table class="tbl"><thead><tr><th>Item</th><th>Type</th><th>SKU</th><th class="num">On Hand</th><th class="num">Price</th></tr></thead><tbody>${
+      items.map(it=>`<tr>
+        <td><b>${esc(it.Name||'')}</b>${it.Description?`<div style="font-size:11.5px;color:var(--ink-3)">${esc(it.Description).slice(0,70)}</div>`:''}</td>
+        <td>${esc(it.Type||'')}</td>
+        <td>${esc(it.Sku||'—')}</td>
+        <td class="num">${it.QtyOnHand!=null?it.QtyOnHand:'—'}</td>
+        <td class="num">${it.UnitPrice!=null?money(it.UnitPrice):'—'}</td>
+      </tr>`).join('')
+    }</tbody></table>`;
+  }catch(e){ el.innerHTML = `<div class="loading">Couldn't load items — ${esc(e.message)}</div>`; }
+}
+async function loadVendors(){
+  const el=G('vendBody');
+  if(!qbConnected){ el.innerHTML = qbConnectPanel('Your vendors'); return; }
+  el.innerHTML = `<div class="loading"><span class="spinner"></span>Pulling vendors from QuickBooks…</div>`;
+  try{
+    const d = await fetch('/api/qbo/vendors').then(r=>r.json());
+    const vs = (d && d.QueryResponse && d.QueryResponse.Vendor) || [];
+    if(!vs.length){ el.innerHTML = `<div class="loading">No vendors in QuickBooks yet.</div>`; return; }
+    el.innerHTML = `<table class="tbl"><thead><tr><th>Vendor</th><th>Contact</th><th>Phone</th><th class="num">Balance</th></tr></thead><tbody>${
+      vs.map(v=>`<tr>
+        <td><b>${esc(v.DisplayName||v.CompanyName||'')}</b></td>
+        <td>${esc((v.PrimaryEmailAddr&&v.PrimaryEmailAddr.Address)||'—')}</td>
+        <td>${esc((v.PrimaryPhone&&v.PrimaryPhone.FreeFormNumber)||'—')}</td>
+        <td class="num">${v.Balance!=null?money(v.Balance):'—'}</td>
+      </tr>`).join('')
+    }</tbody></table>`;
+  }catch(e){ el.innerHTML = `<div class="loading">Couldn't load vendors — ${esc(e.message)}</div>`; }
+}
+
+/* ---- tabs ---- */
+document.querySelectorAll('.tab').forEach(t=> t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.pane').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active'); G('pane-'+t.dataset.pane).classList.add('active');
+  if(t.dataset.pane==='consumables'){ loadConsumables(); }
+  if(t.dataset.pane==='vendors'){ loadVendors(); }
+});
+
+/* ---- project list for the job dropdown ---- */
+async function loadProjects(){
+  if(SUPA.key){
+    try{
+      const r = await fetch(`${SUPA.url}/rest/v1/apb_jobs?select=apb_engagements(name)&order=updated_at.desc`,{headers:{apikey:SUPA.key,Authorization:"Bearer "+SUPA.key}});
+      const data = await r.json();
+      const names=[...new Set(data.map(j=>j.apb_engagements&&j.apb_engagements.name).filter(Boolean))];
+      if(names.length) projectList=names;
+    }catch(e){}
+  }
+  REQS.forEach(r=>{ if(r.job && !projectList.includes(r.job)) projectList.push(r.job); });
+  G('projList').innerHTML = projectList.slice().sort().map(p=>`<option value="${esc(p)}">`).join('');
+}
+
+let toastT;
+function toast(msg){ const t=G('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2200); }
+
+/* wire */
+G('addReq').onclick=()=>openReq(null);
+G('rmClose').onclick=closeReq; G('rmCancel').onclick=closeReq; G('rmSave').onclick=saveReq;
+G('reqModal').onclick=e=>{ if(e.target===G('reqModal')) closeReq(); };
+G('rq').oninput=e=>{ rquery=e.target.value.trim().toLowerCase(); renderReqs(); };
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeReq(); });
+(function(){ const n=G('now'); function t(){ n.textContent=new Date().toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); } t(); setInterval(t,30000); })();
+
+/* init */
+renderReqs();
+loadProjects();
+checkQB().then(()=>{ /* badge set; QB panels load on tab open */ });
+</script>
+</body>
+</html>
