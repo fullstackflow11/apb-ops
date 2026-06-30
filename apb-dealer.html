@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script src="apb-demo.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APB Dealer & Partner Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0E1417;--panel:#fff;--panel-soft:#F4F6F5;
+  --ink:#13191C;--ink-2:#3C474C;--ink-3:#6E787D;
+  --line:#E2E5E2;--line-2:#EDEFEC;
+  --steel:#D4D7D2;            /* Goodwin Gray — fleet color */
+  --blueprint:#0E6E8C;--blueprint-2:#0A5066;--blueprint-soft:#E2EFF3;
+  --cyan:#19A6C0;
+  --gold:#C8A04A;
+  --shadow-sm:0 1px 3px rgba(10,20,24,.08);
+  --shadow:0 14px 40px -18px rgba(10,20,24,.45);
+  --shadow-lg:0 30px 70px -24px rgba(10,20,24,.6);
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:Inter,-apple-system,"Segoe UI",sans-serif;background:var(--panel-soft);color:var(--ink);-webkit-font-smoothing:antialiased;letter-spacing:-.01em;min-height:100vh}
+img{max-width:100%;display:block}
+
+/* ───────── GATE ───────── */
+.gate{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:24px;
+  background:radial-gradient(900px 600px at 80% 110%,rgba(25,166,192,.22),transparent 55%),linear-gradient(160deg,#16201f,#0a0f12 60%,#101a1d)}
+.gate::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(rgba(120,200,220,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(120,200,220,.05) 1px,transparent 1px);
+  background-size:30px 30px}
+.gate-card{position:relative;z-index:1;width:100%;max-width:400px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:38px 34px;backdrop-filter:blur(10px);box-shadow:var(--shadow-lg);text-align:center}
+.gate-logo{height:46px;width:auto;margin:0 auto 22px;filter:brightness(0) invert(1);opacity:.96}
+.gate-card .eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;color:#5fc2cf;margin-bottom:10px}
+.gate-card h1{font-size:24px;font-weight:800;letter-spacing:-.03em;color:#F2F6F6;margin:0 0 6px}
+.gate-card p{font-size:13.5px;line-height:1.55;color:#9fb0b4;margin:0 0 24px}
+.gate-field{position:relative;margin-bottom:14px}
+.gate-field input{width:100%;padding:13px 15px;border:1px solid rgba(255,255,255,.16);border-radius:11px;background:rgba(255,255,255,.06);color:#fff;font-size:15px;font-family:var(--mono);letter-spacing:.08em;text-align:center}
+.gate-field input::placeholder{color:#6c7b80;letter-spacing:.04em}
+.gate-field input:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 3px rgba(25,166,192,.25)}
+.gate-btn{width:100%;padding:13px;border:none;border-radius:11px;background:linear-gradient(180deg,#1593b3,#0b5e76);color:#fff;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 8px 22px -8px rgba(14,110,140,.8);transition:.13s}
+.gate-btn:hover{transform:translateY(-1px)}
+.gate-err{color:#ff9a8f;font-size:12.5px;margin-top:12px;min-height:16px;font-weight:500}
+.gate-foot{margin-top:22px;font-size:11px;color:#6c7b80;line-height:1.5}
+
+/* ───────── PORTAL ───────── */
+.portal{display:none}
+.portal.show{display:block}
+
+.topbar{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.94);backdrop-filter:saturate(180%) blur(14px);display:flex;align-items:center;gap:14px;padding:0 26px;height:64px;border-bottom:1px solid var(--line)}
+.topbar img{height:34px;width:auto}
+.topbar .t{border-left:1px solid var(--line);padding-left:14px}
+.topbar .t b{font-size:15px}
+.topbar .t span{display:block;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3)}
+.topbar .sp{flex:1}
+.topbar .pill{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--blueprint);background:var(--blueprint-soft);padding:5px 11px;border-radius:20px;border:1px solid #cfe3ea}
+.topbar .out{font-size:12.5px;font-weight:600;color:var(--ink-3);background:none;border:1px solid var(--line);border-radius:8px;padding:7px 13px;cursor:pointer}
+.topbar .out:hover{border-color:var(--ink-3);color:var(--ink-2)}
+
+.wrap{max-width:1140px;margin:0 auto;padding:26px 24px 64px}
+
+.hero{position:relative;overflow:hidden;border-radius:22px;color:#fff;padding:40px 40px;margin-bottom:18px;
+  background:radial-gradient(760px 540px at 86% 130%,rgba(25,166,192,.30),transparent 56%),linear-gradient(155deg,#1b2624,#0c1316 58%,#13201f);
+  box-shadow:var(--shadow-lg)}
+.hero::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(rgba(120,200,220,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(120,200,220,.06) 1px,transparent 1px);
+  background-size:28px 28px}
+.hero-body{position:relative;z-index:1;max-width:640px}
+.hero .eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.26em;text-transform:uppercase;color:#6fc6d2;font-weight:500;margin-bottom:12px}
+.hero h1{font-size:34px;font-weight:800;letter-spacing:-.035em;margin:0 0 11px;line-height:1.08}
+.hero p{color:#aebec1;font-size:15px;line-height:1.6;margin:0}
+
+/* confidentiality banner */
+.confid{display:flex;align-items:flex-start;gap:11px;background:#fbf6e9;border:1px solid #ecdcb4;border-radius:12px;padding:12px 16px;margin-bottom:22px;font-size:12.5px;color:#6b5a2e;line-height:1.55}
+.confid svg{flex-shrink:0;margin-top:1px;color:var(--gold)}
+.confid b{color:#4f4220}
+
+/* tabs */
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:26px;flex-wrap:wrap}
+.tab{font-size:14px;font-weight:600;padding:11px 4px;margin-right:18px;border:none;background:none;color:var(--ink-3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:.12s;display:flex;align-items:center;gap:7px}
+.tab svg{width:16px;height:16px}
+.tab:hover{color:var(--ink-2)}
+.tab.active{color:var(--blueprint);border-bottom-color:var(--blueprint)}
+.pane{display:none}.pane.active{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.pane-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:16px;flex-wrap:wrap}
+.pane-head h2{font-size:20px;font-weight:800;letter-spacing:-.025em;margin:0 0 4px}
+.pane-head p{font-size:13.5px;color:var(--ink-3);margin:0;max-width:560px;line-height:1.5}
+.add-asset{display:inline-flex;align-items:center;gap:7px;background:var(--blueprint);color:#fff;border:none;font-size:13px;font-weight:600;padding:9px 15px;border-radius:9px;cursor:pointer;box-shadow:0 4px 14px -4px rgba(14,110,140,.6)}
+.add-asset:hover{background:var(--blueprint-2)}
+.add-asset svg{width:14px;height:14px}
+
+/* asset grids */
+.agrid{display:grid;gap:16px}
+.agrid.logos{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.agrid.photos{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+.agrid.videos{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+
+.acard{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm);overflow:hidden;display:flex;flex-direction:column;transition:transform .14s,box-shadow .14s,border-color .14s}
+.acard:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:#cfe3ea}
+
+/* logo preview tiles */
+.logo-prev{height:130px;display:grid;place-items:center;padding:22px;position:relative}
+.logo-prev.light{background:var(--steel)}
+.logo-prev.dark{background:#14201f}
+.logo-prev img{max-height:74px;width:auto;object-fit:contain}
+.logo-prev .ph{font-family:var(--mono);font-size:11px;letter-spacing:.1em}
+.logo-prev.light .ph{color:#7a8079}
+.logo-prev.dark .ph{color:#5f7a78}
+
+.acard .ab{padding:13px 15px 15px;display:flex;flex-direction:column;gap:5px;flex:1}
+.acard .an{font-size:14px;font-weight:700;letter-spacing:-.01em}
+.acard .ad{font-size:12px;color:var(--ink-3);line-height:1.4}
+.fmt-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:3px}
+.fmt{font-family:var(--mono);font-size:10px;font-weight:500;color:var(--ink-2);background:var(--panel-soft);border:1px solid var(--line);border-radius:5px;padding:2px 7px}
+.acard .af{margin-top:auto;padding-top:11px;display:flex;gap:8px;align-items:center}
+.dl{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:12.5px;font-weight:600;color:#fff;background:var(--blueprint);border-radius:8px;padding:8px 10px;text-decoration:none;transition:.12s}
+.dl:hover{background:var(--blueprint-2)}
+.dl svg{width:13px;height:13px}
+.dl.soft{background:var(--panel-soft);color:var(--blueprint);border:1px solid #cfe3ea}
+.dl.soft:hover{background:var(--blueprint-soft)}
+.aedit{width:30px;height:30px;flex-shrink:0;border-radius:7px;border:1px solid var(--line);background:var(--panel);color:var(--ink-3);cursor:pointer;display:grid;place-items:center}
+.aedit:hover{border-color:var(--blueprint);color:var(--blueprint)}
+.aedit svg{width:13px;height:13px}
+
+/* photo tiles */
+.photo-prev{aspect-ratio:4/3;background:linear-gradient(135deg,#c9cdc7,#aeb4ad);display:grid;place-items:center;position:relative;overflow:hidden}
+.photo-prev img{width:100%;height:100%;object-fit:cover}
+.photo-prev .ph{color:#6a716a;font-size:12px;font-family:var(--mono);display:flex;flex-direction:column;align-items:center;gap:8px}
+.photo-prev .ph svg{width:26px;height:26px;opacity:.6}
+
+/* video tiles */
+.video-prev{position:relative;aspect-ratio:16/9;background:linear-gradient(150deg,#16201f,#0b1413);display:grid;place-items:center;cursor:pointer}
+.video-prev img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.video-prev .play{position:relative;z-index:1;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.92);display:grid;place-items:center;box-shadow:0 6px 18px rgba(0,0,0,.35);transition:transform .15s}
+.video-prev:hover .play{transform:scale(1.1)}
+.video-prev .play svg{width:20px;height:20px;color:#13191C;margin-left:2px}
+.video-prev .vtag{position:absolute;top:9px;right:9px;z-index:1;font-family:var(--mono);font-size:10px;padding:3px 8px;border-radius:11px;background:rgba(0,0,0,.5);color:#fff;backdrop-filter:blur(4px)}
+.video-prev .vtag.pending{background:rgba(184,140,40,.85)}
+
+.empty-cat{grid-column:1/-1;text-align:center;padding:42px 20px;color:var(--ink-3);border:1px dashed var(--line);border-radius:14px;background:var(--panel)}
+.empty-cat svg{width:38px;height:38px;color:var(--line);margin-bottom:12px}
+.empty-cat p{margin:0;font-size:13.5px;line-height:1.5}
+
+/* brand guidelines */
+.bg-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.bg-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm);padding:22px 24px}
+.bg-card.full{grid-column:1/-1}
+.bg-card h3{font-size:15px;font-weight:800;letter-spacing:-.01em;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+.bg-card h3 svg{width:17px;height:17px;color:var(--blueprint)}
+.bg-card p{font-size:13.5px;line-height:1.6;color:var(--ink-2);margin:0 0 10px}
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.swatch{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.swatch .chip{height:56px}
+.swatch .sm{padding:8px 10px;font-size:11px;line-height:1.4}
+.swatch .sm b{display:block;font-size:12px}
+.swatch .sm code{font-family:var(--mono);color:var(--ink-3);font-size:11px}
+.rules{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.rule-col h4{font-size:12px;letter-spacing:.04em;text-transform:uppercase;font-weight:700;margin:0 0 9px}
+.rule-col.do h4{color:var(--blueprint)}
+.rule-col.dont h4{color:#B23129}
+.rule-col ul{margin:0;padding:0;list-style:none}
+.rule-col li{font-size:13px;line-height:1.5;color:var(--ink-2);padding:5px 0 5px 22px;position:relative}
+.rule-col li::before{position:absolute;left:0;top:5px;font-weight:700}
+.rule-col.do li::before{content:"✓";color:var(--blueprint)}
+.rule-col.dont li::before{content:"✕";color:#B23129}
+.type-row{display:flex;align-items:baseline;gap:14px;padding:9px 0;border-bottom:1px solid var(--line-2)}
+.type-row:last-child{border-bottom:none}
+.type-row .tn{font-size:13px;color:var(--ink-3);min-width:120px}
+.type-row .ts{font-weight:800;font-size:20px}
+
+/* source bar */
+.src-bar{margin-top:26px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 16px;font-size:12.5px;color:var(--ink-3)}
+.src-bar svg{width:15px;height:15px;color:var(--blueprint)}
+.src-bar a{color:var(--blueprint);font-weight:600;text-decoration:none;margin-left:auto}
+.src-bar a:hover{text-decoration:underline}
+
+.foot{max-width:1140px;margin:0 auto;padding:22px 24px;color:var(--ink-3);font-size:12px;border-top:1px solid var(--line);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.foot b{color:var(--ink-2)}
+
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(10,20,24,.6);backdrop-filter:blur(3px);z-index:80;display:none;align-items:flex-start;justify-content:center;padding:38px 18px;overflow-y:auto}
+.modal-bg.show{display:flex}
+.modal{background:var(--panel);border-radius:16px;box-shadow:var(--shadow-lg);width:100%;max-width:720px;overflow:hidden}
+.modal.sm{max-width:520px}
+.mhead{padding:17px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.mhead h2{margin:0;font-size:17px;font-weight:700}
+.mhead .x{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:18px;color:var(--ink-3);display:grid;place-items:center}
+.mhead .x:hover{border-color:#B23129;color:#B23129}
+.player{position:relative;width:100%;aspect-ratio:16/9;background:#0b1413}
+.player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.player-pending{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#8fa3a6;text-align:center;padding:20px}
+.player-pending svg{width:42px;height:42px;color:#33474a}
+.player-pending b{color:#c4d6d8;font-size:15px}
+.player-pending span{font-size:12.5px;max-width:340px;line-height:1.5}
+.mbody{padding:20px 22px;display:grid;grid-template-columns:1fr 1fr;gap:13px 15px}
+.fld{display:flex;flex-direction:column;gap:5px}
+.fld.full{grid-column:1/-1}
+.fld label{font-size:11.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--ink-3)}
+.fld input,.fld select{padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13.5px;font-family:inherit;background:var(--panel);color:var(--ink)}
+.fld input:focus,.fld select:focus{outline:none;border-color:var(--blueprint);box-shadow:0 0 0 3px var(--blueprint-soft)}
+.fld .hint{font-size:11px;color:var(--ink-3);font-weight:400;text-transform:none;letter-spacing:0}
+.mfoot{padding:15px 22px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--panel-soft)}
+.btn-del{font-size:13px;color:#B23129;background:none;border:none;cursor:pointer;font-weight:600}
+.btn-ghost{padding:9px 16px;border:1px solid var(--line);border-radius:9px;background:var(--panel);font-size:13.5px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.btn-prim{padding:9px 18px;border:none;border-radius:9px;background:var(--blueprint);color:#fff;font-size:13.5px;font-weight:600;cursor:pointer}
+.btn-prim:hover{background:var(--blueprint-2)}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:10px;font-size:13.5px;font-weight:500;box-shadow:var(--shadow-lg);opacity:0;transition:.25s;z-index:90;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media(max-width:760px){
+  .bg-grid,.rules{grid-template-columns:1fr}
+  .mbody{grid-template-columns:1fr}
+  .hero h1{font-size:27px}
+  .hero{padding:30px 26px}
+}
+</style>
+</head>
+<body>
+
+<!-- ════════ GATE ════════ -->
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <img class="gate-logo" src="apb-logo.png" alt="APB">
+    <div class="eyebrow">Dealer &amp; Partner Portal</div>
+    <h1>Welcome aboard</h1>
+    <p>Brand &amp; marketing resources for authorized All Points Boats dealers and partners. Enter your access code to continue.</p>
+    <div class="gate-field">
+      <input id="gateCode" type="text" placeholder="ACCESS CODE" autocomplete="off" spellcheck="false">
+    </div>
+    <button class="gate-btn" id="gateBtn">Enter Portal</button>
+    <div class="gate-err" id="gateErr"></div>
+    <div class="gate-foot">Need access? Contact APB at <b style="color:#9fb0b4">info@apb1.com</b> · (954)&nbsp;767-8255</div>
+  </div>
+</div>
+
+<!-- ════════ PORTAL ════════ -->
+<div class="portal" id="portal">
+
+  <header class="topbar">
+    <img src="apb-logo.png" alt="APB">
+    <div class="t"><b>Dealer Portal</b><span>Brand &amp; Marketing Resources</span></div>
+    <div class="sp"></div>
+    <span class="pill" id="rolePill">Partner Access</span>
+    <button class="out" id="signOut">Sign out</button>
+  </header>
+
+  <main class="wrap">
+
+    <section class="hero">
+      <div class="hero-body">
+        <div class="eyebrow">All Points Boats · Fort Lauderdale, FL</div>
+        <h1>APB Brand &amp; Marketing Resources</h1>
+        <p>Everything you need to represent the APB brand — logos, photography, videos, and the guidelines that keep us looking sharp everywhere we show up. Download what you need; reach out if something's missing.</p>
+      </div>
+    </section>
+
+    <div class="confid">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <div><b>For authorized APB dealers and partners only.</b> These assets are provided to promote All Points Boats products and services. Don't alter the logo, and don't redistribute these files outside your APB marketing.</div>
+    </div>
+
+    <!-- tabs -->
+    <div class="tabs">
+      <button class="tab active" data-pane="logos">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18M3 12h18"/></svg>
+        Logos
+      </button>
+      <button class="tab" data-pane="photos">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        Photos
+      </button>
+      <button class="tab" data-pane="videos">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+        Videos
+      </button>
+      <button class="tab" data-pane="brand">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9M3 20h2M12 4v16M4 7h16M4 7l1.5 9M20 7l-1.5 9"/></svg>
+        Brand Guidelines
+      </button>
+    </div>
+
+    <!-- LOGOS -->
+    <div class="pane active" id="pane-logos">
+      <div class="pane-head">
+        <div><h2>Logos</h2><p>Primary, reversed, and icon marks in print and web formats. Keep clear space around the mark and never recolor it.</p></div>
+        <button class="add-asset adminonly" data-add="logos" style="display:none"><svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add logo</button>
+      </div>
+      <div class="agrid logos" id="grid-logos"></div>
+    </div>
+
+    <!-- PHOTOS -->
+    <div class="pane" id="pane-photos">
+      <div class="pane-head">
+        <div><h2>Photography</h2><p>Approved product, vessel, fabrication, and facility imagery. Use as shot — light color correction is fine, heavy filters are not.</p></div>
+        <button class="add-asset adminonly" data-add="photos" style="display:none"><svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add photo</button>
+      </div>
+      <div class="agrid photos" id="grid-photos"></div>
+    </div>
+
+    <!-- VIDEOS -->
+    <div class="pane" id="pane-videos">
+      <div class="pane-head">
+        <div><h2>Videos</h2><p>Brand and capability videos. Play them right here, or download for your own channels with attribution to APB.</p></div>
+        <button class="add-asset adminonly" data-add="videos" style="display:none"><svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add video</button>
+      </div>
+      <div class="agrid videos" id="grid-videos"></div>
+    </div>
+
+    <!-- BRAND GUIDELINES -->
+    <div class="pane" id="pane-brand">
+      <div class="pane-head"><div><h2>Brand Guidelines</h2><p>The marketing rules — how to use the APB name, logo, colors, and voice so we stay consistent everywhere.</p></div></div>
+      <div class="bg-grid">
+
+        <div class="bg-card full">
+          <h3><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>Logo Usage</h3>
+          <div class="rules">
+            <div class="rule-col do">
+              <h4>Do</h4>
+              <ul>
+                <li>Use the supplied logo files at full resolution</li>
+                <li>Keep clear space around the mark equal to the height of the “A”</li>
+                <li>Place the color logo on light or Goodwin Gray backgrounds</li>
+                <li>Use the white logo on dark or photographic backgrounds</li>
+              </ul>
+            </div>
+            <div class="rule-col dont">
+              <h4>Don't</h4>
+              <ul>
+                <li>Recolor, stretch, rotate, or add effects to the logo</li>
+                <li>Place the color logo on busy or low-contrast backgrounds</li>
+                <li>Recreate or substitute the typography in the wordmark</li>
+                <li>Crowd the logo with other graphics or text</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-card">
+          <h3><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 22a10 10 0 1 1 0-20"/></svg>Color Palette</h3>
+          <div class="swatches">
+            <div class="swatch"><div class="chip" style="background:#0E6E8C"></div><div class="sm"><b>Blueprint Ink</b><code>#0E6E8C</code></div></div>
+            <div class="swatch"><div class="chip" style="background:#D4D7D2"></div><div class="sm"><b>Goodwin Gray</b><code>#D4D7D2</code></div></div>
+            <div class="swatch"><div class="chip" style="background:#161A1C"></div><div class="sm"><b>Charcoal</b><code>#161A1C</code></div></div>
+            <div class="swatch"><div class="chip" style="background:#19A6C0"></div><div class="sm"><b>Cyan</b><code>#19A6C0</code></div></div>
+          </div>
+        </div>
+
+        <div class="bg-card">
+          <h3><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7V5h16v2M9 20h6M12 5v15"/></svg>Typography</h3>
+          <div class="type-row"><span class="tn">Headlines</span><span class="ts" style="font-weight:900">Inter Black</span></div>
+          <div class="type-row"><span class="tn">Body</span><span class="ts" style="font-weight:500;font-size:16px">Inter Regular / Medium</span></div>
+          <div class="type-row"><span class="tn">Technical / specs</span><span class="ts" style="font-family:var(--mono);font-size:15px;font-weight:500">JetBrains Mono</span></div>
+        </div>
+
+        <div class="bg-card">
+          <h3><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>Voice &amp; Tagline</h3>
+          <p>APB sounds like the shop floor: <b>confident, precise, no fluff.</b> We talk about craftsmanship and getting it right, not hype.</p>
+          <p style="font-size:18px;font-weight:800;color:var(--blueprint);margin:4px 0 0">“Built Different.”</p>
+          <p style="font-size:12.5px;color:var(--ink-3);margin-top:2px">Primary tagline. Secondary: “Quality marine &amp; industrial craftsmanship.”</p>
+        </div>
+
+        <div class="bg-card">
+          <h3><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>Photo Style</h3>
+          <p>Real work, real boats. Natural light, true color, clean framing. Show the craft — welds, fabrication, finished installs — and the fleet in Goodwin Gray.</p>
+          <p style="font-size:12.5px;color:var(--ink-3)">Avoid heavy filters, fake lens flares, or stock imagery that isn't APB's own work.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- source -->
+    <div class="src-bar">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      <span>Assets are managed in the <b>APB Dealer Resources</b> library on SharePoint / Teams.</span>
+      <a id="srcLink" href="https://teams.microsoft.com/l/team/19%3A1OpvNfTyu7kPQ-h-FKzn1of-oYEC7j0vhVpWqdXtCZE1%40thread.tacv2/conversations?groupId=9ad9103b-9709-449f-9663-27143c3f7d6e&tenantId=dc62709a-5508-4fc5-8181-5c8d83399c16" target="_blank" rel="noopener">Open source library ↗</a>
+    </div>
+
+  </main>
+
+  <footer class="foot">
+    <span><b>All Points Boats, Inc.</b> · 900 SW 21st Terrace, Fort Lauderdale, FL 33312</span>
+    <span>(954) 767-8255 · info@apb1.com · apb1.com</span>
+  </footer>
+</div>
+
+<!-- video viewer -->
+<div class="modal-bg" id="viewer">
+  <div class="modal">
+    <div class="mhead"><h2 id="vTitle"></h2><button class="x" id="vClose">×</button></div>
+    <div class="player" id="vPlayer"></div>
+  </div>
+</div>
+
+<!-- add/edit asset -->
+<div class="modal-bg" id="editor">
+  <div class="modal sm">
+    <div class="mhead"><h2 id="eTitle">Add asset</h2><button class="x" id="eClose">×</button></div>
+    <div class="mbody">
+      <div class="fld full"><label>Name <span style="color:#B23129">*</span></label><input id="e_name" placeholder="e.g. Primary Logo — Color"></div>
+      <div class="fld full"><label>Short note</label><input id="e_note" placeholder="e.g. Horizontal lockup, full color"></div>
+      <div class="fld full" id="fmtFld"><label>Formats <span class="hint">(comma-separated)</span></label><input id="e_fmt" placeholder="PNG, SVG, EPS"></div>
+      <div class="fld full"><label id="urlLabel">SharePoint file link <span style="color:#B23129">*</span></label><input id="e_url" placeholder="https://allpointsboats1.sharepoint.com/.../file"><span class="hint">Link to the file in the Dealer Resources library.</span></div>
+      <div class="fld full" id="embedFld" style="display:none"><label>Video embed link <span class="hint">(SharePoint / Stream “Embed”)</span></label><input id="e_embed" placeholder="https://…/embed.aspx?UniqueId=…"><span class="hint">Lets the video play inside the portal.</span></div>
+      <div class="fld full"><label>Image/thumbnail URL <span class="hint">(optional)</span></label><input id="e_thumb" placeholder="Direct image URL for the preview"></div>
+    </div>
+    <div class="mfoot">
+      <button class="btn-del" id="eDelete" style="display:none">Delete</button>
+      <span style="flex:1"></span>
+      <button class="btn-ghost" id="eCancel">Cancel</button>
+      <button class="btn-prim" id="eSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   APB Dealer & Partner Portal — external-facing brand world.
+   Contents: Logos, Photos, Videos, Brand Guidelines ONLY.
+   Source of truth for the files is the APB Dealer Resources
+   SharePoint/Teams library (linked at the bottom). This page is
+   the access layer; each asset carries its SharePoint URL.
+
+   ACCESS: soft client-side gate (prototype). Real per-dealer
+   auth comes when this is integrated with the live site — this
+   is NOT real security, just a shared code so the portal feels
+   gated. Change DEALER_CODE below.
+   ============================================================ */
+const G = document.getElementById.bind(document);
+const DEALER_CODE = 'APB-DEALER';          // share this with partners (prototype)
+const LS_ACCESS = 'apb_dealer_access';
+const LS_ASSETS = 'apb_dealer_assets';
+const TEAMS_URL = G('srcLink').href;
+
+const isAdmin = (function(){ try { return localStorage.getItem('apb_role') === 'admin'; } catch(e){ return false; } })();
+
+/* ---- seed assets (point to the Teams/SharePoint library until real file links are added) ---- */
+const SEED = {
+  logos: [
+    {id:'lg1', name:'Primary Logo — Color', note:'Horizontal lockup, full color', fmt:['PNG','SVG','EPS'], prev:'light', url:'', thumb:''},
+    {id:'lg2', name:'Logo — White / Reverse', note:'For dark & photo backgrounds', fmt:['PNG','SVG'], prev:'dark', url:'', thumb:''},
+    {id:'lg3', name:'Icon / Mark', note:'Standalone APB mark', fmt:['PNG','SVG'], prev:'light', url:'', thumb:''},
+    {id:'lg4', name:'Logo — Black', note:'Single-color black', fmt:['PNG','SVG','EPS'], prev:'light', url:'', thumb:''},
+  ],
+  photos: [
+    {id:'ph1', name:'Fabrication & Welding', note:'Shop craftsmanship', url:'', thumb:''},
+    {id:'ph2', name:'Vessels & Refits', note:'Finished work on the water', url:'', thumb:''},
+    {id:'ph3', name:'The Fleet — Goodwin Gray', note:'Branded fleet vehicles', url:'', thumb:''},
+    {id:'ph4', name:'Facility — Fort Lauderdale', note:'The yard & shop', url:'', thumb:''},
+  ],
+  videos: [
+    {id:'vd1', name:'APB Overview', note:'Who we are', embed:'', url:'', thumb:''},
+    {id:'vd2', name:'Shop Capabilities', note:'What we build', embed:'', url:'', thumb:''},
+  ]
+};
+
+let ASSETS = loadAssets();
+function loadAssets(){
+  try{ const v=JSON.parse(localStorage.getItem(LS_ASSETS)); if(v && v.logos) return v; }catch(e){}
+  localStorage.setItem(LS_ASSETS, JSON.stringify(SEED));
+  return JSON.parse(JSON.stringify(SEED));
+}
+function saveAssets(){ try{ localStorage.setItem(LS_ASSETS, JSON.stringify(ASSETS)); }catch(e){} }
+function uid(){ return 'a'+Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ════ GATE ════ */
+function unlock(){ G('gate').style.display='none'; G('portal').classList.add('show'); render(); }
+(function initGate(){
+  let ok=false; try{ ok = localStorage.getItem(LS_ACCESS)==='1'; }catch(e){}
+  if(ok || isAdmin){ unlock(); }
+})();
+G('gateBtn').onclick=tryCode;
+G('gateCode').addEventListener('keydown',e=>{ if(e.key==='Enter') tryCode(); });
+function tryCode(){
+  const v=(G('gateCode').value||'').trim().toUpperCase();
+  if(v===DEALER_CODE.toUpperCase()){
+    try{ localStorage.setItem(LS_ACCESS,'1'); }catch(e){}
+    unlock();
+  } else {
+    G('gateErr').textContent='That code isn’t recognized. Check with your APB contact.';
+    G('gateCode').focus(); G('gateCode').select();
+  }
+}
+G('signOut').onclick=()=>{ try{ localStorage.removeItem(LS_ACCESS); }catch(e){} location.reload(); };
+
+/* ════ render ════ */
+function render(){
+  if(isAdmin){
+    G('rolePill').textContent='Managing · APB Admin';
+    document.querySelectorAll('.adminonly').forEach(b=>b.style.display='');
+  }
+  renderLogos(); renderPhotos(); renderVideos();
+}
+
+function renderLogos(){
+  const el=G('grid-logos'); const items=ASSETS.logos||[];
+  if(!items.length){ el.innerHTML=emptyCat('No logos posted yet.'); return; }
+  el.innerHTML = items.map(a=>{
+    const prev = a.thumb
+      ? `<div class="logo-prev ${a.prev||'light'}"><img src="${esc(a.thumb)}" alt="${esc(a.name)}"></div>`
+      : `<div class="logo-prev ${a.prev||'light'}"><span class="ph">${esc((a.prev==='dark')?'APB · white':'APB · logo')}</span></div>`;
+    return `<div class="acard">
+      ${prev}
+      <div class="ab">
+        <div class="an">${esc(a.name)}</div>
+        ${a.note?`<div class="ad">${esc(a.note)}</div>`:''}
+        ${a.fmt&&a.fmt.length?`<div class="fmt-row">${a.fmt.map(f=>`<span class="fmt">${esc(f)}</span>`).join('')}</div>`:''}
+        <div class="af">${dlBtn(a)}${editBtn('logos',a.id)}</div>
+      </div></div>`;
+  }).join('');
+  wireEdit('logos');
+}
+function renderPhotos(){
+  const el=G('grid-photos'); const items=ASSETS.photos||[];
+  if(!items.length){ el.innerHTML=emptyCat('No photos posted yet.'); return; }
+  el.innerHTML = items.map(a=>{
+    const prev = a.thumb
+      ? `<div class="photo-prev"><img src="${esc(a.thumb)}" alt="${esc(a.name)}"></div>`
+      : `<div class="photo-prev"><span class="ph"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>${esc(a.name)}</span></div>`;
+    return `<div class="acard">
+      ${prev}
+      <div class="ab">
+        <div class="an">${esc(a.name)}</div>
+        ${a.note?`<div class="ad">${esc(a.note)}</div>`:''}
+        <div class="af">${dlBtn(a)}${editBtn('photos',a.id)}</div>
+      </div></div>`;
+  }).join('');
+  wireEdit('photos');
+}
+function renderVideos(){
+  const el=G('grid-videos'); const items=ASSETS.videos||[];
+  if(!items.length){ el.innerHTML=emptyCat('No videos posted yet.'); return; }
+  el.innerHTML = items.map(a=>{
+    const ready=!!a.embed;
+    const bg = a.thumb?`<img src="${esc(a.thumb)}" alt="">`:'';
+    return `<div class="acard">
+      <div class="video-prev" data-play="${a.id}">
+        ${bg}
+        <span class="vtag ${ready?'':'pending'}">${ready?'▶ Play':'Coming soon'}</span>
+        <div class="play"><svg fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11-7z"/></svg></div>
+      </div>
+      <div class="ab">
+        <div class="an">${esc(a.name)}</div>
+        ${a.note?`<div class="ad">${esc(a.note)}</div>`:''}
+        <div class="af">${a.url?dlBtn(a):`<span class="dl soft" style="cursor:default;opacity:.7">Download soon</span>`}${editBtn('videos',a.id)}</div>
+      </div></div>`;
+  }).join('');
+  el.querySelectorAll('[data-play]').forEach(v=> v.onclick=()=>playVideo(v.dataset.play));
+  wireEdit('videos');
+}
+function dlBtn(a){
+  if(a.url) return `<a class="dl" href="${esc(a.url)}" target="_blank" rel="noopener"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Download</a>`;
+  return `<a class="dl soft" href="${esc(TEAMS_URL)}" target="_blank" rel="noopener"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>In SharePoint</a>`;
+}
+function editBtn(cat,id){
+  if(!isAdmin) return '';
+  return `<button class="aedit" data-edit="${cat}:${id}" title="Edit"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>`;
+}
+function wireEdit(cat){
+  G('grid-'+cat).querySelectorAll('[data-edit]').forEach(b=> b.onclick=()=>{ const [c,id]=b.dataset.edit.split(':'); openEditor(c,id); });
+}
+function emptyCat(msg){
+  return `<div class="empty-cat"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/></svg><p>${msg}${isAdmin?' Use “Add” to post the first one.':' Check back soon.'}</p></div>`;
+}
+
+/* ════ video viewer ════ */
+function playVideo(id){
+  const a=(ASSETS.videos||[]).find(x=>x.id===id); if(!a) return;
+  G('vTitle').textContent=a.name;
+  const p=G('vPlayer');
+  if(a.embed){ p.innerHTML=`<iframe src="${esc(a.embed)}" allow="autoplay; fullscreen; encrypted-media" allowfullscreen></iframe>`; }
+  else { p.innerHTML=`<div class="player-pending"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg><b>Video coming soon</b><span>This one isn't posted yet. Once it's uploaded to SharePoint and linked, it'll play right here.</span></div>`; }
+  G('viewer').classList.add('show');
+}
+function closeViewer(){ G('vPlayer').innerHTML=''; G('viewer').classList.remove('show'); }
+G('vClose').onclick=closeViewer;
+G('viewer').onclick=e=>{ if(e.target===G('viewer')) closeViewer(); };
+
+/* ════ admin add/edit ════ */
+let edCat=null, edId=null;
+function openAdd(cat){ openEditor(cat,null); }
+function openEditor(cat,id){
+  if(!isAdmin) return;
+  edCat=cat; edId=id||null;
+  const a = id ? (ASSETS[cat]||[]).find(x=>x.id===id) : null;
+  G('eTitle').textContent = (a?'Edit ':'Add ')+({logos:'logo',photos:'photo',videos:'video'}[cat]||'asset');
+  G('e_name').value=a?a.name:''; G('e_note').value=a?(a.note||''):'';
+  G('e_fmt').value=a&&a.fmt?a.fmt.join(', '):''; G('e_url').value=a?(a.url||''):'';
+  G('e_embed').value=a?(a.embed||''):''; G('e_thumb').value=a?(a.thumb||''):'';
+  G('fmtFld').style.display = cat==='logos'?'':'none';
+  G('embedFld').style.display = cat==='videos'?'':'none';
+  G('urlLabel').innerHTML = cat==='videos' ? 'Download link <span class="hint">(optional)</span>' : 'SharePoint file link';
+  G('eDelete').style.display = id?'':'none';
+  G('editor').classList.add('show');
+  setTimeout(()=>G('e_name').focus(),50);
+}
+function closeEditor(){ G('editor').classList.remove('show'); edCat=edId=null; }
+function saveEditor(){
+  const name=G('e_name').value.trim();
+  if(!name){ toast('Name is required'); return; }
+  const rec={ name, note:G('e_note').value.trim(), url:G('e_url').value.trim(), thumb:G('e_thumb').value.trim() };
+  if(edCat==='logos'){ rec.fmt=G('e_fmt').value.split(',').map(x=>x.trim()).filter(Boolean); rec.prev='light'; }
+  if(edCat==='videos'){ rec.embed=G('e_embed').value.trim(); }
+  ASSETS[edCat] = ASSETS[edCat]||[];
+  if(edId){ const i=ASSETS[edCat].findIndex(x=>x.id===edId); const old=ASSETS[edCat][i]; ASSETS[edCat][i]={...old,...rec}; toast('Updated'); }
+  else { rec.id=uid(); ASSETS[edCat].push(rec); toast('Added'); }
+  saveAssets(); closeEditor(); render();
+}
+function delAsset(){
+  if(!edId) return;
+  if(!confirm('Remove this asset from the portal?')) return;
+  ASSETS[edCat]=ASSETS[edCat].filter(x=>x.id!==edId);
+  saveAssets(); closeEditor(); render(); toast('Removed');
+}
+document.querySelectorAll('[data-add]').forEach(b=> b.onclick=()=>openAdd(b.dataset.add));
+G('eClose').onclick=closeEditor; G('eCancel').onclick=closeEditor; G('eSave').onclick=saveEditor; G('eDelete').onclick=delAsset;
+G('editor').onclick=e=>{ if(e.target===G('editor')) closeEditor(); };
+
+/* ════ tabs ════ */
+document.querySelectorAll('.tab').forEach(t=> t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.pane').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active'); G('pane-'+t.dataset.pane).classList.add('active');
+});
+
+let toastT;
+function toast(msg){ const t=G('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2100); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeViewer(); closeEditor(); } });
+</script>
+</body>
+</html>
