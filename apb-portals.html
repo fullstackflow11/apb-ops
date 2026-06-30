@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APB · Partner Portals</title>
+<script src="apb-roles.js"></script>
+<script src="apb-demo.js"></script>
+<script>APBRoles.guard(['admin','pm','purchasing'],'Partner Portals');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDEEF2;--panel:#FFFFFF;--panel-2:#F5F6FA;--ink:#0D1626;--ink-2:#3A4559;--ink-3:#6B7A92;--ink-4:#9BA9BE;
+  --navy:#0D1626;--line:#DDE1E8;--line-2:#E8EBF0;
+  --accent:#2457E6;--accent-2:#1B45B8;--accent-soft:#EAF0FE;
+  --green:#0B9E6A;--green-soft:#E4F5EE;--amber:#B86A00;--amber-soft:#FBF0E2;--slate:#50616F;--slate-soft:#ECF0F3;
+  --shadow-sm:0 1px 3px rgba(13,22,38,.07);--shadow:0 8px 28px -12px rgba(13,22,38,.14);--shadow-lg:0 30px 70px -24px rgba(13,22,38,.22);
+  --r:12px;--r-sm:9px;--mono:"DM Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:Inter,-apple-system,"Segoe UI",sans-serif;background:radial-gradient(1200px 600px at 80% -10%,rgba(36,87,230,.05) 0%,transparent 60%),var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+.mono{font-family:var(--mono)}
+.topbar{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.88);backdrop-filter:saturate(180%) blur(12px);display:flex;align-items:center;gap:14px;padding:0 26px;height:62px;border-bottom:1px solid var(--line)}
+.topbar img.logo{height:38px;width:auto;display:block}
+.topbar .t{border-left:1px solid var(--line);padding-left:14px}.topbar .t b{font-size:15px;color:var(--ink)}.topbar .t span{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.topbar .sp{flex:1}
+.tbtn{display:inline-flex;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--line);color:var(--ink-2);border-radius:9px;padding:7px 12px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;box-shadow:var(--shadow-sm)}
+.tbtn:hover{border-color:var(--accent);color:var(--accent)}
+.wrap{max-width:1080px;margin:0 auto;padding:26px 20px 80px}
+.page-h h1{margin:0;font-size:23px;letter-spacing:-.025em}
+.page-h p{margin:5px 0 0;color:var(--ink-2);font-size:13.5px}
+.search{position:relative;margin:20px 0 18px;max-width:420px}
+.search input{width:100%;height:40px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:0 14px 0 38px;font:inherit;font-size:14px}
+.search input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.search svg{position:absolute;left:12px;top:11px;color:var(--ink-3)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px;cursor:pointer;transition:transform .12s,border-color .12s;display:flex;flex-direction:column;gap:8px}
+.card:hover{transform:translateY(-2px);border-color:var(--accent)}
+.card .nm{font-weight:700;font-size:16px;letter-spacing:-.01em}
+.card .cat{font-size:12.5px;color:var(--ink-3)}
+.card .sp{flex:1}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px;width:fit-content}
+.pill i{width:6px;height:6px;border-radius:50%;background:currentColor}
+.p-full{color:var(--green);background:var(--green-soft)}
+.p-mid{color:var(--amber);background:var(--amber-soft)}
+.p-none{color:var(--slate);background:var(--slate-soft)}
+.p-soon{color:var(--ink-3);background:var(--line-2)}
+.card .go{font-size:13px;font-weight:600;color:var(--accent);margin-top:4px}
+.sec-h{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin:26px 0 12px}
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(16,22,34,.34);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:.22s;z-index:40}
+.scrim.open{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;height:100%;width:520px;max-width:94vw;background:#fff;box-shadow:var(--shadow-lg);transform:translateX(100%);transition:transform .26s cubic-bezier(.4,0,.2,1);z-index:50;display:flex;flex-direction:column}
+.drawer.open{transform:none}
+.dh{padding:22px 24px 18px;border-bottom:1px solid var(--line);position:relative}
+.dh .x{position:absolute;right:16px;top:16px;width:32px;height:32px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;color:var(--ink-2);display:grid;place-items:center}
+.dh h2{margin:0 0 4px;font-size:21px;letter-spacing:-.02em}
+.dh .cat{font-size:13px;color:var(--ink-3)}
+.db{padding:8px 24px 28px;overflow:auto;flex:1}
+.block{margin-top:22px}
+.block h3{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin:0 0 10px;border-bottom:1px solid var(--line-2);padding-bottom:7px}
+.lnk{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;margin-bottom:7px;text-decoration:none;color:var(--ink);font-size:13.5px;font-weight:500}
+.lnk:hover{border-color:var(--accent);background:#FAFBFF}
+.lnk .ar{margin-left:auto;color:var(--ink-4)}
+.contact{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:9px}
+.contact .role{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-2);font-weight:700}
+.contact .nm{font-weight:600;font-size:14px;margin-top:3px}
+.contact .meta{font-size:13px;color:var(--ink-2);margin-top:4px;display:flex;flex-direction:column;gap:2px}
+.contact .meta a{color:var(--accent);text-decoration:none}
+.contact .note{font-size:12px;color:var(--ink-3);margin-top:5px}
+ul.bul{margin:0;padding-left:18px}ul.bul li{font-size:13.5px;line-height:1.55;margin:4px 0;color:var(--ink-2)}
+.proc{font-size:13.5px;line-height:1.6;color:var(--ink-2);background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.tbd{color:var(--amber)}
+.hours{font-size:13.5px;color:var(--ink-2);background:var(--amber-soft);border:1px solid #fde9c8;border-radius:10px;padding:11px 13px;line-height:1.5}
+.followup{font-size:13.5px;color:#92600a;background:var(--amber-soft);border:1px solid #fde9c8;border-radius:10px;padding:12px 14px;line-height:1.5}
+.subbrand{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:9px;background:var(--panel-2)}
+.subbrand .sb-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.subbrand .sb-nm{font-weight:700;font-size:14px}
+.subbrand .sb-cat{font-size:12px;color:var(--ink-3)}
+.subbrand .sb-rows{margin-top:7px;display:flex;flex-direction:column;gap:4px}
+.subbrand .sb-row{font-size:13px;color:var(--ink-2)} .subbrand .sb-row b{color:var(--ink)}
+.subbrand .sb-row a{color:var(--accent);text-decoration:none}
+.card .brands{font-size:11.5px;color:var(--accent-2);font-weight:600}
+/* ── featured portal hero card ── */
+.plink-hero{display:flex;align-items:center;gap:15px;padding:17px 18px;border:1.5px solid var(--accent);border-radius:12px;text-decoration:none;color:var(--ink);background:linear-gradient(135deg,#FAFBFF,#EEF3FF);box-shadow:0 2px 14px rgba(36,87,230,.1);transition:.14s}
+.plink-hero:hover{border-color:var(--accent-2);background:linear-gradient(135deg,#EEF3FF,#E0EBFF);box-shadow:0 5px 22px rgba(36,87,230,.18);transform:translateY(-1px)}
+.ph-ic{width:44px;height:44px;border-radius:12px;background:var(--accent);color:#fff;display:grid;place-items:center;flex-shrink:0;box-shadow:0 4px 12px rgba(36,87,230,.3)}
+.ph-body{flex:1;min-width:0}
+.ph-name{font-weight:800;font-size:15px;color:var(--ink);letter-spacing:-.01em}
+.ph-desc{font-size:12px;color:var(--ink-3);margin-top:3px;line-height:1.5}
+.ph-btn{flex-shrink:0;background:var(--accent);color:#fff;border-radius:9px;padding:9px 16px;font:inherit;font-size:13px;font-weight:700;white-space:nowrap;box-shadow:0 2px 8px rgba(36,87,230,.28)}
+/* ── standard portal link cards (multiple portals) ── */
+.plink-card{display:flex;align-items:flex-start;gap:13px;padding:13px 14px;border:1px solid var(--line);border-radius:var(--r-sm);margin-bottom:8px;text-decoration:none;color:var(--ink);background:var(--panel);transition:.12s;box-shadow:var(--shadow-sm)}
+.plink-card:hover{border-color:var(--accent);background:var(--accent-soft);box-shadow:var(--shadow)}
+.plink-card .pc-ic{width:36px;height:36px;border-radius:9px;background:var(--accent-soft);color:var(--accent-2);display:grid;place-items:center;flex-shrink:0}
+.plink-card:hover .pc-ic{background:var(--accent);color:#fff}
+.plink-card .pc-body{flex:1;min-width:0}
+.plink-card .pc-nm{font-weight:700;font-size:13.5px;color:var(--ink);letter-spacing:-.01em}
+.plink-card .pc-desc{font-size:12px;color:var(--ink-3);margin-top:2px;line-height:1.45}
+.plink-card .pc-go{font-size:12px;font-weight:600;color:var(--accent);margin-top:6px}
+/* ── contact card grid ── */
+.ccard-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ccard-grid .ccard{margin-bottom:0}
+.ccard-grid .ccard.ccard-full{grid-column:1/-1}
+.ccard{border:1px solid var(--line);border-radius:var(--r-sm);padding:11px 13px;margin-bottom:7px;background:var(--panel)}
+.ccard-h{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;flex-wrap:wrap}
+.ccard-nm{font-weight:700;font-size:12.5px;color:var(--ink);letter-spacing:-.01em;line-height:1.3}
+.ccard-role{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:99px;padding:2px 7px;line-height:1.7;flex-shrink:0;background:var(--accent-soft);color:var(--accent-2);white-space:nowrap}
+.ccard-acts{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap}
+.ccard-act{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--ink-2);text-decoration:none;background:var(--panel-2);border:1px solid var(--line);border-radius:7px;padding:4px 9px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.ccard-act:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.ccard-note{font-size:11px;color:var(--ink-3);margin-top:5px;line-height:1.4}
+/* ── form chips ── */
+.form-chips{display:flex;flex-wrap:wrap;gap:7px}
+.form-chip{display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--ink-2);font-size:12.5px;font-weight:500;text-decoration:none;box-shadow:var(--shadow-sm);transition:.12s}
+.form-chip:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.form-chip svg{color:var(--ink-4);flex-shrink:0}
+/* ── numbered steps ── */
+.steps{display:flex;flex-direction:column}
+.step{display:flex;gap:11px;padding:10px 0;border-bottom:1px solid var(--line-2)}
+.step:last-child{border-bottom:none}
+.step-n{width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent-2);font-size:11px;font-weight:800;display:grid;place-items:center;flex-shrink:0;margin-top:1px}
+.step-t{font-size:13px;color:var(--ink-2);line-height:1.5}
+/* ── proc / hours ── */
+.proc{font-size:13px;line-height:1.6;color:var(--ink-2);background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-sm);padding:12px 14px}
+.hours{font-size:13px;color:var(--ink-2);background:var(--amber-soft);border:1px solid #fde9c8;border-radius:var(--r-sm);padding:11px 13px;line-height:1.5}
+.followup{font-size:13px;color:#92600a;background:var(--amber-soft);border:1px solid #fde9c8;border-radius:var(--r-sm);padding:12px 14px;line-height:1.5}
+.tbd{color:var(--amber)}
+.block h3{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin:0 0 10px;border-bottom:1px solid var(--line-2);padding-bottom:6px}
+@media(max-width:820px){.grid{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.grid{grid-template-columns:1fr}}
+</style>
+<link rel="stylesheet" href="apb-theme.css">
+</head>
+<body>
+<header class="topbar">
+  <img class="logo" src="apb-logo.png" alt="APB">
+  <div class="t"><b>Partner Portals</b><span>Tech Resource Hub</span></div>
+  <div class="sp"></div>
+  <a class="tbtn" href="https://www.apb1.com" target="_blank" rel="noopener">apb1.com ↗</a>
+  <button class="tbtn" onclick="history.back()">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button>
+  <a class="tbtn" href="index.html">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg>Home</a>
+</header>
+
+<main class="wrap">
+  <div class="page-h">
+    <h1>Partner Portals</h1>
+    <p>Quick access to our manufacturers &amp; partners — links, who to call, forms, hours, and how we order parts &amp; service.</p>
+  </div>
+  <div class="search">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    <input id="q" type="search" placeholder="Search a partner…">
+  </div>
+  <div class="grid" id="cards"></div>
+</main>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer">
+  <div class="dh">
+    <button class="x" id="dx"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    <h2 id="dName">—</h2><div class="cat" id="dCat">—</div>
+    <div id="dStatus" style="margin-top:10px"></div>
+  </div>
+  <div class="db" id="dBody"></div>
+</aside>
+
+<script>
+const $=id=>document.getElementById(id);
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+
+/* =================== PARTNER DATA ===================
+   SmartGyro is filled from APB's dealer-portal research.
+   AdvanTec / Power-Pole have the structure with (add …)
+   placeholders for the contacts you haven't given yet.
+   ==================================================== */
+const PORTALS=[
+{
+  id:"smartgyro", name:"SmartGyro", category:"Gyro Stabilizers", status:"full",
+  links:[
+    {label:"SmartGyro Dealer Portal", desc:"Manuals · install drawings · service bulletins · price list · commissioning wizard · roll-period & roll-reduction tools — organized by model (SG20–SG150)", url:"https://support.smartgyro.com/dealerslogin", featured:true},
+    {label:"Marketing Assets", desc:"Brand guidelines · logos (color & white, vertical & horizontal) · ad templates (full & half page) · corporate & commercial brochures · product videos (overview + Rising Sons Viking 58 + SG20 Diamond 50 case studies) · social media archive 2024–2026 · corporate presentation", url:"https://support.smartgyro.com/dealerslogin/marketing"}
+  ],
+  contacts:[
+    {role:"US Sales & Support", name:"Bob Walker — Sales Manager USA", email:"r.walker@smartgyro.com", phone:"+1 443-776-3237 · cell +1 410-353-1781", note:"US-based, primary day-to-day contact — cables, software & diagnostics"},
+    {role:"Commissioning & Training", name:"Pieter Feenstra — Sales Director N-Europe / APAC / America", email:"p.feenstra@smartgyro.com", phone:"+39 0187 1859146 · mobile +31 6 20611959", note:"Runs remote commissioning + technical training with the Italy engineers"},
+    {role:"Engineering (Italy)", name:"Carlo Gazerro · Fabrizio Stifani", email:"c.gazerro@smartgyro.com", phone:"", note:"f.stifani@smartgyro.com — technical / engineering, La Spezia (CET)"},
+    {role:"Marketing (Italy)", name:"(add — TBD)", email:"(add marketing contact email)", phone:"", note:"SmartGyro marketing team, La Spezia — for co-branding, co-op ads, social asset requests"},
+    {role:"General / HQ", name:"SmartGyro s.r.l.", email:"info@smartgyro.com", phone:"+39 0187 1859146", note:"Via Privata O.T.O. 11, 19136 La Spezia, Italy"}
+  ],
+  forms:[
+    {label:"Vessel Information Form", url:"https://support.smartgyro.com/dealerslogin/documents"},
+    {label:"Commissioning Form", url:"https://support.smartgyro.com/dealerslogin/documents"},
+    {label:"Service & Maintenance Forms", url:"https://support.smartgyro.com/dealerslogin/documents"}
+  ],
+  hours:"Italy technical team runs on CET (≈6 hrs ahead of US Eastern) — best reached mornings US time. Bob (US contact) on US business hours.",
+  howto:[
+    "Manuals, installation drawings & service bulletins are in the Dealer Portal under the model (SG20–SG150).",
+    "Commissioning wizard: general info → gyro serial data → photos → tech + customer signatures → PDF → email — all inside the Dealer Portal.",
+    "Sea-trial roll-period & roll-reduction tools are phone-based (motion sensor) and also accessed through the Dealer Portal."
+  ],
+  parts:"Order through Bob Walker (US). Key diagnostic / software cables: 500KI014 — required for software updates, diagnostics & operational tests (most important); 500KI121 — SG20 software updates.",
+  service:"Service docs & bulletins in the Dealer Support Portal. Warranty repairs per SmartGyro warranty handbook."
+},
+{
+  id:"advantec", name:"AdvanTec Marine Group", category:"Parent group — Freeman, Diamond Sea Glaze, Pacific Coast, Steelhead", status:"mid",
+  links:[ {label:"AdvanTec Marine website", url:"https://advantecmarine.com"} ],
+  contacts:[
+    {role:"Parts & Customer Service — Steelhead (go-to)", name:"Buffy Light", email:"blight@advantecmarine.com", phone:"Office: 1-604-607-0091 ext 3917 · Cell: 1-604-340-9639", note:"Primary contact for all Steelhead parts, remotes & controllers — per Jason, 'she is our go-to' for SH brand products"},
+    {role:"Parts inbox (when Buffy is OOO)", name:"AdvanTec Parts Team", email:"nsichting@advantecmarine.com", phone:"", note:"Use this email for parts orders when Buffy is unavailable"},
+    {role:"Support inbox", name:"AdvanTec Support Team", email:"support@advantecmarine.com", phone:"", note:"General support / service requests"},
+    {role:"Business Development — Military & Govt", name:"Jason Setzer", email:"jsetzer@advantecmarine.com", phone:"Cell: +1.541.373.0823", note:"Initial contact for new business / government work — routes parts & service needs to Buffy"}
+  ],
+  forms:[],
+  hours:"Buffy Light is Canada-based (Pacific time). Parts inbox and support inbox are monitored during regular business hours.",
+  howto:[
+    "Parts (Steelhead brand): email Buffy Light directly — she is AdvanTec's go-to for all Steelhead parts, remotes, and controllers.",
+    "If Buffy is OOO: email nsichting@advantecmarine.com for parts or support@advantecmarine.com for service/support.",
+    "New business / government inquiries: contact Jason Setzer — he'll loop in the right people.",
+    "Catalog & email driven — no full self-service dealer portal like SmartGyro."
+  ],
+  parts:"Email Buffy Light (blight@advantecmarine.com) with the model, part description, and any serial numbers. If OOO, use nsichting@advantecmarine.com.",
+  service:"Email support@advantecmarine.com or contact Buffy. (Add sub-contractor info if APB subs out the on-site service work.)",
+  install:"(Add install process notes for AdvanTec-brand products.)",
+  subBrands:[
+    {name:"Freeman Marine", category:"Watertight Doors & Hatches", parts:"(add parts contact)", service:"(add service contact)", catalog:"", note:""},
+    {name:"Diamond Sea Glaze", category:"Doors & Windows", parts:"(add)", service:"(add)", catalog:"", note:""},
+    {name:"Pacific Coast Marine", category:"Watertight Doors", parts:"(add)", service:"(add)", catalog:"", note:""},
+    {name:"Steelhead Marine", category:"Cranes & Davits", parts:"Buffy Light — blight@advantecmarine.com", service:"support@advantecmarine.com", catalog:"", note:"Remotes, controllers, lift lines, davit parts — Buffy is the direct contact"}
+  ]
+},
+{
+  id:"powerpole", name:"Power-Pole", category:"Anchors / Shallow-water", status:"none",
+  followup:"We don't have dealer-portal access yet. Action: follow up with Power-Pole to get APB set up with portal access + a parts/service contact.",
+  links:[], contacts:[], forms:[], howto:[]
+},
+{
+  id:"cmc", name:"CMC Marine", category:"Stabilizers, Thrusters & Steering", status:"mid",
+  links:[],
+  contacts:[
+    {role:"US Sales (Ft. Lauderdale)", name:"Ben Royston — Sales Manager", email:"b.royston@cmcmarine.com", phone:"cell (954) 669-3656", note:"CMC Marine Corporation · 240 SW 30th St, Unit #1, Ft. Lauderdale, FL 33315"},
+    {role:"Application / Engineering (Italy)", name:"Raffa Invrea", email:"r.invrea@cmcmarine.com", phone:"", note:"CMC HQ, Italy (CET)"}
+  ],
+  forms:[
+    {label:"Data Collection Form — to spec a system (PDF)", url:"CMC-Data-Collection-Form.pdf"}
+  ],
+  hours:"US office in Ft. Lauderdale (Ben Royston) on US Eastern; engineering / HQ in Italy (CET, ~6 hrs ahead).",
+  howto:[
+    "To spec a CMC stabilizer / thruster / steering system, complete the Data Collection Form with the vessel's data in FULL LOAD condition.",
+    "Core vessel data: LOA, LWL, max beam (BMAX) & beam at waterline (BWL), midship draft (TM), displacement (Δ), gross tonnage, cruising & max speed, onboard power supply.",
+    "Stabilizers also need GMT (transversal metacentric height) & block coefficient; thrusters need lateral wet surface, windage area & tunnel position; steering needs rudder area, balance ratio & max torque @35°.",
+    "Attach if available: Hull 3D, appendage plan, rudder drawing. Any missing * values → CMC estimates them and flags it in the proposal."
+  ],
+  parts:"(add CMC parts contact / ordering process)",
+  service:"(add CMC service / commissioning process)"
+},
+{ id:"fci", name:"FCI Watermakers", category:"Watermakers / RO", status:"soon" },
+{ id:"seavision", name:"Sea Vision", category:"Underwater Lighting", status:"soon" }
+];
+const STATUS={
+  full:["p-full","Full dealer portal"], mid:["p-mid","Catalog + email"],
+  none:["p-none","No portal yet — follow up"], soon:["p-soon","Details coming"]
+};
+
+function renderCards(q){
+  q=(q||"").toLowerCase();
+  $("cards").innerHTML=PORTALS.filter(p=>!q||(p.name+" "+p.category).toLowerCase().includes(q)).map(p=>{
+    const st=STATUS[p.status]||STATUS.soon;
+    return `<div class="card" data-id="${esc(p.id)}">
+      <div class="nm">${esc(p.name)}</div>
+      <div class="cat">${esc(p.category)}</div>
+      ${p.subBrands?`<div class="brands">+${p.subBrands.length} brands inside</div>`:""}
+      <div class="sp"></div>
+      <span class="pill ${st[0]}"><i></i>${st[1]}</span>
+      <div class="go">Open →</div>
+    </div>`;
+  }).join("");
+  $("cards").querySelectorAll(".card").forEach(c=>c.onclick=()=>openDrawer(c.dataset.id));
+}
+
+const PORTAL_IC=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+const FORM_IC=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>`;
+
+function contactHTML(c){
+  if(!c.name&&!c.email&&!c.phone) return "";
+  const phone=c.phone?c.phone.split("·")[0].trim():"";
+  const phoneRaw=phone.replace(/[^+0-9]/g,"");
+  return `<div class="ccard">
+    <div class="ccard-h">
+      <div class="ccard-nm">${esc(c.name||"—")}</div>
+      ${c.role?`<span class="ccard-role">${esc(c.role)}</span>`:""}
+    </div>
+    <div class="ccard-acts">
+      ${c.email?`<a class="ccard-act" href="mailto:${esc(c.email)}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> ${esc(c.email)}</a>`:""}
+      ${phoneRaw?`<a class="ccard-act" href="tel:${phoneRaw}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6.08 6.08l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16.92z"/></svg> ${esc(phone)}</a>`:""}
+    </div>
+    ${c.note?`<div class="ccard-note">${esc(c.note)}</div>`:""}
+  </div>`;
+}
+function linkHTML(l, isForm){
+  const href=l.url||"#"; const ext=l.url?` target="_blank" rel="noopener"`:"";
+  if(l.featured){
+    return `<a class="plink-hero" href="${esc(href)}"${ext}>
+      <div class="ph-ic">${PORTAL_IC}</div>
+      <div class="ph-body">
+        <div class="ph-name">${esc(l.label)}</div>
+        <div class="ph-desc">${esc(l.desc)}</div>
+      </div>
+      <div class="ph-btn">Sign in →</div>
+    </a>`;
+  }
+  if(l.desc){
+    return `<a class="plink-card" href="${esc(href)}"${ext}>
+      <div class="pc-ic">${isForm?FORM_IC:PORTAL_IC}</div>
+      <div class="pc-body">
+        <div class="pc-nm">${esc(l.label)}</div>
+        <div class="pc-desc">${esc(l.desc)}</div>
+        <div class="pc-go">Sign in →</div>
+      </div>
+    </a>`;
+  }
+  return `<a class="lnk" href="${esc(href)}"${ext}><span>${esc(l.label)}</span><span class="ar">↗</span></a>`;
+}
+function block(title,html){ return html?`<div class="block"><h3>${title}</h3>${html}</div>`:""; }
+
+function openDrawer(id){
+  const p=PORTALS.find(x=>x.id===id); if(!p) return;
+  const st=STATUS[p.status]||STATUS.soon;
+  $("dName").textContent=p.name; $("dCat").textContent=p.category;
+  $("dStatus").innerHTML=`<span class="pill ${st[0]}"><i></i>${st[1]}</span>`;
+  let h="";
+  if(p.followup) h+=`<div class="block"><div class="followup">⚑ ${esc(p.followup)}</div></div>`;
+  h+=block("Dealer Portals", (p.links&&p.links.length)?p.links.map(l=>linkHTML(l,false)).join(""):"");
+  if(p.subBrands&&p.subBrands.length){
+    h+=`<div class="block"><h3>Brands under ${esc(p.name)}</h3>`+p.subBrands.map(s=>`
+      <div class="ccard">
+        <div class="ccard-h"><div class="ccard-nm">${esc(s.name)}</div><span class="ccard-role">${esc(s.category)}</span></div>
+        <div class="ccard-acts" style="margin-top:8px;flex-direction:column;gap:3px">
+          ${s.parts?`<div style="font-size:12.5px;color:var(--ink-2)"><b style="color:var(--ink)">Parts:</b> ${esc(s.parts)}</div>`:""}
+          ${s.service?`<div style="font-size:12.5px;color:var(--ink-2)"><b style="color:var(--ink)">Service:</b> ${esc(s.service)}</div>`:""}
+          ${s.catalog?`<div style="font-size:12.5px"><b style="color:var(--ink)">Catalog:</b> <a href="${esc(s.catalog)}" target="_blank" rel="noopener" style="color:var(--accent)">open ↗</a></div>`:""}
+        </div>
+      </div>`).join("")+`</div>`;
+  }
+  h+=block("Points of Contact", (p.contacts&&p.contacts.length)?`<div class="ccard-grid">${p.contacts.map(contactHTML).filter(Boolean).join("")}</div>`:"");
+  h+=block("Forms", (p.forms&&p.forms.length)?`<div class="form-chips">${p.forms.map(l=>`<a class="form-chip" href="${esc(l.url||'#')}" target="_blank" rel="noopener">${FORM_IC}${esc(l.label)}</a>`).join("")}</div>`:"");
+  h+=block("Hours", p.hours?`<div class="hours">${esc(p.hours)}</div>`:"");
+  h+=block("How It Works", (p.howto&&p.howto.length)?`<div class="steps">${p.howto.map((x,i)=>`<div class="step"><span class="step-n">${i+1}</span><span class="step-t">${esc(x)}</span></div>`).join("")}</div>`:"");
+  h+=block("Parts Ordering", p.parts?`<div class="proc ${/TBD|add /i.test(p.parts)?'tbd':''}">${esc(p.parts)}</div>`:"");
+  h+=block("Service", p.service?`<div class="proc">${esc(p.service)}</div>`:"");
+  h+=block("Install Notes", p.install?`<div class="proc ${/TBD|add /i.test(p.install)?'tbd':''}">${esc(p.install)}</div>`:"");
+  if(p.status==="soon" && !h.trim()) h=`<div class="block"><div class="proc tbd">Details coming — add links, contacts & process notes for ${esc(p.name)}.</div></div>`;
+  $("dBody").innerHTML=h;
+  $("scrim").classList.add("open"); $("drawer").classList.add("open");
+}
+function closeDrawer(){ $("scrim").classList.remove("open"); $("drawer").classList.remove("open"); }
+$("dx").onclick=closeDrawer; $("scrim").onclick=closeDrawer;
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeDrawer();});
+$("q").addEventListener("input",e=>renderCards(e.target.value));
+renderCards("");
+</script>
+</body>
+</html>
