@@ -325,7 +325,7 @@ async function loadLeads(){
   if(currentTab==='leads') renderBoard();
 }
 async function loadJobs(){
-  const{data,error}=await sb.from('apb_jobs').select('id,job_name,job_number,job_type,status,start_date,completion_date,estimated_value,vessel_name,vessel_length,ms_list_item_id,scope_of_work,notes,proposal_url,proposal_filename,department,created_at,apb_engagements(name)').order('created_at',{ascending:false});
+  const{data,error}=await sb.from('apb_jobs').select('id,job_name,job_number,job_type,status,start_date,completion_date,ms_list_item_id,pm_notes,admin_notes,rd_flag,created_at,updated_at,apb_engagements(name,vessel_name,vessel_length,vessel_type,vessel_year,vessel_make)').order('created_at',{ascending:false});
   if(error){console.error(error);return;}
   allJobs=data||[];
   document.getElementById('jobTabCount').textContent=allJobs.length;
@@ -399,6 +399,8 @@ function leadCard(l){
 // ── Job card ──
 function jobCard(j){
   const engName=j.apb_engagements?.name||'';
+  const vesselName=j.apb_engagements?.vessel_name||j.vessel_name||'';
+  const vesselLength=j.apb_engagements?.vessel_length||j.vessel_length||'';
   const spLink=engName?spFolderUrl(engName):'';
   return`<div class="kcard" draggable="true"
     ondragstart="onDragStart(event,'${j.id}')"
@@ -411,9 +413,9 @@ function jobCard(j){
         <button class="kcard-action danger" onclick="deleteJob('${j.id}')" title="Delete">✕</button>
       </div>
     </div>
-    ${j.vessel_name?`<div class="kcard-vessel">⚓ ${esc(j.vessel_name)}${j.vessel_length?' · '+j.vessel_length+'ft':''}</div>`:''}
+    ${vesselName?`<div class="kcard-vessel">⚓ ${esc(vesselName)}${vesselLength?' · '+vesselLength+'ft':''}</div>`:''}
     ${j.job_number?`<div class="kcard-meta"><span class="kcard-jobno">${esc(j.job_number)}</span></div>`:''}
-    ${j.department?`<div class="kcard-meta" style="font-size:11px;color:var(--ink-4)">${esc(j.department)}</div>`:''}
+    ${j.job_type?`<div class="kcard-meta" style="font-size:11px;color:var(--ink-4)">${esc(j.job_type)}</div>`:''}
     <div class="kcard-footer">
       <div class="kcard-date">${fmtDate(j.created_at)}</div>
       <div style="display:flex;align-items:center;gap:6px">
@@ -559,13 +561,8 @@ async function saveJob(){
   if(upload===null){btn.disabled=false;btn.textContent='Save Job';return;}
   const payload={
     job_name:name,job_number:v('jf_job_number'),
-    estimated_value:v('jf_estimated_value')?parseFloat(v('jf_estimated_value')):null,
-    department:v('jf_department'),status:v('jf_status')||'Approved',
-    vessel_name:v('jf_vessel_name'),vessel_type:v('jf_vessel_type'),
-    vessel_length:v('jf_vessel_length')||null,vessel_year:v('jf_vessel_year')||null,
-    vessel_make:v('jf_vessel_make'),vessel_flag:v('jf_vessel_flag'),
-    scope_of_work:v('jf_scope_of_work'),notes:v('jf_notes'),
-    proposal_url:upload?.url||null,proposal_filename:upload?.filename||null
+    status:v('jf_status')||'Approved',
+    pm_notes:v('jf_scope_of_work'),admin_notes:v('jf_notes'),
   };
   const{error}=editingJobId?await sb.from('apb_jobs').update(payload).eq('id',editingJobId):await sb.from('apb_jobs').insert(payload);
   btn.disabled=false;btn.textContent='Save Job';
@@ -585,15 +582,15 @@ function showJobDetail(id){
     <div class="detail-row">
       <div class="detail-field"><div class="detail-label">Status</div><div class="detail-value"><span class="status-badge badge-${statusKey}">${j.status||'—'}</span></div></div>
       <div class="detail-field"><div class="detail-label">Job Number</div><div class="detail-value" style="font-family:var(--mono)">${esc(j.job_number||'—')}</div></div>
-      <div class="detail-field"><div class="detail-label">Vessel</div><div class="detail-value">${esc(j.vessel_name||'—')}</div></div>
-      <div class="detail-field"><div class="detail-label">Type / Length</div><div class="detail-value">${[j.vessel_type,j.vessel_length?j.vessel_length+'ft':''].filter(Boolean).join(' · ')||'—'}</div></div>
-      <div class="detail-field"><div class="detail-label">Department</div><div class="detail-value">${esc(j.department||'—')}</div></div>
-      <div class="detail-field"><div class="detail-label">Est. Value</div><div class="detail-value" style="color:var(--green);font-family:var(--mono);font-weight:600">${j.estimated_value?'$'+Number(j.estimated_value).toLocaleString():'—'}</div></div>
+      <div class="detail-field"><div class="detail-label">Vessel</div><div class="detail-value">${esc(j.apb_engagements?.vessel_name||'—')}</div></div>
+      <div class="detail-field"><div class="detail-label">Type / Length</div><div class="detail-value">${[j.apb_engagements?.vessel_type,j.apb_engagements?.vessel_length?j.apb_engagements.vessel_length+'ft':''].filter(Boolean).join(' · ')||'—'}</div></div>
+      
+      
       <div class="detail-field"><div class="detail-label">Added</div><div class="detail-value">${fmtDate(j.created_at)}</div></div>
       ${j.ms_list_item_id?`<div class="detail-field"><div class="detail-label">SharePoint</div><div class="detail-value"><a href="https://allpointsboats1.sharepoint.com/sites/operations/Lists/Jobs/DispForm.aspx?ID=${j.ms_list_item_id}" target="_blank" style="color:var(--accent)">Open job →</a></div></div>`:''}
     </div>
-    ${j.scope_of_work?`<div class="detail-section">Scope of Work</div><div class="detail-value" style="white-space:pre-wrap">${esc(j.scope_of_work)}</div>`:''}
-    ${j.notes?`<div class="detail-section">Notes</div><div class="detail-value" style="white-space:pre-wrap">${esc(j.notes)}</div>`:''}
+    ${j.pm_notes?`<div class="detail-section">Scope of Work</div><div class="detail-value" style="white-space:pre-wrap">${esc(j.pm_notes)}</div>`:''}
+    ${j.admin_notes?`<div class="detail-section">Notes</div><div class="detail-value" style="white-space:pre-wrap">${esc(j.admin_notes)}</div>`:''}
     ${j.proposal_url?`<div class="detail-section">Proposal</div><div class="proposal-link"><span style="flex:1;font-size:13px;color:var(--ink-2)">${esc(j.proposal_filename||'Proposal')}</span><a href="${j.proposal_url}" target="_blank">View PDF →</a></div>`:''}`;
   document.getElementById('detailFooter').innerHTML=`
     <button class="btn btn-cancel" onclick="closeDetail()">Close</button>
