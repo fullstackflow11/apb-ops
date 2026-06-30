@@ -196,7 +196,109 @@ body {
 
 @media (max-width: 900px) { .g4 { grid-template-columns: repeat(2,1fr); } .g3 { grid-template-columns: repeat(2,1fr); } }
 @media (max-width: 600px) { .g4,.g3,.g2 { grid-template-columns: 1fr; } .wrap { padding: 16px 14px 60px; } }
+
+/* ── Dashboard widgets ── */
+.kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;position:relative;overflow:hidden;box-shadow:var(--shadow-sm)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--line);border-radius:14px 14px 0 0}
+.kpi.blue::before{background:var(--accent)}
+.kpi.green::before{background:var(--green)}
+.kpi.red::before{background:var(--red)}
+.kpi.amber::before{background:var(--amber)}
+.kpi.violet::before{background:var(--violet)}
+.kpi-label{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--ink-3);text-transform:uppercase;margin-bottom:7px}
+.kpi-value{font-family:var(--mono);font-size:34px;font-weight:500;color:var(--ink)}
+.kpi-sub{font-size:11px;color:var(--ink-4);margin-top:5px}
+.loading-pulse{animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.alert-banner{border-radius:10px;padding:12px 16px;display:none;align-items:center;gap:12px;margin-bottom:14px;font-size:13px}
+.alert-banner.amber{background:var(--amber-soft);border:1px solid rgba(184,106,0,.25);color:var(--amber);display:flex}
+.alert-link{font-size:11px;font-weight:700;color:var(--amber);border:1px solid rgba(184,106,0,.3);padding:4px 10px;border-radius:6px;cursor:pointer;margin-left:auto;white-space:nowrap}
+.launch-tabs{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:14px}
+.launch-tab{padding:9px 18px;font-size:13px;font-weight:600;color:var(--ink-3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
+.launch-tab:hover{color:var(--ink-2)}
+.launch-tab.active{color:var(--ink);border-bottom-color:var(--accent)}
+.launch-panel{display:none}.launch-panel.active{display:block}
+.tile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 14px;display:flex;flex-direction:column;gap:7px;cursor:pointer;transition:all .15s;text-decoration:none;box-shadow:var(--shadow-sm)}
+.tile:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:var(--shadow)}
+.tile .ico{font-size:24px}.tile .name{font-size:13px;font-weight:600;color:var(--ink)}.tile .sub{font-size:11px;color:var(--ink-3)}
+.widget-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dash-panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow-sm)}
+.dash-panel-header{padding:13px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.dash-panel-title{font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--ink-3);text-transform:uppercase}
+.dash-panel-count{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);background:var(--panel-2);padding:2px 8px;border-radius:6px}
+.dash-panel-count.amber{color:var(--amber);background:var(--amber-soft)}
+.dash-panel-count a{color:var(--accent);text-decoration:none;font-size:11.5px;font-weight:600}
+.dash-panel-body{max-height:320px;overflow-y:auto}
+.dash-panel-body.pad{padding:14px 18px}
+.embed{width:100%;display:block;border:none}
+.pipeline-chart{padding:16px 18px}
+.pipeline-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.pipeline-label{font-size:11px;color:var(--ink-3);width:140px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pipeline-bar-wrap{flex:1;height:7px;background:var(--line-2);border-radius:4px;overflow:hidden}
+.pipeline-bar{height:100%;border-radius:4px;transition:width .8s cubic-bezier(.16,1,.3,1)}
+.pipeline-count{font-family:var(--mono);font-size:11px;color:var(--ink);width:22px;text-align:right}
+.job-item{display:flex;align-items:center;gap:9px;padding:10px 16px;border-bottom:1px solid var(--line-2);font-size:12.5px}
+.job-item:last-child{border-bottom:none}
+.job-item:hover{background:var(--panel-2)}
+.status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.job-engagement{font-weight:600;color:var(--ink);min-width:90px;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
+.job-name{font-size:12px;color:var(--ink-3);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.job-num{font-family:var(--mono);font-size:10px;color:var(--ink-4);flex-shrink:0}
+.job-rep{font-size:11px;color:var(--ink-4);flex-shrink:0}
+.ts-row{display:flex;align-items:center;gap:9px;padding:10px 16px;border-bottom:1px solid var(--line-2);font-size:12.5px}
+.ts-row:last-child{border-bottom:none}
+.ts-tech{font-weight:600;color:var(--ink);min-width:80px;flex-shrink:0}
+.ts-job{flex:1;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}
+.ts-hours{font-family:var(--mono);font-size:12px;color:var(--ink);flex-shrink:0}
+.ts-date{font-size:11px;color:var(--ink-4);flex-shrink:0}
+.todo-input-row{display:flex;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.todo-input{flex:1;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:9px 12px;font-size:13.5px;font-family:inherit}
+.todo-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.todo-add{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:0 16px;font-weight:700;cursor:pointer;font-size:18px}
+.todo-item{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--line-2)}
+.todo-item:last-child{border-bottom:none}
+.todo-item input{width:17px;height:17px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+.todo-item .txt{flex:1;font-size:13.5px;color:var(--ink)}
+.todo-item.done .txt{color:var(--ink-4);text-decoration:line-through}
+.todo-item .del{color:var(--ink-4);cursor:pointer;font-size:15px;padding:0 4px}
+.badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;flex-shrink:0}
+.badge-rtbb{background:var(--amber-soft);color:var(--amber)}
+.badge-ip{background:var(--accent-soft);color:var(--accent-2)}
+.badge-nir{background:var(--red-soft);color:var(--red)}
+.badge-is{background:var(--green-soft);color:var(--green)}
+.badge-app{background:var(--violet-soft);color:var(--violet)}
+.badge-lead{background:var(--slate-soft);color:var(--slate)}
+.empty-state{padding:24px;text-align:center;color:var(--ink-3);font-size:13px}
+.spinner-sm{width:20px;height:20px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:28px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.weather-chip{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:7px 13px;background:var(--panel)}
+.weather-chip .temp{font-family:var(--mono);font-size:17px;color:var(--ink);font-weight:500}
+.weather-chip .meta{font-size:10px;color:var(--ink-3)}
+.weather-chip .desc{font-size:12px;color:var(--ink-2)}
+.btn-refresh{background:var(--panel);border:1px solid var(--line);color:var(--ink-3);padding:6px 12px;border-radius:8px;cursor:pointer;font-size:11px;font-weight:600}
+.btn-refresh:hover{border-color:var(--accent);color:var(--accent)}
+.rd-item{padding:13px 18px;border-bottom:1px solid var(--line-2)}
+.rd-item-header{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.rd-entity{font-weight:600;font-size:13px;color:var(--ink);flex:1}
+.rd-type{font-size:10px;font-weight:700;letter-spacing:.08em;background:var(--panel-2);padding:2px 7px;border-radius:5px;color:var(--ink-3)}
+.rd-conf-high{font-size:10px;font-weight:700;color:var(--green);background:var(--green-soft);padding:2px 7px;border-radius:5px}
+.rd-conf-medium{font-size:10px;font-weight:700;color:var(--amber);background:var(--amber-soft);padding:2px 7px;border-radius:5px}
+.rd-reason{font-size:12px;color:var(--ink-3);line-height:1.5;margin-bottom:8px}
+.rd-actions{display:flex;gap:8px;align-items:center}
+.rd-btn{font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:7px;cursor:pointer;border:1px solid}
+.rd-btn-approve{background:var(--green-soft);color:var(--green);border-color:rgba(11,158,106,.3)}
+.rd-btn-reject{background:var(--red-soft);color:var(--red);border-color:rgba(196,48,48,.3)}
+.rd-decided{font-size:12px;font-weight:700}
+.rd-decided.approved{color:var(--green)}.rd-decided.rejected{color:var(--red)}
+.calendar-placeholder{padding:28px;text-align:center;color:var(--ink-3);font-size:13px;line-height:1.6}
+.calendar-placeholder .big{font-size:32px;margin-bottom:10px}
+@media(max-width:900px){.kpi-row{grid-template-columns:repeat(3,1fr)}.widget-grid{grid-template-columns:1fr}}
+@media(max-width:600px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -211,12 +313,12 @@ body {
   <div class="topbar-spacer"></div>
   <div class="live-badge"><div class="dot"></div> Live</div>
   <div class="clock" id="clock"></div>
-<div class="weather-chip" style="margin-left:8px;">
-    <div><div class="temp" id="wtemp">--°</div><div class="meta" style="font-size:10px;">FT LAUDERDALE</div></div>
-    <div><div class="desc" id="wdesc" style="font-size:12px;color:var(--ink-2);">…</div><div class="meta" id="wwind" style="font-size:10px;color:var(--ink-3);"></div></div>
+  <div class="weather-chip" style="margin-left:4px">
+    <div><div class="temp" id="wtemp">--°</div><div class="meta">FT LAUDERDALE</div></div>
+    <div><div class="desc" id="wdesc" style="font-size:12px;color:var(--ink-2)">…</div><div class="meta" id="wwind"></div></div>
   </div>
-  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
-    <div class="updated" id="lastUpdated">…</div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+    <div style="font-family:var(--mono);font-size:10px;color:var(--ink-4)" id="lastUpdated">…</div>
     <button class="btn-refresh" onclick="loadAll()">↻ Refresh</button>
   </div>
 </header>
@@ -247,44 +349,35 @@ body {
     <div class="launch-tab" onclick="switchLaunch('marine',this)">Marine & Weather</div>
     <div class="launch-tab" onclick="switchLaunch('tools',this)">Tools & Files</div>
   </div>
-  <div class="launch-panel active" id="lp-comm">
-    <div class="tile-grid">
-      <a class="tile" href="https://outlook.office.com/mail/" target="_blank"><span class="ico">📧</span><span class="name">Outlook</span><span class="sub">Email</span></a>
-      <a class="tile" href="https://mail.google.com" target="_blank"><span class="ico">✉️</span><span class="name">Gmail</span><span class="sub">Email</span></a>
-      <a class="tile" href="https://teams.microsoft.com" target="_blank"><span class="ico">💬</span><span class="name">Teams</span><span class="sub">Chat & calls</span></a>
-    </div>
-  </div>
-  <div class="launch-panel" id="lp-social">
-    <div class="tile-grid">
-      <a class="tile" href="https://www.facebook.com/allpointsboats/" target="_blank"><span class="ico">📘</span><span class="name">Facebook</span><span class="sub">@allpointsboats</span></a>
-      <a class="tile" href="https://www.instagram.com/allpointsboats/" target="_blank"><span class="ico">📸</span><span class="name">Instagram</span><span class="sub">@allpointsboats</span></a>
-      <a class="tile" href="https://www.linkedin.com/company/all-points-boats" target="_blank"><span class="ico">💼</span><span class="name">LinkedIn</span><span class="sub">Company page</span></a>
-      <a class="tile" href="https://www.youtube.com/results?search_query=all+points+boats+fort+lauderdale" target="_blank"><span class="ico">▶️</span><span class="name">YouTube</span><span class="sub">Channel</span></a>
-    </div>
-  </div>
-  <div class="launch-panel" id="lp-marine">
-    <div class="tile-grid">
-      <a class="tile" href="https://www.marinetraffic.com/en/ais/home/centerx:-80.14/centery:26.12/zoom:11" target="_blank"><span class="ico">🚢</span><span class="name">MarineTraffic</span><span class="sub">Live vessel map</span></a>
-      <a class="tile" href="https://forecast.weather.gov/MapClick.php?lat=26.12&lon=-80.14" target="_blank"><span class="ico">🌊</span><span class="name">Marine Forecast</span><span class="sub">NWS Miami</span></a>
-      <a class="tile" href="https://www.windy.com/?26.122,-80.137,11" target="_blank"><span class="ico">💨</span><span class="name">Windy</span><span class="sub">Wind & waves</span></a>
-      <a class="tile" href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722956" target="_blank"><span class="ico">🌙</span><span class="name">Tides</span><span class="sub">NOAA Ft Lauderdale</span></a>
-    </div>
-  </div>
-  <div class="launch-panel" id="lp-tools">
-    <div class="tile-grid">
-      <a class="tile" href="https://quickbooks.intuit.com" target="_blank"><span class="ico">💰</span><span class="name">QuickBooks</span><span class="sub">Invoices & A/R</span></a>
-      <a class="tile" href="https://www.office.com/launch/sharepoint" target="_blank"><span class="ico">📁</span><span class="name">SharePoint</span><span class="sub">Docs & Jobs</span></a>
-      <a class="tile" href="https://onedrive.live.com" target="_blank"><span class="ico">☁️</span><span class="name">OneDrive</span><span class="sub">Files</span></a>
-      <a class="tile" href="https://claude.ai" target="_blank"><span class="ico">✦</span><span class="name">Claude</span><span class="sub">AI assistant</span></a>
-      <a class="tile" href="apb-tech-portal.html" target="_blank"><span class="ico">🔧</span><span class="name">Tech Portal</span><span class="sub">Timesheets</span></a>
-      <a class="tile" href="apb-admin-review.html" target="_blank"><span class="ico">✅</span><span class="name">Review</span><span class="sub">Timesheet review</span></a>
-      <a class="tile" href="apb-admin-jobs.html" target="_blank"><span class="ico">📋</span><span class="name">CRM</span><span class="sub">Leads & Jobs</span></a>
-      <a class="tile" href="https://supabase.com/dashboard/project/aanrxyiocxxndkvkeocv/editor" target="_blank"><span class="ico">🗄️</span><span class="name">Database</span><span class="sub">Supabase</span></a>
-    </div>
-  </div>
+  <div class="launch-panel active" id="lp-comm"><div class="tile-grid">
+    <a class="tile" href="https://outlook.office.com/mail/" target="_blank"><span class="ico">📧</span><span class="name">Outlook</span><span class="sub">Email</span></a>
+    <a class="tile" href="https://mail.google.com" target="_blank"><span class="ico">✉️</span><span class="name">Gmail</span><span class="sub">Email</span></a>
+    <a class="tile" href="https://teams.microsoft.com" target="_blank"><span class="ico">💬</span><span class="name">Teams</span><span class="sub">Chat & calls</span></a>
+  </div></div>
+  <div class="launch-panel" id="lp-social"><div class="tile-grid">
+    <a class="tile" href="https://www.facebook.com/allpointsboats/" target="_blank"><span class="ico">📘</span><span class="name">Facebook</span><span class="sub">@allpointsboats</span></a>
+    <a class="tile" href="https://www.instagram.com/allpointsboats/" target="_blank"><span class="ico">📸</span><span class="name">Instagram</span><span class="sub">@allpointsboats</span></a>
+    <a class="tile" href="https://www.linkedin.com/company/all-points-boats" target="_blank"><span class="ico">💼</span><span class="name">LinkedIn</span><span class="sub">Company page</span></a>
+  </div></div>
+  <div class="launch-panel" id="lp-marine"><div class="tile-grid">
+    <a class="tile" href="https://www.marinetraffic.com/en/ais/home/centerx:-80.14/centery:26.12/zoom:11" target="_blank"><span class="ico">🚢</span><span class="name">MarineTraffic</span><span class="sub">Live vessel map</span></a>
+    <a class="tile" href="https://forecast.weather.gov/MapClick.php?lat=26.12&lon=-80.14" target="_blank"><span class="ico">🌊</span><span class="name">Marine Forecast</span><span class="sub">NWS Miami</span></a>
+    <a class="tile" href="https://www.windy.com/?26.122,-80.137,11" target="_blank"><span class="ico">💨</span><span class="name">Windy</span><span class="sub">Wind & waves</span></a>
+    <a class="tile" href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722956" target="_blank"><span class="ico">🌙</span><span class="name">Tides</span><span class="sub">NOAA Ft Lauderdale</span></a>
+  </div></div>
+  <div class="launch-panel" id="lp-tools"><div class="tile-grid">
+    <a class="tile" href="https://quickbooks.intuit.com" target="_blank"><span class="ico">💰</span><span class="name">QuickBooks</span><span class="sub">Invoices & A/R</span></a>
+    <a class="tile" href="https://www.office.com/launch/sharepoint" target="_blank"><span class="ico">📁</span><span class="name">SharePoint</span><span class="sub">Docs & Jobs</span></a>
+    <a class="tile" href="https://onedrive.live.com" target="_blank"><span class="ico">☁️</span><span class="name">OneDrive</span><span class="sub">Files</span></a>
+    <a class="tile" href="https://claude.ai" target="_blank"><span class="ico">✦</span><span class="name">Claude</span><span class="sub">AI assistant</span></a>
+    <a class="tile" href="apb-tech-portal.html" target="_blank"><span class="ico">🔧</span><span class="name">Tech Portal</span><span class="sub">Timesheets</span></a>
+    <a class="tile" href="apb-admin-review.html" target="_blank"><span class="ico">✅</span><span class="name">Review</span><span class="sub">Timesheet review</span></a>
+    <a class="tile" href="apb-admin-jobs.html" target="_blank"><span class="ico">📋</span><span class="name">CRM</span><span class="sub">Leads & Jobs</span></a>
+    <a class="tile" href="https://supabase.com/dashboard/project/aanrxyiocxxndkvkeocv/editor" target="_blank"><span class="ico">🗄️</span><span class="name">Database</span><span class="sub">Supabase</span></a>
+  </div></div>
 
   <!-- ── Live Maps ── -->
-  <div class="section-head" style="margin-top:28px;"><h2>Live</h2><div class="rule"></div></div>
+  <div class="section-head" style="margin-top:28px"><h2>Live</h2><div class="rule"></div></div>
   <div class="widget-grid">
     <div class="dash-panel">
       <div class="dash-panel-header"><span class="dash-panel-title">Marine Traffic — Ft Lauderdale</span></div>
@@ -295,19 +388,19 @@ body {
       <div><iframe class="embed" height="340" src="https://embed.windy.com/embed2.html?lat=26.122&lon=-80.137&detailLat=26.122&detailLon=-80.137&width=650&height=360&zoom=10&level=surface&overlay=wind&menu=&message=&marker=&calendar=12&pressure=&type=map&location=coordinates&detail=&metricWind=mph&metricTemp=%C2%B0F&radarRange=-1"></iframe></div>
     </div>
   </div>
-  <div class="widget-grid" style="margin-top:12px;">
+  <div class="widget-grid" style="margin-top:12px">
     <div class="dash-panel">
       <div class="dash-panel-header"><span class="dash-panel-title">Marine Forecast</span><a class="dash-panel-count" href="https://forecast.weather.gov/MapClick.php?lat=26.12&lon=-80.14" target="_blank">NWS ↗</a></div>
-      <div class="dash-panel-body pad" id="marineForecast"><div class="spinner"></div></div>
+      <div class="dash-panel-body pad" id="marineForecast"><div class="spinner-sm"></div></div>
     </div>
     <div class="dash-panel">
       <div class="dash-panel-header"><span class="dash-panel-title">Tides — Ft Lauderdale</span><a class="dash-panel-count" href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722956" target="_blank">NOAA ↗</a></div>
-      <div class="dash-panel-body pad" id="tideInfo"><div class="spinner"></div></div>
+      <div class="dash-panel-body pad" id="tideInfo"><div class="spinner-sm"></div></div>
     </div>
   </div>
 
   <!-- ── My Day ── -->
-  <div class="section-head" style="margin-top:28px;"><h2>My Day</h2><div class="rule"></div></div>
+  <div class="section-head" style="margin-top:28px"><h2>My Day</h2><div class="rule"></div></div>
   <div class="widget-grid">
     <div class="dash-panel">
       <div class="dash-panel-header"><span class="dash-panel-title">To-Do</span><span class="dash-panel-count" id="todoCount">0</span></div>
@@ -320,17 +413,13 @@ body {
     <div class="dash-panel">
       <div class="dash-panel-header"><span class="dash-panel-title">Calendar</span></div>
       <div class="dash-panel-body">
-        <div class="calendar-placeholder">
-          <div class="big">📅</div>
-          Outlook calendar not connected yet.<br>
-          <a href="https://outlook.office.com/calendar/" target="_blank" style="color:var(--accent);font-size:12px;font-weight:600;">Open Outlook Calendar →</a>
-        </div>
+        <div class="calendar-placeholder"><div class="big">📅</div>Outlook calendar not connected yet.<br><a href="https://outlook.office.com/calendar/" target="_blank" style="color:var(--accent);font-size:12px;font-weight:600">Open Outlook Calendar →</a></div>
       </div>
     </div>
   </div>
 
   <!-- ── Jobs ── -->
-  <div class="section-head" style="margin-top:28px;"><h2>Jobs</h2><div class="rule"></div></div>
+  <div class="section-head" style="margin-top:28px"><h2>Jobs</h2><div class="rule"></div></div>
   <div class="widget-grid">
     <div class="dash-panel">
       <div class="dash-panel-header"><span class="dash-panel-title">Pipeline</span><span class="dash-panel-count" id="pipelineTotal">—</span></div>
@@ -338,25 +427,25 @@ body {
     </div>
     <div class="dash-panel">
       <div class="dash-panel-header"><span class="dash-panel-title">Ready To Bill</span><span class="dash-panel-count amber" id="billCount">—</span></div>
-      <div class="dash-panel-body" id="billList"><div class="spinner"></div></div>
+      <div class="dash-panel-body" id="billList"><div class="spinner-sm"></div></div>
     </div>
   </div>
-  <div class="widget-grid" style="margin-top:12px;">
+  <div class="widget-grid" style="margin-top:12px">
     <div class="dash-panel">
       <div class="dash-panel-header"><span class="dash-panel-title">In Progress</span><span class="dash-panel-count" id="ipCount">—</span></div>
-      <div class="dash-panel-body" id="ipList"><div class="spinner"></div></div>
+      <div class="dash-panel-body" id="ipList"><div class="spinner-sm"></div></div>
     </div>
     <div class="dash-panel">
       <div class="dash-panel-header"><span class="dash-panel-title">Recent Timesheets</span><span class="dash-panel-count" id="tsCount">—</span></div>
-      <div class="dash-panel-body" id="tsList"><div class="spinner"></div></div>
+      <div class="dash-panel-body" id="tsList"><div class="spinner-sm"></div></div>
     </div>
   </div>
 
-  <!-- ── R&D Section ── -->
-  <div class="section-head" id="rdSection" style="margin-top:28px;"><h2>R&D Review</h2><div class="rule"></div></div>
+  <!-- ── R&D ── -->
+  <div class="section-head" id="rdSection" style="margin-top:28px"><h2>R&D Review</h2><div class="rule"></div></div>
   <div class="dash-panel">
     <div class="dash-panel-header"><span class="dash-panel-title">Flagged Items</span><span class="dash-panel-count amber" id="rdPendingCount">—</span></div>
-    <div class="dash-panel-body" id="rdList"><div class="spinner"></div></div>
+    <div class="dash-panel-body" id="rdList"><div class="spinner-sm"></div></div>
   </div>
 
 
@@ -731,7 +820,7 @@ async function loadJobs(){
         <div class="status-dot" style="background:${STATUS_COLORS[j.status]||'#666'}"></div>
         <div class="job-engagement"><a href="${j.apb_engagements?.name ? 'https://allpointsboats1.sharepoint.com/sites/operations/Lists/Jobs/Grouped%20by%20Project.aspx?FilterField1=Parent%5Fx0020%5FProject&FilterValue1='+encodeURIComponent(j.apb_engagements.name)+'&FilterType1=Text&FilterDisplay1='+encodeURIComponent(j.apb_engagements.name)+'&viewid=3af2d7b3%2D0ba9%2D4ab5%2Dbed7%2Dbc4bdf461cb9' : '#'}" target="_blank" onclick="event.stopPropagation()" title="Open in SharePoint" style="color:inherit;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${j.apb_engagements?.name||'—'}</a></div>
         <div class="job-num">${j.job_number||''}</div>
-        <div class="job-name">${j.job_name}${j.ms_list_item_id ? '<a href="https://allpointsboats1.sharepoint.com/sites/operations/Lists/Jobs/DispForm.aspx?ID='+j.ms_list_item_id+'" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:var(--muted);margin-left:5px;text-decoration:none;" title="Open in SharePoint">↗</a>' : ''}</div>
+        <div class="job-name">${j.job_name}${j.ms_list_item_id ? '<a href="https://allpointsboats1.sharepoint.com/sites/operations/Lists/Jobs/DispForm.aspx?ID='+j.ms_list_item_id+'" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:var(--ink-3);margin-left:5px;text-decoration:none;" title="Open in SharePoint">↗</a>' : ''}</div>
         ${statusBadge(j.status)}
         <div class="job-rep">${j.apb_engagements?.rep||''}</div>
       </div>`).join('')
@@ -745,8 +834,8 @@ async function loadJobs(){
         <div class="status-dot" style="background:${STATUS_COLORS[j.status]||'#666'}"></div>
         <div class="job-engagement"><a href="${j.apb_engagements?.name ? 'https://allpointsboats1.sharepoint.com/sites/operations/Lists/Jobs/Grouped%20by%20Project.aspx?FilterField1=Parent%5Fx0020%5FProject&FilterValue1='+encodeURIComponent(j.apb_engagements.name)+'&FilterType1=Text&FilterDisplay1='+encodeURIComponent(j.apb_engagements.name)+'&viewid=3af2d7b3%2D0ba9%2D4ab5%2Dbed7%2Dbc4bdf461cb9' : '#'}" target="_blank" onclick="event.stopPropagation()" title="Open in SharePoint" style="color:inherit;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${j.apb_engagements?.name||'—'}</a></div>
         <div class="job-num">${j.job_number||''}</div>
-        <div class="job-name">${j.job_name}${j.ms_list_item_id ? '<a href="https://allpointsboats1.sharepoint.com/sites/operations/Lists/Jobs/DispForm.aspx?ID='+j.ms_list_item_id+'" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:var(--muted);margin-left:5px;text-decoration:none;" title="Open in SharePoint">↗</a>' : ''}</div>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);flex-shrink:0;">${j.job_status_pct!=null?j.job_status_pct+'%':''}</div>
+        <div class="job-name">${j.job_name}${j.ms_list_item_id ? '<a href="https://allpointsboats1.sharepoint.com/sites/operations/Lists/Jobs/DispForm.aspx?ID='+j.ms_list_item_id+'" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:var(--ink-3);margin-left:5px;text-decoration:none;" title="Open in SharePoint">↗</a>' : ''}</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--ink-3);flex-shrink:0;">${j.job_status_pct!=null?j.job_status_pct+'%':''}</div>
         <div class="job-rep">${j.apb_engagements?.rep||''}</div>
       </div>`).join('')
     : '<div class="empty-state">No jobs in progress</div>';
@@ -803,7 +892,7 @@ async function loadRdReviews(){
           ? `<button class="rd-btn rd-btn-approve" onclick="decideRd('${r.id}','approved')">✓ Approve R&D</button>
              <button class="rd-btn rd-btn-reject" onclick="decideRd('${r.id}','rejected')">✕ Not R&D</button>`
           : `<span class="rd-decided ${r.decision}">${r.decision==='approved'?'✓ Approved':'✕ Rejected'}</span>
-             <span style="font-size:11px;color:var(--muted);margin-left:8px;">by ${r.reviewed_by||'unknown'}</span>`
+             <span style="font-size:11px;color:var(--ink-3);margin-left:8px;">by ${r.reviewed_by||'unknown'}</span>`
         }
       </div>
     </div>`).join('');
