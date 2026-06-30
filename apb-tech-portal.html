@@ -2,556 +2,622 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>APB Tech Portal</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  :root {
-  --bg:#EDEEF2; --card:#ffffff; --card2:#F5F6FA; --panel:#ffffff; --panel-2:#F5F6FA;
-    --border:#DDE1E8; --border-bright:#C7CED9; --line:#DDE1E8; --line-2:#E8EBF0;
-    --silver:#2457E6; --silver-bright:#0D1626; --silver-dim:#6B7A92;
-    --metal:linear-gradient(135deg,#2457E6 0%,#1B45B8 100%);
-    --text:#0D1626; --muted:#6B7A92; --input-bg:#ffffff;
-    --danger:#C43030; --ok:#0B9E6A; --warn:#B86A00;
-    --ink:#0D1626; --ink-2:#3A4559; --ink-3:#6B7A92; --ink-4:#9BA9BE;
-    --accent:#2457E6; --accent-2:#1B45B8; --accent-soft:#EAF0FE;
-    --green:#0B9E6A; --green-soft:#E4F5EE;
-    --amber:#B86A00; --amber-soft:#FBF0E2;
-    --red:#C43030; --red-soft:#FBEAEA;
-    --violet:#6B3FD4; --violet-soft:#EEE9FC;
-    --blue:#2457E6; --cyan:#0A6E99;
-    --shadow-sm:0 1px 3px rgba(13,22,38,.07); --shadow:0 8px 28px -12px rgba(13,22,38,.14);
-    --mono:"DM Mono",ui-monospace,monospace;
-    --font-mono:"DM Mono",ui-monospace,monospace;
-    --font-body:Inter,-apple-system,"Segoe UI",sans-serif;
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#EDEEF2; --panel:#fff; --panel-2:#F5F6FA;
+  --ink:#0D1626; --ink-2:#3A4559; --ink-3:#6B7A92; --ink-4:#9BA9BE;
+  --line:#DDE1E8; --line-2:#E8EBF0;
+  --accent:#2457E6; --accent-2:#1B45B8; --accent-soft:#EAF0FE;
+  --green:#0B9E6A; --green-soft:#E4F5EE;
+  --amber:#B86A00; --amber-soft:#FBF0E2;
+  --red:#C43030; --red-soft:#FBEAEA;
+  --shadow-sm:0 1px 3px rgba(13,22,38,.07); --shadow:0 8px 28px -12px rgba(13,22,38,.14);
+  --mono:"DM Mono",ui-monospace,monospace;
 }
-  html { height: 100%; background:var(--bg); }
-  body { min-height: 100%; color: var(--text); font-family: Inter,-apple-system,'Segoe UI',sans-serif; max-width: 520px; margin: 0 auto; background:var(--bg); }
-  .screen { display: none; min-height: 100vh; flex-direction: column; }
-  .screen.active { display: flex; }
-  #loginScreen { align-items: center; justify-content: center; padding: 32px 24px;
-    background: radial-gradient(ellipse at 50% -10%, rgba(200,204,210,.10) 0%, transparent 55%), #000; }
-  .login-logo { text-align: center; margin-bottom: 38px; }
-  .login-logo .bar { width: 46px; height: 4px; background: var(--metal); border-radius: 2px; display: inline-block; margin-bottom: 16px; }
-  .login-logo h1 { font-family: 'DM Mono', monospace; font-size: 23px; font-weight: 500; letter-spacing: 6px;
-    background: var(--metal); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-  .login-logo p { font-size: 12px; color: var(--muted); margin-top: 6px; letter-spacing: 3px; text-transform: uppercase; }
-  .login-card { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 28px 24px; }
-  .login-card h2 { font-size: 16px; font-weight: 600; margin-bottom: 20px; color: var(--ink); }
-  .pin-display { display: flex; gap: 12px; justify-content: center; margin-bottom: 26px; }
-  .pin-dot { width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--border-bright); transition: all 0.15s; }
-  .pin-dot.filled { background: var(--silver); border-color: var(--silver); box-shadow: 0 0 8px rgba(200,204,210,.4); }
-  .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-  .pin-btn { background: var(--card); border: 1px solid var(--border); border-radius: 12px; height: 62px; font-size: 22px; font-weight: 600; color: var(--ink); cursor: pointer; transition: all 0.1s; user-select: none; display: flex; align-items: center; justify-content: center; }
-  .pin-btn:active { transform: scale(0.93); background: var(--border); border-color: var(--ink-3); }
-  .pin-btn.del { font-size: 16px; color: var(--muted); font-family: 'DM Mono', monospace; }
-  .tech-selector { margin-bottom: 22px; }
-  .tech-selector label { font-size: 11px; color: var(--muted); letter-spacing: 2px; display: block; margin-bottom: 10px; font-family: 'DM Mono', monospace; }
-  .tech-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .tech-btn { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 6px; text-align: center; font-size: 12.5px; font-weight: 500; cursor: pointer; transition: all 0.15s; color: var(--silver); }
-  .tech-btn.selected { border-color: var(--silver); color: #000; background: var(--metal); font-weight: 600; }
-  .login-error { color: var(--danger); font-size: 13px; text-align: center; margin-top: 14px; min-height: 20px; }
-  #appScreen { background:var(--bg); }
-  .app-header{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.92);backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:16px;padding:0 24px;height:62px}
-  .app-header .tech-name { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; color: var(--ink); }
-  .app-header .tech-role { font-size: 10px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 2px; margin-top: 2px; }
-  .signout-btn { background: none; border: 1px solid var(--border-bright); border-radius: 8px; color: var(--ink-3); padding: 7px 13px; font-size: 12px; cursor: pointer; }
-  .tabs { display: flex; background: var(--card); border-bottom: 1px solid var(--border); }
-  .tab { flex: 1; padding: 14px; text-align: center; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
-  .tab.active { color: var(--ink); border-bottom-color: var(--silver); }
-  .tab-content { display: none; padding: 20px; }
-  .tab-content.active { display: block; }
-  .form-section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 14px; }
-  .form-section-title { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 2px; color: var(--ink-3); text-transform: uppercase; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
-  .field { margin-bottom: 14px; }
-  .field:last-child { margin-bottom: 0; }
-  .field label { display: block; font-size: 12px; color: var(--ink-3); margin-bottom: 7px; font-family: 'DM Mono', monospace; letter-spacing: 0.5px; }
-  .field label .req { color: var(--danger); margin-left: 3px; }
-  .form-input, .form-select, .form-textarea { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 12px; font-size: 14px; font-family: Inter,-apple-system,'Segoe UI',sans-serif; -webkit-appearance: none; }
-  .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--silver); }
-  .form-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a8e96' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
-  .form-textarea { resize: vertical; min-height: 60px; line-height: 1.5; }
-  .time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .lunch-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .punch-pair { background:var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
-  .punch-pair-times { display: grid; grid-template-columns: 1fr 1fr 28px; gap: 8px; align-items: end; margin-bottom: 8px; }
-  .punch-pair label { font-size: 12px; color: var(--ink-3); margin-bottom: 7px; display: block; font-family: 'DM Mono', monospace; }
-  .punch-pair-label { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink-3); letter-spacing: 1px; margin-bottom: 8px; }
-  .punch-remove { background: none; border: 1px solid var(--border-bright); color: var(--danger); border-radius: 6px; width: 28px; height: 44px; font-size: 16px; cursor: pointer; margin-top: 22px; }
-  .add-punch-btn { width: 100%; background: var(--card); border: 1px dashed var(--border-bright); border-radius: 8px; padding: 10px; color: var(--ink-3); font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 14px; }
-  .punch-reason { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 10px 12px; font-size: 13px; font-family: Inter,-apple-system,'Segoe UI',sans-serif; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a8e96' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
-  .lunch-btn { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 10px 4px; text-align: center; font-size: 13px; cursor: pointer; color: var(--ink-3); transition: all 0.15s; }
-  .lunch-btn.selected { border-color: var(--silver); color: #000; background: var(--metal); font-weight: 600; }
-  .hours-display { background: var(--card); border: 1px solid var(--border-bright); border-radius: 8px; padding: 12px; font-family: 'DM Mono', monospace; font-size: 17px; text-align: center; color: var(--ink); }
-  .job-line { background:var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 12px; position: relative; }
-  .job-line-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-  .job-line-num { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink-3); letter-spacing: 1px; }
-  .job-line-remove { background: none; border: 1px solid var(--border-bright); color: var(--danger); border-radius: 6px; width: 26px; height: 26px; font-size: 16px; cursor: pointer; line-height: 1; }
-  .line-row { display: grid; grid-template-columns: 1fr 90px; gap: 10px; }
-  .add-line-btn { width: 100%; background: var(--card); border: 1px dashed var(--border-bright); border-radius: 10px; padding: 14px; color: var(--silver); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
-  .add-line-btn:active { border-color: var(--silver); }
-  .totals-bar { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; background: var(--card); border: 1px solid var(--border-bright); border-radius: 8px; margin-top: 4px; font-size: 13px; }
-  .totals-bar .label { color: var(--ink-3); }
-  .totals-bar .vals { font-family: 'DM Mono', monospace; }
-  .totals-bar .match { color: var(--ok); }
-  .totals-bar .mismatch { color: var(--warn); }
-  .photo-add { display: flex; gap: 10px; }
-  .photo-btn { flex: 1; background: var(--card); border: 1px dashed var(--border-bright); border-radius: 10px; padding: 16px 8px; text-align: center; cursor: pointer; color: var(--ink-3); font-size: 13px; }
-  .photo-btn .icon { font-size: 22px; display: block; margin-bottom: 4px; }
-  .photo-previews { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
-  .photo-thumb { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
-  .photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
-  .photo-thumb .remove { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; background: rgba(0,0,0,.75); border: 1px solid var(--border-bright); border-radius: 50%; color: #fff; font-size: 14px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-  .photo-uploading { font-size: 11px; color: var(--ink-3); margin-top: 8px; font-family: 'DM Mono', monospace; }
-  .submit-btn { width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 12px; padding: 17px; font-size: 15px; font-weight: 700; cursor: pointer; letter-spacing: 1.5px; margin-top: 6px; }
-  .submit-btn:disabled { opacity: 0.35; }
-  .msg-box { margin-top: 12px; border-radius: 8px; padding: 13px 16px; font-size: 13px; display: none; line-height: 1.4; }
-  .msg-box.success { background: rgba(74,192,120,.1); border: 1px solid rgba(74,192,120,.3); color: var(--ok); display: block; }
-  .msg-box.error { background: rgba(216,72,72,.1); border: 1px solid rgba(216,72,72,.3); color: var(--danger); display: block; }
-  .history-entry { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; }
-  .history-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
-  .history-vessel { font-weight: 600; font-size: 14px; color: var(--ink); }
-  .history-hours { font-family: 'DM Mono', monospace; font-size: 18px; color: var(--ink); }
-  .history-meta { font-size: 12px; color: var(--muted); }
-  .history-line { font-size: 12.5px; color: var(--text); margin-top: 6px; padding-left: 10px; border-left: 2px solid var(--border-bright); line-height: 1.5; }
-  .history-line .ln-job { font-family: 'DM Mono', monospace; color: var(--silver); }
-  .history-line .ln-hrs { color: var(--ink-3); }
-  .history-line { position: relative; padding-right: 56px; }
-  .ln-edit-btn { position: absolute; top: 6px; right: 0; font-size: 10px; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-bright); background: transparent; color: var(--silver); cursor: pointer; }
-  .ln-edit-btn:hover { border-color: var(--silver); }
-  .ln-locked { position: absolute; top: 6px; right: 0; font-size: 10px; color: var(--muted); }
-  .ln-edit-form { margin-top: 8px; padding: 10px; background:var(--bg); border-radius: 8px; border: 1px solid var(--border-bright); }
-  .ln-edit-form textarea, .ln-edit-form input { width: 100%; box-sizing: border-box; background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font-size: 12.5px; margin-top: 4px; }
-  .ln-edit-actions { display: flex; gap: 8px; margin-top: 8px; }
-  .ln-edit-actions button { font-size: 11px; padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border-bright); background: transparent; color: var(--text); cursor: pointer; }
-  .ln-edit-actions button.save { background: var(--silver); color: #0c0c0e; border-color: var(--silver); }
-  .ln-edited-tag { font-size: 10px; color: var(--muted); margin-top: 4px; }
-  .history-photos { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
-  .history-photos img { width: 56px; height: 56px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
-  .empty-state { text-align: center; color: var(--muted); padding: 40px 20px; font-size: 13px; line-height: 1.7; }
-  .week-summary { background: linear-gradient(135deg, rgba(200,204,210,.08), rgba(122,126,134,.04)); border: 1px solid var(--border-bright); border-radius: 10px; padding: 15px 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
-  .week-label { font-size: 12px; color: var(--ink-3); }
-  .week-hours { font-family: 'DM Mono', monospace; font-size: 23px; color: var(--ink); }
+html,body{height:100%;background:var(--bg);color:var(--ink);font-family:Inter,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+
+/* ── Screens ── */
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+
+/* ── Login ── */
+.login-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 20px;gap:24px}
+.login-brand{text-align:center}
+.login-brand h1{font-family:var(--mono);font-size:22px;font-weight:700;letter-spacing:.12em;color:var(--ink)}
+.login-brand p{font-size:11px;text-transform:uppercase;letter-spacing:.2em;color:var(--ink-3);margin-top:4px}
+.login-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px;width:100%;max-width:420px;box-shadow:var(--shadow)}
+.login-card h2{font-size:14px;font-weight:700;color:var(--ink-2);margin-bottom:16px}
+.tech-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px}
+.tech-btn{background:var(--panel-2);border:1.5px solid var(--line);border-radius:10px;padding:12px 8px;font:inherit;font-size:13px;font-weight:600;color:var(--ink-2);cursor:pointer;transition:.12s;text-align:center}
+.tech-btn:hover{border-color:var(--accent);color:var(--accent)}
+.tech-btn.selected{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-2)}
+.pin-display{display:flex;justify-content:center;gap:14px;margin-bottom:16px}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--line);background:transparent;transition:.15s}
+.pin-dot.filled{background:var(--accent);border-color:var(--accent)}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pin-btn{background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:16px;font:inherit;font-size:20px;font-weight:600;color:var(--ink);cursor:pointer;transition:.12s;aspect-ratio:1}
+.pin-btn:hover{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-2)}
+.pin-btn:active{transform:scale(.95)}
+.pin-btn.del{font-size:14px;color:var(--ink-3)}
+.login-error{color:var(--red);font-size:12.5px;text-align:center;margin-top:12px;min-height:18px}
+
+/* ── App header ── */
+.app-header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:58px}
+.app-header .who{line-height:1.2}
+.app-header .tech-name{font-size:15px;font-weight:700;color:var(--ink)}
+.app-header .tech-role{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-3)}
+.signout-btn{font-size:12px;font-weight:600;color:var(--ink-3);background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
+.signout-btn:hover{border-color:var(--red);color:var(--red)}
+
+/* ── Tabs ── */
+.tabs{display:flex;border-bottom:1px solid var(--line);background:rgba(255,255,255,.92);backdrop-filter:blur(8px);position:sticky;top:58px;z-index:49}
+.tab{flex:1;padding:13px;text-align:center;font-size:13.5px;font-weight:600;color:var(--ink-3);cursor:pointer;border-bottom:2px solid transparent;transition:.15s}
+.tab.active{color:var(--ink);border-bottom-color:var(--accent)}
+.tab-content{display:none;padding:20px 16px 80px}
+.tab-content.active{display:block}
+
+/* ── Form sections ── */
+.form-section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow-sm)}
+.form-section-title{font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px}
+.req{color:var(--red)}
+.form-input,.form-select,.form-textarea{width:100%;background:var(--panel-2);border:1.5px solid var(--line);border-radius:10px;color:var(--ink);padding:12px 14px;font-size:15px;font-family:inherit;-webkit-appearance:none;transition:.12s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:var(--accent);background:var(--panel);box-shadow:0 0 0 3px var(--accent-soft)}
+.form-textarea{resize:vertical;min-height:80px;line-height:1.5}
+
+/* ── Hours input (big, prominent) ── */
+.hours-input-wrap{position:relative}
+.hours-input-big{font-size:32px;font-family:var(--mono);font-weight:600;text-align:center;padding:16px;letter-spacing:-.02em}
+.hours-input-big:focus{outline:none;border-color:var(--accent);background:var(--panel);box-shadow:0 0 0 3px var(--accent-soft)}
+.hours-unit{position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--ink-3);font-weight:600;pointer-events:none}
+.hours-quick{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px}
+.hq-btn{background:var(--panel-2);border:1.5px solid var(--line);border-radius:8px;padding:9px 4px;font:inherit;font-size:13px;font-weight:700;color:var(--ink-2);cursor:pointer;text-align:center;transition:.12s}
+.hq-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.hq-btn.selected{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-2)}
+.ot-notice{margin-top:8px;padding:10px 12px;background:var(--amber-soft);border:1px solid rgba(184,106,0,.2);border-radius:8px;font-size:12.5px;color:var(--amber);font-weight:600;display:none}
+
+/* ── Clock in/out (optional) ── */
+.clock-optional{margin-top:12px;border-top:1px solid var(--line-2);padding-top:12px}
+.clock-toggle{font-size:12px;color:var(--ink-3);font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px}
+.clock-toggle::before{content:"▶";font-size:9px;transition:.15s}
+.clock-toggle.open::before{transform:rotate(90deg)}
+.clock-fields{display:none;margin-top:12px}
+.clock-fields.open{display:block}
+.clock-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.lunch-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.lunch-btn{background:var(--panel-2);border:1.5px solid var(--line);border-radius:8px;padding:10px 4px;font:inherit;font-size:13px;font-weight:600;color:var(--ink-3);cursor:pointer;text-align:center;transition:.12s}
+.lunch-btn:hover{border-color:var(--accent)}
+.lunch-btn.selected{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-2)}
+.clock-calc{font-family:var(--mono);font-size:13px;color:var(--ink-3);margin-top:8px;text-align:center}
+
+/* ── Job lines ── */
+.job-line{background:var(--panel-2);border:1.5px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px;position:relative}
+.job-line-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.job-line-num{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--accent);text-transform:uppercase}
+.job-line-remove{background:var(--red-soft);border:1px solid rgba(196,48,48,.2);border-radius:6px;color:var(--red);font-size:12px;font-weight:700;padding:4px 10px;cursor:pointer}
+.job-line-remove:hover{background:rgba(196,48,48,.2)}
+.job-no-warn{background:var(--amber-soft);border:1px solid rgba(184,106,0,.2);border-radius:8px;padding:10px 12px;font-size:12.5px;color:var(--amber);line-height:1.4}
+.add-line-btn{width:100%;border:1.5px dashed var(--line);background:var(--panel-2);color:var(--ink-3);border-radius:10px;padding:13px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:.12s;margin-bottom:14px}
+.add-line-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+
+/* ── Hours totals bar ── */
+.totals-bar{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;box-shadow:var(--shadow-sm)}
+.totals-bar .label{font-size:12px;font-weight:600;color:var(--ink-3)}
+.totals-bar .vals{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--ink)}
+.totals-bar .match{color:var(--green)}
+.totals-bar .over{color:var(--red)}
+
+/* ── Submit button ── */
+.submit-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:17px;font:inherit;font-size:16px;font-weight:700;cursor:pointer;transition:.12s;letter-spacing:.02em}
+.submit-btn:hover{background:var(--accent-2)}
+.submit-btn:disabled{opacity:.6;cursor:not-allowed}
+.msg-box{display:none;border-radius:10px;padding:13px 16px;font-size:13.5px;margin-top:12px;line-height:1.5}
+.msg-box.success{background:var(--green-soft);border:1px solid rgba(11,158,106,.25);color:var(--green);display:block}
+.msg-box.error{background:var(--red-soft);border:1px solid rgba(196,48,48,.25);color:var(--red);display:block}
+
+/* ── Photos ── */
+.photo-add{display:flex;gap:10px;flex-wrap:wrap}
+.photo-btn{display:flex;align-items:center;gap:6px;background:var(--panel-2);border:1.5px solid var(--line);border-radius:10px;padding:11px 14px;font:inherit;font-size:13.5px;font-weight:600;color:var(--ink-2);cursor:pointer;transition:.12s}
+.photo-btn:hover{border-color:var(--accent);color:var(--accent)}
+.photo-btn .icon{font-size:18px}
+.photo-status{font-size:12px;color:var(--ink-3);margin-top:8px}
+.photo-previews{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.photo-thumb{position:relative;width:72px;height:72px}
+.photo-thumb img{width:100%;height:100%;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.photo-thumb .remove{position:absolute;top:-5px;right:-5px;width:18px;height:18px;background:var(--red);color:#fff;border-radius:50%;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer}
+
+/* ── History ── */
+.week-summary{background:linear-gradient(135deg,var(--accent-soft),rgba(36,87,230,.04));border:1px solid rgba(36,87,230,.15);border-radius:12px;padding:16px 18px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.week-label{font-size:12px;font-weight:600;color:var(--ink-3)}
+.week-hours{font-family:var(--mono);font-size:26px;font-weight:600;color:var(--accent)}
+.week-reg{font-size:11px;color:var(--ink-3);margin-top:2px}
+.history-entry{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:10px;box-shadow:var(--shadow-sm)}
+.history-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
+.history-vessel{font-size:15px;font-weight:700;color:var(--ink)}
+.history-meta{font-size:12px;color:var(--ink-3);margin-top:2px}
+.history-hours{font-family:var(--mono);font-size:22px;font-weight:600;color:var(--ink)}
+.history-ot{font-size:10px;font-weight:700;background:var(--amber-soft);color:var(--amber);padding:2px 7px;border-radius:99px;margin-left:6px;vertical-align:middle}
+.history-line{padding:8px 0;border-bottom:1px solid var(--line-2);position:relative;padding-right:60px}
+.history-line:last-of-type{border-bottom:none}
+.ln-job{font-family:var(--mono);font-size:11.5px;font-weight:600;color:var(--accent-2)}
+.ln-hrs{font-family:var(--mono);font-size:11.5px;color:var(--ink-3)}
+.ln-desc{font-size:13px;color:var(--ink-2);margin-top:3px;line-height:1.4}
+.ln-edit-btn{position:absolute;top:8px;right:0;font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink-3);cursor:pointer}
+.ln-edit-btn:hover{border-color:var(--accent);color:var(--accent)}
+.ln-locked{position:absolute;top:8px;right:0;font-size:10px;color:var(--green);background:var(--green-soft);padding:3px 8px;border-radius:7px;border:1px solid rgba(11,158,106,.2)}
+.ln-edited-tag{font-size:10px;color:var(--amber);margin-top:3px}
+.ln-edit-form{margin-top:8px;padding:12px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.ln-edit-form input,.ln-edit-form textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:9px 11px;font:inherit;font-size:13.5px;margin-top:5px}
+.ln-edit-form textarea{resize:vertical;min-height:60px}
+.ln-edit-actions{display:flex;gap:8px;margin-top:8px}
+.ln-edit-actions button{font-size:12px;padding:6px 14px;border-radius:7px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink-3);cursor:pointer;font-weight:600}
+.ln-edit-actions button.save{background:var(--accent);color:#fff;border-color:var(--accent)}
+.history-photos{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.history-photos img{width:60px;height:60px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:pointer}
+.empty-state{text-align:center;color:var(--ink-3);padding:48px 20px;font-size:14px;line-height:1.7}
 </style>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
 
+<!-- ── Login ── -->
 <div class="screen active" id="loginScreen">
-  <div class="login-logo"><div class="bar"></div><h1>APB TECH</h1><p>Timesheet Portal</p></div>
-  <div class="login-card">
-    <h2>Select your name & enter PIN</h2>
-    <div class="tech-selector"><label>WHO ARE YOU?</label><div class="tech-grid" id="techGrid"></div></div>
-    <div class="pin-display"><div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div><div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div></div>
-    <div class="pin-pad">
-      <button class="pin-btn" onclick="pinPress('1')">1</button><button class="pin-btn" onclick="pinPress('2')">2</button><button class="pin-btn" onclick="pinPress('3')">3</button>
-      <button class="pin-btn" onclick="pinPress('4')">4</button><button class="pin-btn" onclick="pinPress('5')">5</button><button class="pin-btn" onclick="pinPress('6')">6</button>
-      <button class="pin-btn" onclick="pinPress('7')">7</button><button class="pin-btn" onclick="pinPress('8')">8</button><button class="pin-btn" onclick="pinPress('9')">9</button>
-      <button class="pin-btn del" onclick="pinClear()">CLR</button><button class="pin-btn" onclick="pinPress('0')">0</button><button class="pin-btn del" onclick="pinDel()">DEL</button>
+  <div class="login-wrap">
+    <div class="login-brand">
+      <h1>APB TECH</h1>
+      <p>Timesheet Portal</p>
     </div>
-    <div class="login-error" id="loginError"></div>
+    <div class="login-card">
+      <h2>Who are you?</h2>
+      <div class="tech-grid" id="techGrid"></div>
+      <div class="pin-display">
+        <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
+        <div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div>
+      </div>
+      <div class="pin-pad">
+        <button class="pin-btn" onclick="pinPress('1')">1</button>
+        <button class="pin-btn" onclick="pinPress('2')">2</button>
+        <button class="pin-btn" onclick="pinPress('3')">3</button>
+        <button class="pin-btn" onclick="pinPress('4')">4</button>
+        <button class="pin-btn" onclick="pinPress('5')">5</button>
+        <button class="pin-btn" onclick="pinPress('6')">6</button>
+        <button class="pin-btn" onclick="pinPress('7')">7</button>
+        <button class="pin-btn" onclick="pinPress('8')">8</button>
+        <button class="pin-btn" onclick="pinPress('9')">9</button>
+        <button class="pin-btn del" onclick="pinClear()">CLR</button>
+        <button class="pin-btn" onclick="pinPress('0')">0</button>
+        <button class="pin-btn del" onclick="pinDel()">⌫</button>
+      </div>
+      <div class="login-error" id="loginError"></div>
+    </div>
   </div>
 </div>
 
+<!-- ── App ── -->
 <div class="screen" id="appScreen">
   <div class="app-header">
-    <div><div class="tech-name" id="headerName">—</div><div class="tech-role" id="headerRole">Tech</div></div>
+    <div class="who">
+      <div class="tech-name" id="headerName">—</div>
+      <div class="tech-role" id="headerRole">Tech</div>
+    </div>
     <button class="signout-btn" onclick="logout()">Sign Out</button>
   </div>
   <div class="tabs">
     <div class="tab active" onclick="switchTab('log')">Log Time</div>
     <div class="tab" onclick="switchTab('history')">My Hours</div>
   </div>
+
+  <!-- Log Time Tab -->
   <div class="tab-content active" id="tabLog">
+
+    <!-- Date -->
     <div class="form-section">
-      <div class="form-section-title">Visit</div>
-      <div class="field"><label>Date <span class="req">*</span></label><input type="date" class="form-input" id="dateInput"></div>
-      <div id="punchPairs"></div>
-      <button class="add-punch-btn" onclick="addPunchPair()" id="addPunchBtn">+ Add Punch</button>
-      <div class="field"><label>Lunch Break</label><div class="lunch-row">
-        <div class="lunch-btn selected" onclick="setLunch(0.5, this)">30 min</div>
-        <div class="lunch-btn" onclick="setLunch(1, this)">1 hr</div>
-        <div class="lunch-btn" onclick="setLunch(1.5, this)">1.5 hr</div>
-      </div></div>
-      <div class="field"><label>Total Hours On Site</label><div class="hours-display" id="hoursDisplay">—</div></div>
+      <div class="form-section-title">Day</div>
+      <div class="field">
+        <label>Date <span class="req">*</span></label>
+        <input type="date" class="form-input" id="dateInput">
+      </div>
     </div>
+
+    <!-- Hours on site — PRIMARY INPUT -->
     <div class="form-section">
-      <div class="form-section-title"><span>Jobs Worked</span></div>
+      <div class="form-section-title">
+        <span>Hours on Site</span>
+        <span style="font-size:10px;font-weight:500;color:var(--ink-4);text-transform:none;letter-spacing:0">OT starts after 8h</span>
+      </div>
+      <div class="field">
+        <label>Total hours worked today <span class="req">*</span></label>
+        <div class="hours-input-wrap">
+          <input type="number" step="0.5" min="0.5" max="24" class="form-input hours-input-big" id="totalHoursInput" placeholder="8.0" oninput="onHoursChange()">
+          <span class="hours-unit">hrs</span>
+        </div>
+        <div class="hours-quick">
+          <button class="hq-btn" onclick="setHours(6)">6h</button>
+          <button class="hq-btn" onclick="setHours(7)">7h</button>
+          <button class="hq-btn" onclick="setHours(8)">8h</button>
+          <button class="hq-btn" onclick="setHours(9)">9h</button>
+          <button class="hq-btn" onclick="setHours(10)">10h</button>
+        </div>
+        <div class="ot-notice" id="otNotice">⚡ Over 8 hours — overtime applies to extra time</div>
+      </div>
+
+      <!-- Clock times optional -->
+      <div class="clock-optional">
+        <div class="clock-toggle" id="clockToggle" onclick="toggleClock()">Clock in/out (optional — for payroll records)</div>
+        <div class="clock-fields" id="clockFields">
+          <div class="clock-row">
+            <div class="field" style="margin-bottom:0"><label>Clock In</label><input type="time" class="form-input" id="clockIn" onchange="calcClockHours()"></div>
+            <div class="field" style="margin-bottom:0"><label>Clock Out</label><input type="time" class="form-input" id="clockOut" onchange="calcClockHours()"></div>
+          </div>
+          <div class="field" style="margin-top:12px;margin-bottom:0">
+            <label>Lunch Break</label>
+            <div class="lunch-row">
+              <div class="lunch-btn selected" onclick="setLunch(0.5,this)">30 min</div>
+              <div class="lunch-btn" onclick="setLunch(1,this)">1 hr</div>
+              <div class="lunch-btn" onclick="setLunch(0,this)">No break</div>
+            </div>
+          </div>
+          <div class="clock-calc" id="clockCalc"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Job Lines -->
+    <div class="form-section">
+      <div class="form-section-title">Jobs Worked</div>
       <div id="jobLines"></div>
-      <button class="add-line-btn" onclick="addJobLine()" id="addLineBtn">+ Add Job Line</button>
-      <div class="totals-bar"><span class="label">Logged across jobs</span><span class="vals" id="totalsVals">0.0 / 0.0 hrs</span></div>
+      <button class="add-line-btn" onclick="addJobLine()">+ Add Job / Vessel</button>
+      <div class="totals-bar">
+        <span class="label">Hours logged across jobs</span>
+        <span class="vals" id="totalsVals">0.0 hrs</span>
+      </div>
     </div>
+
+    <!-- Notes -->
     <div class="form-section">
-      <div class="form-section-title">Visit Notes</div>
-      <div class="field"><label>Materials Used</label><textarea class="form-textarea" id="materialsUsed" placeholder="Parts, consumables, materials (optional)"></textarea></div>
-      <div class="field"><label>Problems / Notes for Team</label><textarea class="form-textarea" id="problemNotes" placeholder="Issues, blockers, safety concerns (optional)"></textarea></div>
+      <div class="form-section-title">Notes</div>
+      <div class="field">
+        <label>Materials Used</label>
+        <textarea class="form-textarea" id="materialsUsed" placeholder="Parts, consumables, materials…"></textarea>
+      </div>
+      <div class="field">
+        <label>Problems / Notes for Manager</label>
+        <textarea class="form-textarea" id="problemNotes" placeholder="Issues, safety concerns, blockers…"></textarea>
+      </div>
     </div>
+
+    <!-- Photos -->
     <div class="form-section">
       <div class="form-section-title">Photos</div>
       <div class="photo-add">
         <label class="photo-btn"><span class="icon">📷</span>Take Photo<input type="file" accept="image/*" capture="environment" style="display:none" onchange="handlePhotos(this.files)"></label>
-        <label class="photo-btn"><span class="icon">🖼️</span>Choose Photos<input type="file" accept="image/*" multiple style="display:none" onchange="handlePhotos(this.files)"></label>
+        <label class="photo-btn"><span class="icon">🖼️</span>Choose<input type="file" accept="image/*" multiple style="display:none" onchange="handlePhotos(this.files)"></label>
       </div>
-      <div class="photo-uploading" id="photoStatus"></div>
+      <div class="photo-status" id="photoStatus"></div>
       <div class="photo-previews" id="photoPreviews"></div>
     </div>
-    <button class="submit-btn" id="submitBtn" onclick="submitTimesheet()">LOG TIMESHEET</button>
+
+    <button class="submit-btn" id="submitBtn" onclick="submitTimesheet()">Submit Timesheet</button>
     <div class="msg-box" id="logMsg"></div>
-    <div style="height: 32px;"></div>
+    <div style="height:32px"></div>
   </div>
+
+  <!-- My Hours Tab -->
   <div class="tab-content" id="tabHistory">
     <div id="weekSummary"></div>
-    <div id="historyContent"><div class="empty-state">Loading your hours...</div></div>
-    <div style="height: 32px;"></div>
+    <div id="historyContent"><div class="empty-state">Loading your hours…</div></div>
+    <div style="height:32px"></div>
   </div>
 </div>
 
 <script>
-const SUPABASE_URL = 'https://aanrxyiocxxndkvkeocv.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU';
-const PHOTO_BUCKET = 'timesheet-photos';
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-let allTechs = [], allEngagements = [], currentTech = null, selectedPin = '', lunchHours = 0.5, uploadedPhotos = [], lineCounter = 0;
+const SUPABASE_URL='https://aanrxyiocxxndkvkeocv.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU';
+const PHOTO_BUCKET='timesheet-photos';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-(async function init() {
-  document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
-  const { data: techs } = await sb.from('apb_techs').select('*').eq('active', true).order('name');
-  allTechs = techs || [];
-  document.getElementById('techGrid').innerHTML = allTechs.map(t => `<button class="tech-btn" onclick="selectTech('${t.id}', this)">${t.name}</button>`).join('');
-  const { data: engs } = await sb.from('apb_engagements').select('id, name, status').not('status', 'in', '("Closed","Cancelled")').order('name');
-  allEngagements = engs || [];
-  addPunchPair(); // Start with one punch pair
+let allTechs=[],allEngagements=[],currentTech=null,selectedPin='',lunchHours=0.5,uploadedPhotos=[],lineCounter=0;
+
+const SHOP_CATEGORIES=['1.0 Shop Maintenance, Cleaning & Organization','2.0 Equipment Maintenance & Repairs','3.0 Material Processing & Inventory','4.0 Training & Process Improvement','5.0 Facility Improvements & Internal Projects','6.0 Engineering & Design Development (R&D)','7.0 Mechanical Systems Development (R&D)','8.0 Fabrication & Manufacturing Development (R&D)'];
+const ADMIN_CATEGORIES=['1.0 General Admin — Email & Communication','2.0 Planning & Scheduling','3.0 Policy & Procedure Development','4.0 Staff / Safety Meeting','5.0 Sales, Estimating & Proposals','6.0 Legal & Document Review','7.0 Project Management (Non-Billable)','8.0 R&D Review & Direction'];
+
+(async function init(){
+  document.getElementById('dateInput').value=new Date().toISOString().split('T')[0];
+  const{data:techs}=await sb.from('apb_techs').select('*').eq('active',true).order('name');
+  allTechs=techs||[];
+  document.getElementById('techGrid').innerHTML=allTechs.map(t=>`<button class="tech-btn" onclick="selectTech('${t.id}',this)">${t.name}</button>`).join('');
+  const{data:engs}=await sb.from('apb_engagements').select('id,name,status').not('status','in','("Closed","Cancelled")').order('name');
+  allEngagements=engs||[];
+  addJobLine();
 })();
 
-function selectTech(id, el) { document.querySelectorAll('.tech-btn').forEach(b => b.classList.remove('selected')); el.classList.add('selected'); currentTech = allTechs.find(t => t.id === id); selectedPin = ''; updatePinDots(); document.getElementById('loginError').textContent = ''; }
-function pinPress(d) { if (!currentTech) { document.getElementById('loginError').textContent = 'Select your name first.'; return; } if (selectedPin.length >= 4) return; selectedPin += d; updatePinDots(); if (selectedPin.length === 4) checkPin(); }
-function pinDel() { selectedPin = selectedPin.slice(0, -1); updatePinDots(); }
-function pinClear() { selectedPin = ''; updatePinDots(); }
-function updatePinDots() { for (let i = 0; i < 4; i++) document.getElementById('d'+i).classList.toggle('filled', i < selectedPin.length); }
-function checkPin() { if (selectedPin === currentTech.pin) showApp(); else { document.getElementById('loginError').textContent = 'Wrong PIN. Try again.'; setTimeout(() => { selectedPin=''; updatePinDots(); }, 800); } }
-function showApp() { document.getElementById('loginScreen').classList.remove('active'); document.getElementById('appScreen').classList.add('active'); document.getElementById('headerName').textContent = currentTech.name; document.getElementById('headerRole').textContent = currentTech.role || 'Tech'; }
-function logout() { currentTech = null; selectedPin = ''; document.getElementById('appScreen').classList.remove('active'); document.getElementById('loginScreen').classList.add('active'); document.querySelectorAll('.tech-btn').forEach(b => b.classList.remove('selected')); updatePinDots(); document.getElementById('loginError').textContent = ''; resetForm(); }
-function switchTab(tab) { document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active'); document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active'); if (tab === 'history') loadHistory(); }
+// ── Auth ──
+function selectTech(id,el){document.querySelectorAll('.tech-btn').forEach(b=>b.classList.remove('selected'));el.classList.add('selected');currentTech=allTechs.find(t=>t.id===id);selectedPin='';updatePinDots();document.getElementById('loginError').textContent='';}
+function pinPress(d){if(!currentTech){document.getElementById('loginError').textContent='Select your name first.';return;}if(selectedPin.length>=4)return;selectedPin+=d;updatePinDots();if(selectedPin.length===4)checkPin();}
+function pinDel(){selectedPin=selectedPin.slice(0,-1);updatePinDots();}
+function pinClear(){selectedPin='';updatePinDots();}
+function updatePinDots(){for(let i=0;i<4;i++)document.getElementById('d'+i).classList.toggle('filled',i<selectedPin.length);}
+function checkPin(){if(selectedPin===currentTech.pin)showApp();else{document.getElementById('loginError').textContent='Wrong PIN. Try again.';setTimeout(()=>{selectedPin='';updatePinDots();},800);}}
+function showApp(){document.getElementById('loginScreen').classList.remove('active');document.getElementById('appScreen').classList.add('active');document.getElementById('headerName').textContent=currentTech.name;document.getElementById('headerRole').textContent=currentTech.role||'Tech';}
+function logout(){currentTech=null;selectedPin='';document.getElementById('appScreen').classList.remove('active');document.getElementById('loginScreen').classList.add('active');document.querySelectorAll('.tech-btn').forEach(b=>b.classList.remove('selected'));updatePinDots();document.getElementById('loginError').textContent='';resetForm();}
+function switchTab(tab){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');document.getElementById('tab'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active');if(tab==='history')loadHistory();}
 
-const SHOP_CATEGORIES = [
-  '1.0 Shop Maintenance, Cleaning & Organization',
-  '2.0 Equipment Maintenance & Repairs',
-  '3.0 Material Processing & Inventory',
-  '4.0 Training & Process Improvement',
-  '5.0 Facility Improvements & Internal Projects',
-  '6.0 Engineering & Design Development (R&D)',
-  '7.0 Mechanical Systems Development (R&D)',
-  '8.0 Fabrication & Manufacturing Development (R&D)'
-];
-
-const ADMIN_CATEGORIES = [
-  '1.0 General Admin — Email & Communication',
-  '2.0 Planning & Scheduling',
-  '3.0 Policy & Procedure Development',
-  '4.0 Staff / Safety Meeting',
-  '5.0 Sales, Estimating & Proposals',
-  '6.0 Legal & Document Review',
-  '7.0 Project Management (Non-Billable)',
-  '8.0 R&D Review & Direction'
-];
-
-async function getJobsForEngagement(engId) {
-  const { data } = await sb.from('apb_jobs').select('id, job_name, job_number, status').eq('engagement_id', engId).not('status', 'in', '("Paid","Cancelled")').order('job_number');
-  return data || [];
+// ── Hours ──
+function setHours(h){
+  document.getElementById('totalHoursInput').value=h;
+  document.querySelectorAll('.hq-btn').forEach(b=>b.classList.toggle('selected',parseFloat(b.textContent)===h));
+  onHoursChange();
+}
+function onHoursChange(){
+  const h=parseFloat(document.getElementById('totalHoursInput').value)||0;
+  document.querySelectorAll('.hq-btn').forEach(b=>b.classList.toggle('selected',parseFloat(b.textContent)===h));
+  document.getElementById('otNotice').style.display=h>8?'block':'none';
+  updateTotals();
+}
+function toggleClock(){
+  const t=document.getElementById('clockToggle');
+  const f=document.getElementById('clockFields');
+  t.classList.toggle('open');
+  f.classList.toggle('open');
+}
+function setLunch(hrs,el){lunchHours=hrs;document.querySelectorAll('.lunch-btn').forEach(b=>b.classList.remove('selected'));el.classList.add('selected');calcClockHours();}
+function calcClockHours(){
+  const cin=document.getElementById('clockIn').value;
+  const cout=document.getElementById('clockOut').value;
+  if(!cin||!cout){document.getElementById('clockCalc').textContent='';return;}
+  const[ih,im]=cin.split(':').map(Number),[oh,om]=cout.split(':').map(Number);
+  const mins=(oh*60+om)-(ih*60+im);
+  if(mins<=0){document.getElementById('clockCalc').textContent='';return;}
+  const net=parseFloat(((mins/60)-lunchHours).toFixed(2));
+  document.getElementById('clockCalc').textContent=`Net: ${net.toFixed(1)} hrs (${(mins/60).toFixed(1)}h − ${lunchHours}h lunch)`;
+  // Auto-fill total hours if empty
+  if(!document.getElementById('totalHoursInput').value&&net>0){
+    document.getElementById('totalHoursInput').value=net.toFixed(1);
+    onHoursChange();
+  }
+}
+function updateTotals(){
+  const lineTotal=[...document.querySelectorAll('.line-hours')].reduce((s,el)=>s+parseFloat(el.value||0),0);
+  const el=document.getElementById('totalsVals');
+  el.textContent=lineTotal.toFixed(1)+' hrs';
+  const total=parseFloat(document.getElementById('totalHoursInput').value)||0;
+  el.className='vals';
+  if(lineTotal>0&&total>0){
+    if(lineTotal>total+0.05)el.classList.add('over');
+    else if(Math.abs(lineTotal-total)<0.05)el.classList.add('match');
+  }
 }
 
-function vesselOptionsHtml() {
-  let opts = '<option value="">Select vessel...</option><option value="SHOP">— Shop Work —</option><option value="ADMIN">— Admin / Non-Billable —</option>';
-  allEngagements.forEach(e => { opts += `<option value="${e.id}">${e.name}</option>`; });
+// ── Job lines ──
+function vesselOptionsHtml(){
+  let opts='<option value="">Select vessel / project…</option><option value="SHOP">— Shop Work —</option><option value="ADMIN">— Admin / Non-Billable —</option>';
+  allEngagements.forEach(e=>{opts+=`<option value="${e.id}">${e.name}</option>`;});
   return opts;
 }
-
-function shopOptionsHtml() {
-  return '<option value="">Select category...</option>' + SHOP_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
+function shopOptionsHtml(){return'<option value="">Select category…</option>'+SHOP_CATEGORIES.map(c=>`<option value="${c}">${c}</option>`).join('');}
+function adminOptionsHtml(){return'<option value="">Select category…</option>'+ADMIN_CATEGORIES.map(c=>`<option value="${c}">${c}</option>`).join('');}
+function jobOptionsHtml(jobs){
+  if(!jobs.length)return'<option value="">No active jobs for this vessel</option>';
+  return'<option value="">Select job…</option>'+jobs.map(j=>`<option value="${j.id}" data-job-number="${j.job_number||''}" data-job-name="${j.job_name||''}">${j.job_number?j.job_number+' — ':''}${j.job_name}</option>`).join('');
 }
-
-function adminOptionsHtml() {
-  return '<option value="">Select category...</option>' + ADMIN_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
+async function getJobsForEngagement(engId){
+  const{data}=await sb.from('apb_jobs').select('id,job_name,job_number,status').eq('engagement_id',engId).not('status','in','("Paid","Cancelled")').order('job_number');
+  return data||[];
 }
-
-function jobOptionsHtml(jobs) {
-  if (!jobs.length) return '<option value="">No active jobs for this vessel</option>';
-  return '<option value="">Select job...</option>' + jobs.map(j => `<option value="${j.id}" data-job-number="${j.job_number||''}" data-job-name="${j.job_name||''}">${j.job_number ? j.job_number+' — ' : ''}${j.job_name}</option>`).join('');
-}
-
-async function onLineVesselChange(lineId) {
-  const div = document.getElementById(lineId);
-  const vesselSel = div.querySelector('.line-vessel');
-  const jobSlot = div.querySelector('.line-job-slot');
-  const val = vesselSel.value;
-  if (!val) { jobSlot.innerHTML = ''; return; }
-  if (val === 'SHOP') {
-    jobSlot.innerHTML = `<div class="field"><label>Shop Category <span class="req">*</span></label><select class="form-select line-job">${shopOptionsHtml()}</select></div>`;
-  } else if (val === 'ADMIN') {
-    jobSlot.innerHTML = `<div class="field"><label>Admin Category <span class="req">*</span></label><select class="form-select line-job">${adminOptionsHtml()}</select></div>`;
+async function onLineVesselChange(lineId){
+  const div=document.getElementById(lineId);
+  const val=div.querySelector('.line-vessel').value;
+  const jobSlot=div.querySelector('.line-job-slot');
+  if(!val){jobSlot.innerHTML='';return;}
+  if(val==='SHOP'){
+    jobSlot.innerHTML=`<div class="field"><label>Shop Category <span class="req">*</span></label><select class="form-select line-job">${shopOptionsHtml()}</select></div>`;
+  } else if(val==='ADMIN'){
+    jobSlot.innerHTML=`<div class="field"><label>Admin Category <span class="req">*</span></label><select class="form-select line-job">${adminOptionsHtml()}</select></div>`;
   } else {
-    jobSlot.innerHTML = `<div class="field"><label>Job <span class="req">*</span></label><select class="form-select line-job"><option value="">Loading jobs...</option></select></div>`;
-    const jobs = await getJobsForEngagement(val);
-    if (!jobs.length) {
-      jobSlot.innerHTML = `<div class="field"><label>Job <span class="req">*</span></label><div style="padding:10px 12px;background: var(--card);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--warn);">⚠ No active jobs for this vessel. Contact management to add jobs before logging time.</div><input type="hidden" class="line-job" value="NO_JOBS"></div>`;
+    jobSlot.innerHTML=`<div class="field"><label>Job <span class="req">*</span></label><select class="form-select line-job"><option>Loading…</option></select></div>`;
+    const jobs=await getJobsForEngagement(val);
+    if(!jobs.length){
+      jobSlot.innerHTML=`<div class="field"><label>Job</label><div class="job-no-warn">⚠ No active jobs for this vessel.<br>Contact management to add jobs.</div><input type="hidden" class="line-job" value="NO_JOBS"></div>`;
     } else {
-      jobSlot.innerHTML = `<div class="field"><label>Job <span class="req">*</span></label><select class="form-select line-job">${jobOptionsHtml(jobs)}</select></div>`;
+      jobSlot.innerHTML=`<div class="field"><label>Job <span class="req">*</span></label><select class="form-select line-job">${jobOptionsHtml(jobs)}</select></div>`;
     }
   }
 }
-
-async function addJobLine() {
+function addJobLine(){
   lineCounter++;
-  const id = 'line_' + lineCounter;
-  const div = document.createElement('div');
-  div.className = 'job-line'; div.id = id;
-  div.innerHTML = `
-    <div class="job-line-head"><span class="job-line-num">JOB LINE ${lineCounter}</span><button class="job-line-remove" onclick="removeJobLine('${id}')">\u00d7</button></div>
+  const id='line_'+lineCounter;
+  const div=document.createElement('div');
+  div.className='job-line';div.id=id;
+  div.innerHTML=`
+    <div class="job-line-head"><span class="job-line-num">Job Line ${lineCounter}</span><button class="job-line-remove" onclick="removeJobLine('${id}')">Remove</button></div>
     <div class="field"><label>Vessel / Project <span class="req">*</span></label><select class="form-select line-vessel" onchange="onLineVesselChange('${id}')">${vesselOptionsHtml()}</select></div>
     <div class="line-job-slot"></div>
-    <div class="field"><label>Description of Work <span class="req">*</span></label><textarea class="form-textarea line-desc" placeholder="What did you do?"></textarea></div>
-    <div class="field"><label>Hours <span class="req">*</span></label><input type="number" step="0.5" min="0" class="form-input line-hours" placeholder="0.0" oninput="updateTotals()"></div>`;
+    <div class="field"><label>Description of Work <span class="req">*</span></label><textarea class="form-textarea line-desc" placeholder="What did you do on this job? Be specific." rows="3"></textarea></div>
+    <div class="field"><label>Hours on this job <span class="req">*</span></label><input type="number" step="0.5" min="0.5" max="24" class="form-input line-hours" placeholder="e.g. 4.0" oninput="updateTotals()"></div>`;
   document.getElementById('jobLines').appendChild(div);
   updateTotals();
 }
-function removeJobLine(id) { const el = document.getElementById(id); if (el) el.remove(); updateTotals(); }
-let punchCounter = 0;
-const PUNCH_REASONS = [
-  'Work',
-  'Lunch',
-  'Personal / Medical',
-  'Errand',
-  'Early Departure',
-  'Other'
-];
+function removeJobLine(id){const el=document.getElementById(id);if(el)el.remove();updateTotals();}
 
-function addPunchPair() {
-  punchCounter++;
-  const id = 'punch_' + punchCounter;
-  const isFirst = punchCounter === 1;
-  const div = document.createElement('div');
-  div.className = 'punch-pair'; div.id = id;
-  const removeBtn = !isFirst ? `<button class="punch-remove" onclick="removePunch('${id}')">×</button>` : '<div></div>';
-  const reasonOpts = PUNCH_REASONS.map(r => `<option value="${r}" ${r === 'Work' ? 'selected' : ''}>${r}</option>`).join('');
-  div.innerHTML = `
-    <div class="punch-pair-label">PUNCH ${punchCounter}</div>
-    <div class="punch-pair-times">
-      <div><label>Clock In</label><input type="time" class="form-input punch-in" onchange="calcHours()"></div>
-      <div><label>Clock Out</label><input type="time" class="form-input punch-out" onchange="calcHours()"></div>
-      ${removeBtn}
-    </div>
-    <select class="punch-reason">${reasonOpts}</select>`;
-  document.getElementById('punchPairs').appendChild(div);
-  calcHours();
-}
-function removePunch(id) { const el = document.getElementById(id); if (el) { el.remove(); calcHours(); } }
-function setLunch(hrs, el) {
-  lunchHours = hrs;
-  document.querySelectorAll('.lunch-btn').forEach(b => b.classList.remove('selected'));
-  el.classList.add('selected');
-  calcHours();
-}
-function clockHours() {
-  const pairs = [...document.querySelectorAll('.punch-pair')];
-  let total = 0;
-  for (const p of pairs) {
-    const cin = p.querySelector('.punch-in').value;
-    const cout = p.querySelector('.punch-out').value;
-    if (!cin || !cout) continue;
-    const [ih,im] = cin.split(':').map(Number), [oh,om] = cout.split(':').map(Number);
-    const mins = (oh*60+om) - (ih*60+im);
-    if (mins > 0) total += mins;
-  }
-  if (total === 0) return null;
-  const net = (total/60) - lunchHours;
-  return net > 0 ? parseFloat(net.toFixed(2)) : null;
-}
-function getPunches() {
-  return [...document.querySelectorAll('.punch-pair')].map(p => ({
-    punch_in: p.querySelector('.punch-in').value,
-    punch_out: p.querySelector('.punch-out').value,
-    reason: p.querySelector('.punch-reason')?.value || 'Work'
-  })).filter(p => p.punch_in && p.punch_out);
-}
-function calcHours() { const h = clockHours(); document.getElementById('hoursDisplay').textContent = h !== null ? h.toFixed(1) + ' hrs' : '—'; updateTotals(); }
-function lineHoursTotal() { return [...document.querySelectorAll('.line-hours')].reduce((s, el) => s + (parseFloat(el.value) || 0), 0); }
-function updateTotals() {
-  const lineTotal = lineHoursTotal(); const clock = clockHours();
-  const el = document.getElementById('totalsVals');
-  el.textContent = `${lineTotal.toFixed(1)} / ${clock !== null ? clock.toFixed(1) : '0.0'} hrs`;
-  el.className = 'vals';
-  if (clock !== null && lineTotal > 0) el.classList.add(Math.abs(lineTotal - clock) < 0.05 ? 'match' : 'mismatch');
-}
-async function handlePhotos(files) {
-  if (!files || !files.length) return;
-  const status = document.getElementById('photoStatus');
-  for (const file of files) {
-    status.textContent = 'Uploading ' + file.name + '...';
-    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-    const path = `${currentTech.name.replace(/[^a-z0-9]/gi,'_')}/${Date.now()}_${Math.random().toString(36).slice(2,7)}.${ext}`;
-    const { error } = await sb.storage.from(PHOTO_BUCKET).upload(path, file, { contentType: file.type });
-    if (error) { status.textContent = 'Photo upload failed: ' + error.message; continue; }
-    const { data } = sb.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+// ── Photos ──
+async function handlePhotos(files){
+  if(!files||!files.length)return;
+  const status=document.getElementById('photoStatus');
+  for(const file of files){
+    status.textContent='Uploading…';
+    const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
+    const path=`${currentTech.name.replace(/[^a-z0-9]/gi,'_')}/${Date.now()}_${Math.random().toString(36).slice(2,7)}.${ext}`;
+    const{error}=await sb.storage.from(PHOTO_BUCKET).upload(path,file,{contentType:file.type});
+    if(error){status.textContent='Upload failed: '+error.message;continue;}
+    const{data}=sb.storage.from(PHOTO_BUCKET).getPublicUrl(path);
     uploadedPhotos.push(data.publicUrl);
   }
-  status.textContent = uploadedPhotos.length + ' photo(s) attached'; renderPhotos();
+  status.textContent=uploadedPhotos.length+' photo(s) attached';renderPhotos();
 }
-function renderPhotos() { document.getElementById('photoPreviews').innerHTML = uploadedPhotos.map((url, i) => `<div class="photo-thumb"><img src="${url}"><div class="remove" onclick="removePhoto(${i})">×</div></div>`).join(''); }
-function removePhoto(i) { uploadedPhotos.splice(i, 1); renderPhotos(); document.getElementById('photoStatus').textContent = uploadedPhotos.length + ' photo(s) attached'; }
+function renderPhotos(){document.getElementById('photoPreviews').innerHTML=uploadedPhotos.map((url,i)=>`<div class="photo-thumb"><img src="${url}"><div class="remove" onclick="removePhoto(${i})">×</div></div>`).join('');}
+function removePhoto(i){uploadedPhotos.splice(i,1);renderPhotos();document.getElementById('photoStatus').textContent=uploadedPhotos.length+' photo(s) attached';}
 
-async function submitTimesheet() {
-  const date = document.getElementById('dateInput').value;
-  const punches = getPunches();
-  const clock = clockHours();
-  if (!date) return showMsg('error', 'Enter a date.');
-  if (punches.length === 0 || clock === null) return showMsg('error', 'Add at least one complete clock in/out pair.');
-  const lineEls = [...document.querySelectorAll('.job-line')];
-  if (!lineEls.length) return showMsg('error', 'Add at least one job line.');
-  const lines = [];
-  for (const le of lineEls) {
-    const vesselSel = le.querySelector('.line-vessel');
-    const jobSel = le.querySelector('.line-job');
-    const vesselVal = vesselSel ? vesselSel.value : '';
-    const vesselName = vesselSel ? vesselSel.options[vesselSel.selectedIndex]?.text : '';
-    const jobVal = jobSel ? jobSel.value : '';
-    const jobOpt = jobSel ? jobSel.options[jobSel.selectedIndex] : null;
-    const jobNumber = jobOpt?.dataset?.jobNumber || '';
-    const jobName = jobOpt?.dataset?.jobName || jobOpt?.text || '';
-    const workDesc = le.querySelector('.line-desc').value.trim();
-    const hrs = parseFloat(le.querySelector('.line-hours').value);
-    if (!vesselVal) return showMsg('error', 'Select a vessel for each job line.');
-    if (!jobVal || jobVal === 'NO_JOBS') return showMsg('error', !jobVal ? 'Select a job or shop category for each line.' : 'This vessel has no active jobs. Ask management to add jobs first.');
-    if (!workDesc) return showMsg('error', 'Add a description for each job line.');
-    if (!hrs || hrs <= 0) return showMsg('error', 'Enter hours > 0 for each line.');
-    const isShop = vesselVal === 'SHOP';
-    const isAdmin = vesselVal === 'ADMIN';
-    lines.push({
-      vessel_id: (isShop || isAdmin) ? null : vesselVal,
-      vessel_name: isShop ? 'Shop' : isAdmin ? 'Admin' : vesselName,
-      job_id: (isShop || isAdmin) ? null : jobVal,
-      job_number: (isShop || isAdmin) ? null : jobNumber,
-      job_name: (isShop || isAdmin) ? null : jobName,
-      shop_category: isShop ? jobVal : isAdmin ? jobVal : null,
-      work_description: workDesc,
-      hours: hrs
-    });
+// ── Submit ──
+async function submitTimesheet(){
+  const date=document.getElementById('dateInput').value;
+  const totalHours=parseFloat(document.getElementById('totalHoursInput').value);
+  const cin=document.getElementById('clockIn').value;
+  const cout=document.getElementById('clockOut').value;
+
+  if(!date)return showMsg('error','Enter a date.');
+  if(!totalHours||totalHours<=0)return showMsg('error','Enter your total hours worked today.');
+
+  const lineEls=[...document.querySelectorAll('.job-line')];
+  if(!lineEls.length)return showMsg('error','Add at least one job line.');
+  const lines=[];
+  for(const le of lineEls){
+    const vesselSel=le.querySelector('.line-vessel');
+    const jobSel=le.querySelector('.line-job');
+    const vesselVal=vesselSel?.value||'';
+    const vesselName=vesselSel?.options[vesselSel.selectedIndex]?.text||'';
+    const jobVal=jobSel?.value||'';
+    const jobOpt=jobSel?.options[jobSel.selectedIndex];
+    const jobNumber=jobOpt?.dataset?.jobNumber||'';
+    const jobName=jobOpt?.dataset?.jobName||jobOpt?.text||'';
+    const workDesc=le.querySelector('.line-desc').value.trim();
+    const hrs=parseFloat(le.querySelector('.line-hours').value);
+    if(!vesselVal)return showMsg('error','Select a vessel for each job line.');
+    if(!jobVal||jobVal==='NO_JOBS')return showMsg('error',!jobVal?'Select a job for each line.':'This vessel has no active jobs. Ask management to add jobs first.');
+    if(!workDesc)return showMsg('error','Add a work description for each job line.');
+    if(!hrs||hrs<=0)return showMsg('error','Enter hours > 0 for each job line.');
+    const isShop=vesselVal==='SHOP',isAdmin=vesselVal==='ADMIN';
+    lines.push({vessel_id:(isShop||isAdmin)?null:vesselVal,vessel_name:isShop?'Shop':isAdmin?'Admin':vesselName,job_id:(isShop||isAdmin)?null:jobVal,job_number:(isShop||isAdmin)?null:jobNumber,job_name:(isShop||isAdmin)?null:jobName,shop_category:isShop?jobVal:isAdmin?jobVal:null,work_description:workDesc,hours:hrs});
   }
-  const totalHours = lines.reduce((s, l) => s + l.hours, 0);
-  // Use first line's vessel as the primary engagement for the visit record
-  // Use first billable vessel line as primary, fallback to first line
-  const primaryLine = lines.find(l => l.vessel_id) || lines[0];
-  const engId = primaryLine.vessel_id || null;
-  const engName = primaryLine.vessel_name;
-  const firstPunch = punches[0];
-  const btn = document.getElementById('submitBtn'); btn.disabled = true; btn.textContent = 'Saving...';
-  const { data: visit, error: vErr } = await sb.from('apb_timesheets').insert({
-    tech_id: currentTech.id, tech_name: currentTech.name,
-    engagement_id: engId, vessel_name: engName,
-    visit_date: date, clock_in: firstPunch.punch_in, clock_out: punches[punches.length-1].punch_out,
-    lunch_hours: lunchHours, total_hours: totalHours,
-    materials_used: document.getElementById('materialsUsed').value.trim() || null,
-    problem_notes: document.getElementById('problemNotes').value.trim() || null,
-    photo_urls: uploadedPhotos.length ? uploadedPhotos.join(',') : null
-  }).select().single();
-  if (vErr) { btn.disabled = false; btn.textContent = 'LOG TIMESHEET'; showMsg('error', 'Error: ' + vErr.message); return; }
-  const lineRows = lines.map(l => ({ timesheet_id: visit.id, engagement_id: l.vessel_id || null, vessel_name: l.vessel_name, job_id: l.job_id || null, job_number: l.job_number || null, job_name: l.job_name || null, shop_category: l.shop_category || null, work_description: l.work_description, hours: l.hours }));
-  const { error: lErr } = await sb.from('apb_timesheet_lines').insert(lineRows);
-  if (lErr) { btn.disabled = false; btn.textContent = 'LOG TIMESHEET'; showMsg('error', 'Visit saved but lines failed: ' + lErr.message); return; }
-  // Save punch records
-  const punchRows = punches.map(p => {
-    const [ih,im] = p.punch_in.split(':').map(Number), [oh,om] = p.punch_out.split(':').map(Number);
-    const dur = parseFloat((((oh*60+om)-(ih*60+im))/60).toFixed(2));
-    return { timesheet_id: visit.id, tech_id: currentTech.id, tech_name: currentTech.name, visit_date: date, punch_in: p.punch_in, punch_out: p.punch_out, duration_hours: dur > 0 ? dur : 0, reason: p.reason || 'Work', is_open: false };
-  });
-  await sb.from('apb_punches').insert(punchRows);
-  btn.disabled = false; btn.textContent = 'LOG TIMESHEET';
-  showMsg('success', `✓ Logged ${lines.length} job line(s), ${totalHours.toFixed(1)} hrs on ${engName}`);
-  resetForm();
-}
-function resetForm() {
-  document.getElementById('jobLines').innerHTML = ''; lineCounter = 0;
-  document.getElementById('punchPairs').innerHTML = ''; punchCounter = 0; addPunchPair();
-  document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
-  document.getElementById('hoursDisplay').textContent = '—';
-  document.getElementById('materialsUsed').value = ''; document.getElementById('problemNotes').value = '';
-  lunchHours = 0.5; uploadedPhotos = [];
-  document.querySelectorAll('.lunch-btn').forEach((b,i) => b.classList.toggle('selected', i===0));
-  document.getElementById('photoPreviews').innerHTML = ''; document.getElementById('photoStatus').textContent = '';
-  updateTotals();
-}
-function showMsg(type, text) { const el = document.getElementById('logMsg'); el.textContent = text; el.className = 'msg-box ' + type; if (type === 'success') setTimeout(() => { el.className = 'msg-box'; }, 6000); }
 
-function openLineEdit(lineId) {
-  const l = window.__lineCache[lineId];
-  if (!l || l.reviewed) return;
-  document.getElementById('editform-' + lineId).innerHTML = `
-    <div class="ln-edit-form">
-      <label style="font-size:11px;color:var(--muted)">Hours</label>
-      <input type="number" step="0.1" min="0.1" id="edithrs-${lineId}" value="${l.hours}">
-      <label style="font-size:11px;color:var(--muted)">Work description</label>
-      <textarea id="editdesc-${lineId}" rows="2">${l.work_description || ''}</textarea>
-      <div class="ln-edit-actions">
-        <button class="save" onclick="saveLineEdit('${lineId}')">Save Correction</button>
-        <button onclick="cancelLineEdit('${lineId}')">Cancel</button>
+  const lineTotal=lines.reduce((s,l)=>s+l.hours,0);
+  if(lineTotal>totalHours+0.05)return showMsg('error',`Job hours total (${lineTotal.toFixed(1)}h) exceeds your time on site (${totalHours.toFixed(1)}h). Please correct.`);
+
+  const primaryLine=lines.find(l=>l.vessel_id)||lines[0];
+  const btn=document.getElementById('submitBtn');btn.disabled=true;btn.textContent='Saving…';
+
+  const{data:visit,error:vErr}=await sb.from('apb_timesheets').insert({
+    tech_id:currentTech.id,tech_name:currentTech.name,
+    engagement_id:primaryLine.vessel_id||null,vessel_name:primaryLine.vessel_name,
+    visit_date:date,clock_in:cin||null,clock_out:cout||null,
+    lunch_hours:lunchHours,total_hours:totalHours,
+    materials_used:document.getElementById('materialsUsed').value.trim()||null,
+    problem_notes:document.getElementById('problemNotes').value.trim()||null,
+    photo_urls:uploadedPhotos.length?uploadedPhotos.join(','):null
+  }).select().single();
+  if(vErr){btn.disabled=false;btn.textContent='Submit Timesheet';showMsg('error','Error: '+vErr.message);return;}
+
+  const lineRows=lines.map(l=>({timesheet_id:visit.id,engagement_id:l.vessel_id||null,vessel_name:l.vessel_name,job_id:l.job_id||null,job_number:l.job_number||null,job_name:l.job_name||null,shop_category:l.shop_category||null,work_description:l.work_description,hours:l.hours}));
+  const{error:lErr}=await sb.from('apb_timesheet_lines').insert(lineRows);
+  if(lErr){btn.disabled=false;btn.textContent='Submit Timesheet';showMsg('error','Visit saved but lines failed: '+lErr.message);return;}
+
+  // Save punch record if clock in/out entered
+  if(cin&&cout){
+    const[ih,im]=cin.split(':').map(Number),[oh,om]=cout.split(':').map(Number);
+    const dur=parseFloat((((oh*60+om)-(ih*60+im))/60).toFixed(2));
+    await sb.from('apb_punches').insert({timesheet_id:visit.id,tech_id:currentTech.id,tech_name:currentTech.name,visit_date:date,punch_in:cin,punch_out:cout,duration_hours:dur>0?dur:0,reason:'Work',is_open:false});
+  }
+
+  btn.disabled=false;btn.textContent='Submit Timesheet';
+  const ot=Math.max(0,totalHours-8);
+  showMsg('success',`✓ Logged ${lines.length} job line(s) · ${totalHours.toFixed(1)}h total${ot>0?' ('+ot.toFixed(1)+'h OT)':''}. Switching to history…`);
+  resetForm();
+  setTimeout(()=>switchTab('history'),2000);
+}
+
+function resetForm(){
+  document.getElementById('jobLines').innerHTML='';lineCounter=0;
+  document.getElementById('dateInput').value=new Date().toISOString().split('T')[0];
+  document.getElementById('totalHoursInput').value='';
+  document.getElementById('otNotice').style.display='none';
+  document.querySelectorAll('.hq-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('clockIn').value='';document.getElementById('clockOut').value='';
+  document.getElementById('clockCalc').textContent='';
+  document.getElementById('materialsUsed').value='';document.getElementById('problemNotes').value='';
+  lunchHours=0.5;uploadedPhotos=[];
+  document.querySelectorAll('.lunch-btn').forEach((b,i)=>b.classList.toggle('selected',i===0));
+  document.getElementById('photoPreviews').innerHTML='';document.getElementById('photoStatus').textContent='';
+  document.getElementById('logMsg').className='msg-box';
+  updateTotals();
+  addJobLine();
+}
+function showMsg(type,text){const el=document.getElementById('logMsg');el.textContent=text;el.className='msg-box '+type;if(type==='success')setTimeout(()=>{el.className='msg-box';},7000);}
+
+// ── History ──
+function openLineEdit(lineId){
+  const l=window.__lineCache[lineId];if(!l||l.reviewed)return;
+  document.getElementById('editform-'+lineId).innerHTML=`<div class="ln-edit-form">
+    <label style="font-size:11px;font-weight:700;color:var(--ink-3);display:block;margin-bottom:3px">Hours</label>
+    <input type="number" step="0.1" min="0.1" max="24" id="edithrs-${lineId}" value="${l.hours}">
+    <label style="font-size:11px;font-weight:700;color:var(--ink-3);display:block;margin-top:8px;margin-bottom:3px">Description</label>
+    <textarea id="editdesc-${lineId}" rows="2">${l.work_description||''}</textarea>
+    <div class="ln-edit-actions">
+      <button class="save" onclick="saveLineEdit('${lineId}')">Save Correction</button>
+      <button onclick="cancelLineEdit('${lineId}')">Cancel</button>
+    </div></div>`;
+}
+function cancelLineEdit(lineId){document.getElementById('editform-'+lineId).innerHTML='';}
+async function saveLineEdit(lineId){
+  const l=window.__lineCache[lineId];
+  const{data:fresh}=await sb.from('apb_timesheet_lines').select('reviewed,hours').eq('id',lineId).single();
+  if(!fresh||fresh.reviewed){alert('This entry was reviewed by a manager and can no longer be edited.');loadHistory();return;}
+  const newHours=parseFloat(document.getElementById('edithrs-'+lineId).value);
+  const newDesc=document.getElementById('editdesc-'+lineId).value.trim();
+  if(!newHours||newHours<=0)return alert('Enter hours > 0.');
+  if(!newDesc)return alert('Description cannot be empty.');
+  const{error}=await sb.from('apb_timesheet_lines').update({hours:newHours,work_description:newDesc,edited_by:currentTech.name,edited_at:new Date().toISOString(),original_hours:l.original_hours??l.hours,edit_note:'Self-correction by tech'}).eq('id',lineId);
+  if(error)return alert('Save failed: '+error.message);
+  const{data:siblings}=await sb.from('apb_timesheet_lines').select('hours').eq('timesheet_id',l.timesheet_id);
+  const newTotal=(siblings||[]).reduce((s,x)=>s+parseFloat(x.hours||0),0);
+  await sb.from('apb_timesheets').update({total_hours:newTotal}).eq('id',l.timesheet_id);
+  cancelLineEdit(lineId);loadHistory();
+}
+async function loadHistory(){
+  const{data:visits}=await sb.from('apb_timesheets').select('*,apb_engagements(name)').eq('tech_name',currentTech.name).order('visit_date',{ascending:false}).limit(30);
+  const el=document.getElementById('historyContent');
+  if(!visits?.length){el.innerHTML='<div class="empty-state">No timesheets logged yet.<br>Submit your first timesheet on the Log Time tab.</div>';document.getElementById('weekSummary').innerHTML='';return;}
+  const ids=visits.map(v=>v.id);
+  const{data:allLines}=await sb.from('apb_timesheet_lines').select('*,apb_jobs(job_name,job_number)').in('timesheet_id',ids).order('created_at');
+  window.__lineCache=Object.fromEntries((allLines||[]).map(l=>[l.id,l]));
+  const linesByVisit={};
+  (allLines||[]).forEach(l=>{(linesByVisit[l.timesheet_id]=linesByVisit[l.timesheet_id]||[]).push(l);});
+  const today=new Date(),monday=new Date(today);monday.setDate(today.getDate()-((today.getDay()+6)%7));monday.setHours(0,0,0,0);
+  const weekHrs=visits.filter(t=>new Date(t.visit_date+'T12:00:00')>=monday).reduce((s,t)=>s+parseFloat(t.total_hours||0),0);
+  const weekOT=Math.max(0,weekHrs-(visits.filter(t=>new Date(t.visit_date+'T12:00:00')>=monday).length*8));
+  document.getElementById('weekSummary').innerHTML=`<div class="week-summary"><div><div class="week-label">This week</div><div class="week-reg">${weekOT>0?`Reg: ${(weekHrs-weekOT).toFixed(1)}h · OT: ${weekOT.toFixed(1)}h`:'All regular time'}</div></div><div class="week-hours">${weekHrs.toFixed(1)}h</div></div>`;
+  el.innerHTML=visits.map(v=>{
+    const d=new Date(v.visit_date+'T12:00:00');
+    const dateStr=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+    const lines=linesByVisit[v.id]||[];
+    const photos=v.photo_urls?v.photo_urls.split(',').filter(Boolean):[];
+    const h=parseFloat(v.total_hours||0);
+    const ot=Math.max(0,h-8);
+    return`<div class="history-entry">
+      <div class="history-header">
+        <div><div class="history-vessel">${v.apb_engagements?.name||v.vessel_name||'—'}</div><div class="history-meta">${dateStr}</div></div>
+        <div style="text-align:right"><div class="history-hours">${h.toFixed(1)}h${ot>0?`<span class="history-ot">+${ot.toFixed(1)}h OT</span>`:''}</div></div>
       </div>
-    </div>`;
-}
-function cancelLineEdit(lineId) { document.getElementById('editform-' + lineId).innerHTML = ''; }
-async function saveLineEdit(lineId) {
-  const l = window.__lineCache[lineId];
-  // re-check reviewed status fresh from DB right before writing, so an in-flight manager review can't be clobbered
-  const { data: fresh } = await sb.from('apb_timesheet_lines').select('reviewed, hours').eq('id', lineId).single();
-  if (!fresh || fresh.reviewed) { alert('This entry was just reviewed by a manager and can no longer be edited. Refreshing your history.'); loadHistory(); return; }
-  const newHours = parseFloat(document.getElementById('edithrs-' + lineId).value);
-  const newDesc = document.getElementById('editdesc-' + lineId).value.trim();
-  if (!newHours || newHours <= 0) return alert('Enter hours greater than 0.');
-  if (!newDesc) return alert('Description cannot be empty.');
-  const updates = {
-    hours: newHours,
-    work_description: newDesc,
-    edited_by: currentTech.name,
-    edited_at: new Date().toISOString(),
-    original_hours: l.original_hours !== null && l.original_hours !== undefined ? l.original_hours : l.hours,
-    edit_note: 'Self-correction by tech after submission'
-  };
-  const { error } = await sb.from('apb_timesheet_lines').update(updates).eq('id', lineId);
-  if (error) return alert('Save failed: ' + error.message);
-  // keep the parent visit's total_hours in sync with the corrected line
-  const { data: siblingLines } = await sb.from('apb_timesheet_lines').select('hours').eq('timesheet_id', l.timesheet_id);
-  const newTotal = (siblingLines || []).reduce((s, x) => s + parseFloat(x.hours || 0), 0);
-  await sb.from('apb_timesheets').update({ total_hours: newTotal }).eq('id', l.timesheet_id);
-  cancelLineEdit(lineId);
-  loadHistory();
-}
-async function loadHistory() {
-  const { data: visits } = await sb.from('apb_timesheets').select('*, apb_engagements(name)').eq('tech_name', currentTech.name).order('visit_date', {ascending:false}).limit(30);
-  const el = document.getElementById('historyContent');
-  if (!visits || !visits.length) { el.innerHTML = '<div class="empty-state">No timesheets logged yet.</div>'; document.getElementById('weekSummary').innerHTML = ''; return; }
-  const ids = visits.map(v => v.id);
-  const { data: allLines } = await sb.from('apb_timesheet_lines').select('*, apb_jobs(job_name, job_number)').in('timesheet_id', ids).order('created_at');
-  window.__lineCache = Object.fromEntries((allLines||[]).map(l => [l.id, l]));
-  const linesByVisit = {};
-  (allLines || []).forEach(l => { (linesByVisit[l.timesheet_id] = linesByVisit[l.timesheet_id] || []).push(l); });
-  const today = new Date(); const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay()+6)%7)); monday.setHours(0,0,0,0);
-  const weekHours = visits.filter(t => new Date(t.visit_date+'T12:00:00') >= monday).reduce((s,t) => s + parseFloat(t.total_hours||0), 0);
-  document.getElementById('weekSummary').innerHTML = `<div class="week-summary"><div><div class="week-label">This week</div></div><div class="week-hours">${weekHours.toFixed(1)} hrs</div></div>`;
-  el.innerHTML = visits.map(v => {
-    const d = new Date(v.visit_date+'T12:00:00');
-    const dateStr = d.toLocaleDateString('en-US', {weekday:'short',month:'short',day:'numeric'});
-    const lines = linesByVisit[v.id] || [];
-    const photos = v.photo_urls ? v.photo_urls.split(',').filter(Boolean) : [];
-    return `<div class="history-entry">
-      <div class="history-header"><div><div class="history-vessel">${v.apb_engagements?.name || v.vessel_name || '—'}</div><div class="history-meta">${dateStr}</div></div><div class="history-hours">${parseFloat(v.total_hours||0).toFixed(1)}h</div></div>
-      ${lines.map(l => { const jNum = l.job_number || l.apb_jobs?.job_number || ''; const jName = l.job_name || l.apb_jobs?.job_name || l.shop_category || ''; const label = [jNum, jName].filter(Boolean).join(' — '); const locked = !!l.reviewed; return `<div class="history-line" id="line-${l.id}">
-        ${locked ? `<span class="ln-locked">🔒 reviewed</span>` : `<button class="ln-edit-btn" onclick="openLineEdit('${l.id}')">Edit</button>`}
-        <span class="ln-job">${label || 'No job info'}</span> <span class="ln-hrs" id="hrs-${l.id}">· ${parseFloat(l.hours).toFixed(1)}h</span><br><span id="desc-${l.id}">${l.work_description}</span>
-        ${l.edited_by ? `<div class="ln-edited-tag">✎ edited by ${l.edited_by} · ${new Date(l.edited_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</div>` : ''}
-        <div id="editform-${l.id}"></div>
-      </div>`; }).join('')}
-      ${photos.length ? `<div class="history-photos">${photos.map(p => `<img src="${p}">`).join('')}</div>` : ''}
+      ${lines.map(l=>{
+        const jNum=l.job_number||l.apb_jobs?.job_number||'';
+        const jName=l.job_name||l.apb_jobs?.job_name||l.shop_category||'';
+        const label=[jNum,jName].filter(Boolean).join(' — ');
+        const locked=!!l.reviewed;
+        return`<div class="history-line" id="line-${l.id}">
+          ${locked?`<span class="ln-locked">✓ reviewed</span>`:`<button class="ln-edit-btn" onclick="openLineEdit('${l.id}')">Edit</button>`}
+          <div class="ln-job">${label||'—'} <span class="ln-hrs">· ${parseFloat(l.hours).toFixed(1)}h</span></div>
+          <div class="ln-desc">${l.work_description||''}</div>
+          ${l.edited_by?`<div class="ln-edited-tag">✎ edited by ${l.edited_by}</div>`:''}
+          <div id="editform-${l.id}"></div>
+        </div>`;
+      }).join('')}
+      ${photos.length?`<div class="history-photos">${photos.map(p=>`<img src="${p}" onclick="window.open('${p}','_blank')">`).join('')}</div>`:''}
     </div>`;
   }).join('');
 }
