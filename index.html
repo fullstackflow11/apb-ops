@@ -805,7 +805,7 @@ const STATUS_BADGE={'Ready To Be Billed':'badge-rtbb','In Progress':'badge-ip','
 function statusBadge(s){ return `<span class="badge ${STATUS_BADGE[s]||'badge-lead'}">${s}</span>`; }
 
 // ── MAIN LOAD ──
-async async function loadAll(){
+async function loadAll(){
   document.getElementById('lastUpdated').textContent='Updating...';
   await Promise.all([loadJobs(), loadTimesheets(), loadWeather(), loadRdReviews()]);
   document.getElementById('lastUpdated').textContent='Updated '+new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
