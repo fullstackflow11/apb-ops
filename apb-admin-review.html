@@ -171,6 +171,32 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
 .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(12px);opacity:0;background:#11151C;color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;box-shadow:var(--shadow);transition:.22s;z-index:9999;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%)}
 
+/* ── Review modal ── */
+.modal-scrim{position:fixed;inset:0;background:rgba(13,22,38,.45);backdrop-filter:blur(3px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
+.review-modal{background:var(--panel);border-radius:16px;box-shadow:0 30px 70px -20px rgba(13,22,38,.4);width:560px;max-width:100%;max-height:90vh;overflow:hidden;display:flex;flex-direction:column}
+.rm-header{padding:20px 24px 16px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;gap:14px}
+.rm-icon{width:40px;height:40px;border-radius:10px;background:var(--panel-2);display:grid;place-items:center;font-size:18px;flex-shrink:0}
+.rm-title{font-size:15px;font-weight:700;color:var(--ink)}
+.rm-sub{font-size:12px;color:var(--ink-3);margin-top:2px}
+.rm-close{margin-left:auto;background:none;border:none;font-size:20px;color:var(--ink-4);cursor:pointer;line-height:1;padding:2px}
+.rm-close:hover{color:var(--ink)}
+.rm-body{padding:20px 24px;overflow-y:auto;flex:1}
+.rm-field{margin-bottom:14px}
+.rm-label{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);margin-bottom:5px}
+.rm-value{font-size:13.5px;color:var(--ink-2);line-height:1.5;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.rm-value.big{font-family:var(--mono);font-size:26px;font-weight:600;color:var(--ink);padding:12px 14px}
+.rm-textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:10px 12px;font:inherit;font-size:13.5px;resize:vertical;min-height:72px}
+.rm-textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.rm-ot-warn{background:var(--amber-soft);border:1px solid rgba(184,106,0,.2);border-radius:8px;padding:10px 14px;font-size:12.5px;color:var(--amber);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.rm-edited-note{background:var(--accent-soft);border:1px solid rgba(36,87,230,.2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--accent-2);margin-bottom:14px}
+.rm-footer{padding:16px 24px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center}
+.rm-footer .spacer{flex:1}
+.rm-flag-btn{background:var(--amber-soft);color:var(--amber);border:1px solid rgba(184,106,0,.25);border-radius:8px;padding:9px 16px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.rm-flag-btn:hover{background:rgba(184,106,0,.2)}
+.rm-approve-btn{background:var(--green);color:#fff;border:none;border-radius:8px;padding:9px 22px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.rm-approve-btn:hover{background:#0a8a5c}
+.rm-cancel-btn{background:var(--panel-2);color:var(--ink-3);border:1px solid var(--line);border-radius:8px;padding:9px 16px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.rm-cancel-btn:hover{border-color:var(--ink-3);color:var(--ink)}
 /* ── Export ── */
 @media(max-width:900px){.summary-bar{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:600px){.summary-bar{grid-template-columns:repeat(2,1fr)}.controls{gap:6px}}
@@ -282,6 +308,48 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
   <!-- Visit list -->
   <div id="visitList"><div class="spinner"></div></div>
 </main>
+
+<!-- Review modal -->
+<div id="reviewModal" style="display:none" class="modal-scrim" onclick="if(event.target===this)closeReviewModal()">
+  <div class="review-modal">
+    <div class="rm-header">
+      <div class="rm-icon">🔍</div>
+      <div>
+        <div class="rm-title" id="rm-title">Review Entry</div>
+        <div class="rm-sub" id="rm-sub"></div>
+      </div>
+      <button class="rm-close" onclick="closeReviewModal()">✕</button>
+    </div>
+    <div class="rm-body">
+      <div id="rm-ot-warn" class="rm-ot-warn" style="display:none">⚠ This entry exceeds 8 hours — OT applies</div>
+      <div id="rm-edited-note" class="rm-edited-note" style="display:none"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="rm-field">
+          <div class="rm-label">Hours</div>
+          <div class="rm-value big" id="rm-hours">—</div>
+        </div>
+        <div class="rm-field">
+          <div class="rm-label">Job</div>
+          <div class="rm-value" id="rm-job" style="min-height:52px">—</div>
+        </div>
+      </div>
+      <div class="rm-field">
+        <div class="rm-label">Work Description</div>
+        <div class="rm-value" id="rm-desc" style="min-height:64px;white-space:pre-wrap">—</div>
+      </div>
+      <div class="rm-field">
+        <div class="rm-label">Review Note <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink-4)">(optional — visible in audit log)</span></div>
+        <textarea class="rm-textarea" id="rm-note" placeholder="Add a note if flagging or for your records…"></textarea>
+      </div>
+    </div>
+    <div class="rm-footer">
+      <button class="rm-cancel-btn" onclick="closeReviewModal()">Cancel</button>
+      <button class="rm-flag-btn" onclick="flagFromModal()">⚑ Flag for follow-up</button>
+      <div class="spacer"></div>
+      <button class="rm-approve-btn" onclick="approveFromModal()">✓ Approve</button>
+    </div>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -499,7 +567,7 @@ function renderCard(v){
               <span class="billable-label ${l.billable!==false?'yes':'no'}">${l.billable!==false?'Bill':'Non'}</span>
             </div>
           </td>
-          <td><button class="review-btn ${l.reviewed?'done':'pending'}" onclick="toggleReviewed('${l.id}',${!l.reviewed},this)">${l.reviewed?'✓ Done':'Review'}</button></td>
+          <td><button class="review-btn ${l.reviewed?'done':'pending'}" onclick="${l.reviewed?`toggleReviewed('${l.id}',false,this)`:`openReviewModal('${l.id}')`}">${l.reviewed?'✓ Done':'Review'}</button></td>
         </tr>`).join('')}
       </tbody>
     </table>`
@@ -569,6 +637,82 @@ async function batchApproveAll(){
   showToast(`✓ All ${ids.length} lines approved`);
   updateSummary(); renderTechTable(); renderVisits();
 }
+
+// ── Review modal ──
+let _modalLineId = null;
+
+function openReviewModal(lineId) {
+  const l = lines.find(x => x.id === lineId);
+  if (!l) return;
+  _modalLineId = lineId;
+
+  // Find parent visit for context
+  const v = visits.find(x => x.id === l.timesheet_id);
+  const vessel = v ? (v.apb_engagements?.name || v.vessel_name || '—') : '—';
+  const dateStr = v?.visit_date ? new Date(v.visit_date + 'T12:00:00').toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric', year:'numeric'}) : '—';
+
+  document.getElementById('rm-title').textContent = vessel;
+  document.getElementById('rm-sub').textContent = `${v?.tech_name || '—'} · ${dateStr}`;
+  document.getElementById('rm-hours').textContent = parseFloat(l.hours || 0).toFixed(1) + 'h';
+  document.getElementById('rm-job').textContent = l.job_number || l.job_no || l.shop_category || '—';
+  document.getElementById('rm-desc').textContent = l.work_description || l.description || '(no description entered)';
+  document.getElementById('rm-note').value = '';
+
+  // OT warning
+  const otWarn = document.getElementById('rm-ot-warn');
+  otWarn.style.display = parseFloat(l.hours || 0) > 8 ? '' : 'none';
+
+  // Edit note
+  const editNote = document.getElementById('rm-edited-note');
+  if (l.edited_by) {
+    editNote.style.display = '';
+    editNote.textContent = `✎ Edited by ${l.edited_by}${l.original_hours ? ' · original: ' + l.original_hours + 'h' : ''}`;
+  } else {
+    editNote.style.display = 'none';
+  }
+
+  document.getElementById('reviewModal').style.display = 'flex';
+  document.getElementById('rm-note').focus();
+}
+
+function closeReviewModal() {
+  document.getElementById('reviewModal').style.display = 'none';
+  _modalLineId = null;
+}
+
+async function approveFromModal() {
+  if (!_modalLineId) return;
+  const note = document.getElementById('rm-note').value.trim();
+  const editor = currentUser?.email || 'admin';
+  const updates = { reviewed: true };
+  if (note) updates.review_note = note;
+  const { error } = await sb.from('apb_timesheet_lines').update(updates).eq('id', _modalLineId);
+  if (error) { showToast('Error: ' + error.message); return; }
+  const l = lines.find(x => x.id === _modalLineId);
+  if (l) { l.reviewed = true; if (note) l.review_note = note; }
+  closeReviewModal();
+  showToast('✓ Approved');
+  updateSummary(); renderTechTable(); renderVisits();
+}
+
+async function flagFromModal() {
+  if (!_modalLineId) return;
+  const note = document.getElementById('rm-note').value.trim() || 'Flagged for follow-up';
+  const { error } = await sb.from('apb_timesheet_lines').update({ review_note: note, reviewed: false }).eq('id', _modalLineId);
+  if (error) { showToast('Error: ' + error.message); return; }
+  const l = lines.find(x => x.id === _modalLineId);
+  if (l) { l.review_note = note; }
+  closeReviewModal();
+  showToast('⚑ Flagged');
+}
+
+// Keyboard shortcut — Enter to approve, Escape to close
+document.addEventListener('keydown', e => {
+  if (document.getElementById('reviewModal').style.display !== 'none') {
+    if (e.key === 'Escape') closeReviewModal();
+    if (e.key === 'Enter' && e.metaKey) approveFromModal();
+  }
+});
 
 // ── Line actions ──
 async function toggleBillable(lineId,billable){
