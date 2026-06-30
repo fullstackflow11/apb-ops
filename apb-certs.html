@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Certification Hub — APB</title>
+<script src="apb-roles.js"></script>
+<script src="apb-demo.js"></script>
+<script>APBRoles.guard('pm','Cert Hub');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDEEF2;--panel:#fff;--panel-2:#F5F6FA;
+  --ink:#0D1626;--ink-2:#3A4559;--ink-3:#6B7A92;
+  --line:#DDE1E8;--line-2:#EFF1F5;
+  --accent:#2457E6;--accent-2:#1B45B8;--accent-soft:#EAF0FE;
+  --green:#0B9E6A;--green-soft:#E4F5EE;
+  --amber:#B86A00;--amber-soft:#FBF0E2;
+  --orange:#C05300;--orange-soft:#FDEEE0;
+  --red:#C43030;--red-soft:#FCE8E8;
+  --gray-soft:#F0F2F5;
+  --teal:#0A7E8C;--teal-soft:#E2F5F7;
+  --shadow-sm:0 1px 3px rgba(13,22,38,.07);
+  --shadow:0 8px 28px -12px rgba(13,22,38,.14);
+  --shadow-lg:0 20px 56px -12px rgba(13,22,38,.22);
+  --mono:"DM Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;min-height:100vh;letter-spacing:-.01em}
+
+/* ══ Topbar ══════════════════════════════════════════ */
+.topbar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.92);backdrop-filter:saturate(180%) blur(14px);display:flex;align-items:center;gap:14px;padding:0 28px;height:58px;border-bottom:1px solid var(--line)}
+.back{font-size:13px;font-weight:600;color:var(--ink-3);text-decoration:none;display:flex;align-items:center;gap:5px;white-space:nowrap;transition:.12s}
+.back:hover{color:var(--accent)}
+.ttitle{font-size:15px;font-weight:700;color:var(--ink);padding-left:14px;border-left:1px solid var(--line);white-space:nowrap}
+.sp{flex:1}
+.sp-btn{background:none;border:1px solid var(--line);border-radius:8px;padding:7px 13px;font-size:12.5px;font-weight:600;color:var(--ink-3);cursor:pointer;text-decoration:none;display:flex;align-items:center;gap:6px;transition:.12s;white-space:nowrap}
+.sp-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.add-btn{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:.12s;white-space:nowrap}
+.add-btn:hover{background:var(--accent-2);transform:translateY(-1px)}
+
+/* ══ Hero ════════════════════════════════════════════ */
+.hero{position:relative;overflow:hidden;color:#fff;padding:38px 48px 0;margin-bottom:0;
+  background:
+    radial-gradient(600px 480px at 90% 110%,rgba(36,87,230,.45) 0%,transparent 55%),
+    radial-gradient(300px 240px at -5% -10%,rgba(100,140,255,.18) 0%,transparent 55%),
+    linear-gradient(160deg,#131a24,#0b0f17,#121820);
+  box-shadow:var(--shadow-lg)}
+.hero::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:radial-gradient(circle at 1px 1px,rgba(255,255,255,.05) 1px,transparent 0);
+  background-size:28px 28px}
+.hero-anchor{position:absolute;right:48px;top:36px;width:160px;height:160px;opacity:.05;pointer-events:none}
+.hero-body{position:relative;z-index:1}
+.hero .eyebrow{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:#6a90d0;font-weight:700;margin-bottom:10px}
+.hero h1{font-size:36px;font-weight:800;letter-spacing:-.04em;margin:0 0 10px;line-height:1.05}
+.hero .tagline{color:#adbbd4;font-size:14px;line-height:1.6;max-width:480px;margin:0 0 24px}
+.hero-actions{display:flex;gap:10px;flex-wrap:wrap;position:relative;z-index:1}
+.ha{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:9px;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer;border:none;white-space:nowrap;transition:all .13s;line-height:1}
+.ha svg{width:14px;height:14px;stroke-width:2.2;flex-shrink:0}
+.ha.prim{background:var(--accent);color:#fff;box-shadow:0 4px 16px rgba(36,87,230,.5)}
+.ha.prim:hover{background:#1d46c8;transform:translateY(-1px)}
+.ha.ghost{background:rgba(255,255,255,.08);color:#d4dfef;border:1px solid rgba(255,255,255,.13)}
+.ha.ghost:hover{background:rgba(255,255,255,.15);color:#fff}
+
+/* Hero KPI strip */
+.hero-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:0;position:relative;z-index:1;margin-top:28px;border-top:1px solid rgba(255,255,255,.08)}
+.hk{padding:18px 24px;border-right:1px solid rgba(255,255,255,.08)}
+.hk:last-child{border-right:none}
+.hk .hk-n{display:block;font-family:var(--mono);font-size:26px;font-weight:500;color:#fff;margin-bottom:4px;letter-spacing:-.02em}
+.hk .hk-n.red{color:#ff7b7b}
+.hk .hk-n.amber{color:#ffc46a}
+.hk .hk-n.green{color:#6ddbb4}
+.hk .hk-lbl{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#5e7fb8;font-weight:700}
+
+/* ══ Wrap ════════════════════════════════════════════ */
+.wrap{max-width:1200px;margin:0 auto;padding:24px 24px 64px}
+
+/* ══ Filter card ════════════════════════════════════ */
+.filter-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm);padding:18px 20px;margin-bottom:18px}
+.filter-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.search-box{position:relative;flex:1;min-width:220px}
+.search-box input{width:100%;padding:9px 14px 9px 36px;border:1px solid var(--line);border-radius:9px;background:var(--panel-2);font-size:13.5px;color:var(--ink);outline:none;transition:.12s;font-family:inherit}
+.search-box input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);background:var(--panel)}
+.search-box svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--ink-3);pointer-events:none}
+.divider{width:1px;height:24px;background:var(--line);flex-shrink:0}
+.chip-row{display:flex;gap:6px;flex-wrap:wrap}
+.chip{padding:6px 13px;border-radius:20px;border:1px solid var(--line);background:transparent;font-size:12.5px;font-weight:600;color:var(--ink-3);cursor:pointer;transition:.12s;white-space:nowrap;line-height:1}
+.chip:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.chip.rc.active{background:var(--red);border-color:var(--red)}
+.chip.ac.active{background:var(--amber);border-color:var(--amber)}
+.chip.gc.active{background:var(--green);border-color:var(--green)}
+
+/* ══ Result count ═══════════════════════════════════ */
+.result-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.result-count{font-size:12.5px;color:var(--ink-3)}
+.sp-links{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3)}
+.sp-links a{color:var(--accent);font-weight:600;text-decoration:none;transition:.1s}
+.sp-links a:hover{text-decoration:underline}
+.sp-links .sep{color:var(--line)}
+
+/* ══ Table ═══════════════════════════════════════════ */
+.table-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm);overflow:hidden}
+.cert-table{width:100%;border-collapse:collapse;font-size:13.5px}
+.cert-table th{padding:11px 12px;background:var(--panel-2);border-bottom:2px solid var(--line);font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);text-align:left;white-space:nowrap;cursor:pointer;user-select:none;transition:.1s}
+.cert-table th:hover{color:var(--accent)}
+.cert-table th.sort-asc::after{content:" ↑"}
+.cert-table th.sort-desc::after{content:" ↓"}
+.cert-table td{padding:11px 12px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+.cert-table tr:last-child td{border-bottom:none}
+.cert-table tr.row-expired td{border-left:3px solid var(--red);background:rgba(196,48,48,.025)}
+.cert-table tr.row-soon30 td{border-left:3px solid var(--amber)}
+.cert-table tr.row-soon60 td{border-left:3px solid var(--orange)}
+.cert-table tr.row-expired:first-child td,.cert-table tr.row-soon30:first-child td,.cert-table tr.row-soon60:first-child td{padding-left:13px}
+.cert-table tr.row-expired td:first-child,.cert-table tr.row-soon30 td:first-child,.cert-table tr.row-soon60 td:first-child{padding-left:13px}
+.cert-table tr.data-row:hover td{background:#fafbfc}
+.cert-table tr.row-expired:hover td{background:rgba(196,48,48,.04)}
+
+/* name / type cells */
+.name-cell{font-weight:600;color:var(--ink);min-width:120px;max-width:155px}
+.name-sub{font-size:11px;color:var(--ink-3);font-family:var(--mono);margin-top:2px}
+.type-cell{color:var(--ink-2);min-width:150px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wpq-sub{font-size:11px;color:var(--teal);font-family:var(--mono);margin-top:2px}
+
+/* Category header rows */
+.cat-row td{background:linear-gradient(90deg,var(--panel-2),var(--panel));border-bottom:1px solid var(--line);font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);padding:9px 16px}
+
+/* Authority badges */
+.auth-badge{display:inline-block;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.auth-ABS{background:#EAF3FF;color:#1565C0}
+.auth-Lloyds{background:#E8F5E9;color:#1B5E20}
+.auth-RINA{background:#F3E5F5;color:#6A1B9A}
+.auth-BV{background:#E0F2F1;color:#00695C}
+.auth-OSHA{background:#FFF3E0;color:#E65100}
+.auth-TSA{background:#E8EAF6;color:#283593}
+.auth-AWS{background:#FCE4EC;color:#880E4F}
+.auth-Harken{background:#E1F5FE;color:#01579B}
+.auth-Viega{background:#E8F5E9;color:#1B5E20}
+.auth-Internal{background:var(--gray-soft);color:var(--ink-3)}
+.auth-External{background:var(--gray-soft);color:var(--ink-3)}
+.auth-Other{background:var(--gray-soft);color:var(--ink-3)}
+
+/* Status pills */
+.status-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11.5px;font-weight:700;white-space:nowrap}
+.st-expired{background:var(--red-soft);color:var(--red)}
+.st-soon30{background:#fff3f3;color:var(--red)}
+.st-soon60{background:var(--amber-soft);color:var(--amber)}
+.st-active{background:var(--green-soft);color:var(--green)}
+.st-noexp{background:var(--gray-soft);color:var(--ink-3)}
+.st-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+/* Days cell */
+.d-expired{color:var(--red);font-weight:700;font-family:var(--mono);font-size:12px}
+.d-soon30{color:var(--red);font-weight:600;font-family:var(--mono);font-size:12px}
+.d-soon60{color:var(--orange);font-weight:600;font-family:var(--mono);font-size:12px}
+.d-active{color:var(--green);font-family:var(--mono);font-size:12px}
+.d-noexp{color:var(--ink-3);font-size:12px}
+
+/* Action buttons */
+.act-btn{background:none;border:none;padding:4px 9px;border-radius:6px;cursor:pointer;color:var(--ink-3);font-size:12px;font-weight:600;transition:.1s;line-height:1}
+.act-btn:hover{background:var(--accent-soft);color:var(--accent)}
+.act-btn.del:hover{background:var(--red-soft);color:var(--red)}
+.act-link{color:var(--accent);font-size:13px;text-decoration:none;padding:3px 6px;border-radius:5px;transition:.1s}
+.act-link:hover{background:var(--accent-soft)}
+
+/* Empty state */
+.empty-state{text-align:center;padding:72px 24px;color:var(--ink-3)}
+.empty-state .ei{font-size:44px;margin-bottom:14px}
+.empty-state h3{font-size:18px;color:var(--ink-2);margin-bottom:6px;font-weight:700}
+.empty-state p{font-size:14px;line-height:1.5}
+
+/* ══ Modal ═══════════════════════════════════════════ */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--panel);border-radius:20px;width:100%;max-width:660px;max-height:92vh;overflow-y:auto;box-shadow:0 28px 90px rgba(0,0,0,.35)}
+.modal-hdr{padding:22px 26px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;position:sticky;top:0;background:var(--panel);z-index:1;border-radius:20px 20px 0 0}
+.modal-hdr h2{font-size:17px;font-weight:700;flex:1}
+.modal-close{background:none;border:none;cursor:pointer;color:var(--ink-3);font-size:20px;line-height:1;padding:3px 8px;border-radius:7px;transition:.1s}
+.modal-close:hover{background:var(--gray-soft);color:var(--ink)}
+.modal-body{padding:22px 26px}
+.modal-foot{padding:16px 26px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;position:sticky;bottom:0;background:var(--panel);border-radius:0 0 20px 20px}
+
+/* Form fields */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.form-row.full{grid-template-columns:1fr}
+.form-row.triple{grid-template-columns:1fr 1fr 1fr}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.field input,.field select,.field textarea{padding:9px 12px;border:1px solid var(--line);border-radius:9px;font-size:13.5px;color:var(--ink);background:var(--panel);outline:none;transition:.12s;font-family:inherit}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.field textarea{resize:vertical;min-height:76px;font-size:13px}
+.field .hint{font-size:11px;color:var(--ink-3);line-height:1.5}
+.weld-info{background:var(--accent-soft);border:1px solid #c7d7f8;border-radius:10px;padding:11px 14px;font-size:12px;color:var(--accent-2);margin-bottom:14px;line-height:1.55}
+
+/* Buttons */
+.btn{padding:9px 20px;border-radius:9px;font-size:13.5px;font-weight:600;cursor:pointer;border:1px solid transparent;transition:.12s;line-height:1}
+.btn-prim{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-prim:hover{background:var(--accent-2)}
+.btn-ghost{background:none;border-color:var(--line);color:var(--ink-3)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-danger{background:none;border-color:var(--red);color:var(--red);margin-right:auto}
+.btn-danger:hover{background:var(--red-soft)}
+
+/* ══ Responsive ══════════════════════════════════════ */
+@media(max-width:840px){
+  .hero{padding:28px 24px 0}.hero h1{font-size:28px}
+  .hero-kpis{grid-template-columns:repeat(2,1fr)}
+  .hk:nth-child(2){border-right:none}
+  .hk:nth-child(3){border-top:1px solid rgba(255,255,255,.08)}
+  .form-row,.form-row.triple{grid-template-columns:1fr}
+}
+@media(max-width:540px){
+  .filter-row{flex-direction:column;align-items:stretch}
+  .divider{display:none}
+  .topbar{padding:0 14px;gap:8px}
+  .sp-btn{display:none}
+  .hero{padding:22px 18px 0}
+  .hero h1{font-size:24px}
+  .hero-kpis{grid-template-columns:1fr 1fr}
+}
+</style>
+<link rel="stylesheet" href="apb-theme.css">
+</head>
+<body>
+
+<!-- ── Topbar ───────────────────────────────────────── -->
+<header class="topbar">
+  <a href="index.html" class="back">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+    PM Console
+  </a>
+  <span class="ttitle">Certification Hub</span>
+  <div class="sp"></div>
+  <a class="sp-btn" href="https://allpointsboats1.sharepoint.com/:f:/s/operations/IgAWYfOfIVbDTaZxFoDEXASQAVD_3HfMvu5i8qPa9z78guY?e=2wQ4bQ" target="_blank" rel="noopener">
+    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+    SharePoint Certs
+  </a>
+  <button class="add-btn" onclick="openAdd()">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    Add Cert
+  </button>
+</header>
+
+<!-- ── Hero ─────────────────────────────────────────── -->
+<section class="hero">
+  <!-- Anchor watermark -->
+  <svg class="hero-anchor" viewBox="0 0 100 100" fill="white" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <circle cx="50" cy="22" r="8" fill="none" stroke="white" stroke-width="5"/>
+    <line x1="50" y1="30" x2="50" y2="80" stroke="white" stroke-width="5" stroke-linecap="round"/>
+    <line x1="25" y1="45" x2="75" y2="45" stroke="white" stroke-width="5" stroke-linecap="round"/>
+    <path d="M25,45 Q18,70 30,80" fill="none" stroke="white" stroke-width="5" stroke-linecap="round"/>
+    <path d="M75,45 Q82,70 70,80" fill="none" stroke="white" stroke-width="5" stroke-linecap="round"/>
+    <line x1="30" y1="80" x2="50" y2="80" stroke="white" stroke-width="5" stroke-linecap="round"/>
+    <line x1="50" y1="80" x2="70" y2="80" stroke="white" stroke-width="5" stroke-linecap="round"/>
+  </svg>
+
+  <div class="hero-body">
+    <div class="eyebrow">All Points Boats · Compliance &amp; Certification</div>
+    <h1>Certification Hub</h1>
+    <p class="tagline">Welding WPQs, OSHA safety cards, TWIC, SCP, and equipment calibrations — every expiration date tracked in one place.</p>
+    <div class="hero-actions">
+      <button class="ha prim" onclick="openAdd()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Add Certification
+      </button>
+      <a class="ha ghost" href="https://allpointsboats1.sharepoint.com/:f:/s/operations/IgAWYfOfIVbDTaZxFoDEXASQAVD_3HfMvu5i8qPa9z78guY?e=2wQ4bQ" target="_blank" rel="noopener">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        Open SharePoint Folder
+      </a>
+      <a class="ha ghost" href="https://allpointsboats1.sharepoint.com/sites/compliance/Shared%20Documents/Compliance%20Safety/Employee%20Certs/" target="_blank" rel="noopener">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Employee Certs
+      </a>
+    </div>
+  </div>
+
+  <div class="hero-kpis">
+    <div class="hk"><span class="hk-n red" id="heroExpired">—</span><span class="hk-lbl">Expired — needs action</span></div>
+    <div class="hk"><span class="hk-n amber" id="heroSoon">—</span><span class="hk-lbl">Expiring within 60 days</span></div>
+    <div class="hk"><span class="hk-n green" id="heroActive">—</span><span class="hk-lbl">Active &amp; Current</span></div>
+    <div class="hk"><span class="hk-n" id="heroTotal">—</span><span class="hk-lbl">Total cert records</span></div>
+  </div>
+</section>
+
+<!-- ── Main content ──────────────────────────────────── -->
+<main class="wrap">
+
+  <!-- Filter card -->
+  <div class="filter-card">
+    <div class="filter-row">
+      <div class="search-box">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="search" id="searchInput" placeholder="Search name, cert type, WPQ code, authority…" oninput="render()">
+      </div>
+      <div class="divider"></div>
+      <div class="chip-row" id="catChips">
+        <button class="chip active" data-cat="all">All</button>
+        <button class="chip" data-cat="welding">⚡ Welding</button>
+        <button class="chip" data-cat="safety">🦺 Safety</button>
+        <button class="chip" data-cat="specialty">⭐ Specialty</button>
+        <button class="chip" data-cat="equipment">🔧 Equipment</button>
+      </div>
+      <div class="divider"></div>
+      <div class="chip-row" id="statusChips">
+        <button class="chip active" data-st="all">All</button>
+        <button class="chip rc" data-st="expired">Expired</button>
+        <button class="chip ac" data-st="soon">Expiring Soon</button>
+        <button class="chip gc" data-st="active">Active</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result bar -->
+  <div class="result-bar">
+    <span class="result-count" id="resultCount"></span>
+    <div class="sp-links">
+      <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg>
+      Synced from SharePoint <b style="color:var(--ink-2);margin-left:3px">Jun 27 2026</b>
+      <span class="sep">·</span>
+      <a href="https://allpointsboats1.sharepoint.com/sites/operations/Shared%20Documents/Certs/Welding%20Certificates/Welding%20Logs/" target="_blank" rel="noopener">Welding Logs</a>
+      <span class="sep">·</span>
+      <a href="https://allpointsboats1.sharepoint.com/sites/compliance/Shared%20Documents/Compliance%20Safety/Employee%20Certs/" target="_blank" rel="noopener">Employee Certs</a>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-card">
+   <div style="overflow-x:auto">
+    <table class="cert-table" style="min-width:860px">
+      <thead>
+        <tr>
+          <th data-col="name">Name / Equipment</th>
+          <th data-col="certType">Cert Type</th>
+          <th data-col="authority">Authority</th>
+          <th data-col="certDate">Cert Date</th>
+          <th data-col="expiryDate">Expiry</th>
+          <th data-col="days">Days Left</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="certsBody"></tbody>
+    </table>
+   </div>
+  </div>
+
+</main>
+
+<!-- ── Add / Edit Modal ─────────────────────────────── -->
+<div class="modal-overlay" id="modalOverlay">
+<div class="modal">
+  <div class="modal-hdr">
+    <h2 id="modalTitle">Add Certification</h2>
+    <button class="modal-close" onclick="closeModal()">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="form-row">
+      <div class="field">
+        <label>Category</label>
+        <select id="fCat" onchange="onCatChange()">
+          <option value="welding">⚡ Welding</option>
+          <option value="safety">🦺 Safety / OSHA</option>
+          <option value="specialty">⭐ Specialty</option>
+          <option value="equipment">🔧 Equipment / Calibration</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Name / Equipment</label>
+        <input id="fName" type="text" placeholder="Person name or equipment name">
+      </div>
+    </div>
+    <div class="form-row full" id="rowSerial" style="display:none">
+      <div class="field">
+        <label>Serial Number / Model</label>
+        <input id="fSerial" type="text" placeholder="e.g. S/N M02AA04347">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>Cert Type</label>
+        <input id="fCertType" type="text" placeholder="e.g. ABS Welder Qualification">
+        <div class="hint" id="certTypeHint"></div>
+      </div>
+      <div class="field">
+        <label>Issuing Authority</label>
+        <select id="fAuth">
+          <option value="ABS">ABS (American Bureau of Shipping)</option>
+          <option value="Lloyds">Lloyd's Register</option>
+          <option value="RINA">RINA</option>
+          <option value="BV">Bureau Veritas</option>
+          <option value="AWS">AWS</option>
+          <option value="OSHA">OSHA</option>
+          <option value="TSA">TSA (TWIC)</option>
+          <option value="Harken">Harken</option>
+          <option value="Viega">Viega</option>
+          <option value="Internal">Internal / APB</option>
+          <option value="External">External Lab</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+    </div>
+    <div id="weldingFields" style="display:none">
+      <div class="weld-info">ℹ️ <strong>Welding cert extension rule:</strong> ABS/Lloyd's/RINA certs can be extended 2 extra years (beyond the standard 3yr) if the welder maintains documented log entries of weld activity every ≤6 months, signed by an APB manager. Without logs, certs expire at 3 years and require a retest.</div>
+      <div class="form-row triple">
+        <div class="field">
+          <label>WPQ Code</label>
+          <input id="fWpq" type="text" placeholder="WPQ-GTAW-CUNI-6G">
+        </div>
+        <div class="field">
+          <label>Process</label>
+          <select id="fProcess">
+            <option value="">— Select —</option>
+            <option>GTAW (TIG)</option>
+            <option>GMAW (MIG)</option>
+            <option>SMAW (Stick)</option>
+            <option>FCAW (Flux Core)</option>
+            <option>Multiple</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Material</label>
+          <select id="fMaterial">
+            <option value="">— Select —</option>
+            <option>Aluminum 5086</option>
+            <option>Aluminum 5083</option>
+            <option>Stainless 316L</option>
+            <option>Stainless 304</option>
+            <option>Carbon Steel</option>
+            <option>CuNi (Copper Nickel)</option>
+            <option>Multiple</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="field">
+          <label>Weld Log Status</label>
+          <select id="fLog">
+            <option value="yes">Yes — log maintained every ≤6 months (eligible for 2yr extension)</option>
+            <option value="no">No — standard 3-year expiry applies</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>Cert / Issue Date</label>
+        <input id="fCertDate" type="date">
+      </div>
+      <div class="field">
+        <label>Expiry Date <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">(leave blank = no expiry)</span></label>
+        <input id="fExpiry" type="date">
+      </div>
+    </div>
+    <div class="form-row full">
+      <div class="field">
+        <label>SharePoint Document Link</label>
+        <input id="fSharePoint" type="url" placeholder="https://allpointsboats1.sharepoint.com/…">
+        <div class="hint">Paste the direct link to the cert PDF/file so you can jump straight to it</div>
+      </div>
+    </div>
+    <div class="form-row full">
+      <div class="field">
+        <label>Notes</label>
+        <textarea id="fNotes" placeholder="Cert number, renewal requirements, who to contact…"></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-danger" id="deleteBtn" onclick="deleteCert()" style="display:none">Delete</button>
+    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-prim" onclick="saveCert()">Save Cert</button>
+  </div>
+</div>
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────
+const STORE = 'apb_certs';
+let certs = [];
+let sortCol = 'days';
+let sortDir = 1;
+let catFilter = 'all';
+let statusFilter = 'all';
+let editId = null;
+
+// ── Status helpers ─────────────────────────────────────────────────────────
+function daysLeft(c) {
+  if (!c.expiryDate) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const exp = new Date(c.expiryDate + 'T00:00:00');
+  return Math.floor((exp - today) / 86400000);
+}
+function statusOf(c) {
+  const d = daysLeft(c);
+  if (d === null) return 'noexp';
+  if (d < 0)    return 'expired';
+  if (d <= 30)  return 'soon30';
+  if (d <= 60)  return 'soon60';
+  return 'active';
+}
+
+// ── Filter / sort ──────────────────────────────────────────────────────────
+function filtered() {
+  const q = (document.getElementById('searchInput').value||'').toLowerCase().trim();
+  return certs.filter(c => {
+    const matchQ = !q
+      || (c.name||'').toLowerCase().includes(q)
+      || (c.certType||'').toLowerCase().includes(q)
+      || (c.authority||'').toLowerCase().includes(q)
+      || (c.wpqCode||'').toLowerCase().includes(q)
+      || (c.serialNo||'').toLowerCase().includes(q)
+      || (c.notes||'').toLowerCase().includes(q);
+    const matchCat = catFilter==='all' || c.category===catFilter;
+    const st = statusOf(c);
+    const matchSt = statusFilter==='all'
+      || (statusFilter==='expired' && st==='expired')
+      || (statusFilter==='soon' && (st==='soon30'||st==='soon60'))
+      || (statusFilter==='active' && st==='active');
+    return matchQ && matchCat && matchSt;
+  });
+}
+function sortedFiltered() {
+  return filtered().sort((a,b)=>{
+    let va,vb;
+    if(sortCol==='days'){va=daysLeft(a)??100000;vb=daysLeft(b)??100000;}
+    else if(sortCol==='certDate'||sortCol==='expiryDate'){va=a[sortCol]||'9999-99-99';vb=b[sortCol]||'9999-99-99';}
+    else{va=(a[sortCol]||'').toLowerCase();vb=(b[sortCol]||'').toLowerCase();}
+    return va<vb?-sortDir:va>vb?sortDir:0;
+  });
+}
+
+// ── Render helpers ─────────────────────────────────────────────────────────
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmt(d){
+  if(!d) return '<span style="color:var(--ink-3)">—</span>';
+  const [y,m,day]=d.split('-');
+  return new Date(+y,+m-1,+day).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+function authBadge(auth){
+  const k=(auth||'Other').replace(/[^a-zA-Z]/g,'');
+  return `<span class="auth-badge auth-${k}">${esc(auth||'—')}</span>`;
+}
+function statusPill(st){
+  const map={
+    expired: ['st-expired','● Expired'],
+    soon30:  ['st-soon30', '● Soon'],
+    soon60:  ['st-soon60', '● Soon'],
+    active:  ['st-active', '● Active'],
+    noexp:   ['st-noexp',  'No Expiry'],
+  };
+  const [cls,lbl]=map[st]||map.noexp;
+  return `<span class="status-pill ${cls}">${lbl}</span>`;
+}
+function daysCell(c){
+  const d=daysLeft(c);
+  if(d===null) return `<span class="d-noexp">—</span>`;
+  if(d<0)    return `<span class="d-expired">${Math.abs(d)}d ago</span>`;
+  if(d<=30)  return `<span class="d-soon30">${d}d</span>`;
+  if(d<=60)  return `<span class="d-soon60">${d}d</span>`;
+  return `<span class="d-active">${d}d</span>`;
+}
+function catLabel(cat){
+  return {welding:'⚡ Welding',safety:'🦺 Safety / OSHA',specialty:'⭐ Specialty',equipment:'🔧 Equipment / Calibration'}[cat]||cat;
+}
+function rowClass(st){
+  if(st==='expired') return 'row-expired';
+  if(st==='soon30')  return 'row-soon30';
+  if(st==='soon60')  return 'row-soon60';
+  return '';
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function render(){
+  updateHeroKPIs();
+  const rows=sortedFiltered();
+  document.getElementById('resultCount').textContent=rows.length+' record'+(rows.length===1?'':'s');
+  const tbody=document.getElementById('certsBody');
+
+  if(!rows.length){
+    tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state"><div class="ei">📋</div><h3>No certifications found</h3><p>Adjust filters or add records with the <b>Add Cert</b> button</p></div></td></tr>`;
+    return;
+  }
+
+  const q=document.getElementById('searchInput').value;
+  const showHeaders=catFilter==='all'&&!q;
+  let html='';
+
+  if(showHeaders){
+    const cats=['welding','safety','specialty','equipment'];
+    const grouped={};
+    cats.forEach(k=>grouped[k]=rows.filter(r=>r.category===k));
+    cats.forEach(cat=>{
+      if(!grouped[cat].length) return;
+      html+=`<tr class="cat-row"><td colspan="8">${catLabel(cat)} <span style="font-weight:400;letter-spacing:0;text-transform:none;font-size:12px;color:var(--ink-3)">${grouped[cat].length} record${grouped[cat].length===1?'':'s'}</span></td></tr>`;
+      grouped[cat].forEach(c=>{html+=certRow(c);});
+    });
+  } else {
+    rows.forEach(c=>{html+=certRow(c);});
+  }
+  tbody.innerHTML=html;
+}
+
+function certRow(c){
+  const st=statusOf(c);
+  const rc=rowClass(st);
+  const subLine=c.serialNo?`<div class="name-sub">${esc(c.serialNo)}</div>`:'';
+  const wpqLine=c.wpqCode?`<div class="wpq-sub">${esc(c.wpqCode)}</div>`:'';
+  const docBtn=c.sharePointUrl
+    ?`<a class="act-link" href="${esc(c.sharePointUrl)}" target="_blank" rel="noopener" title="Open in SharePoint">📎</a>`
+    :'';
+  const expStyle=st==='expired'||st==='soon30'?'font-weight:700':'';
+  const expColor=st==='expired'?'color:var(--red)':st==='soon30'?'color:var(--red)':st==='soon60'?'color:var(--orange)':'';
+  return `<tr class="data-row ${rc}">
+    <td class="name-cell"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;max-width:160px" title="${esc(c.name)}">${esc(c.name)}</span>${subLine}</td>
+    <td class="type-cell" title="${esc(c.certType)}">${esc(c.certType)}${wpqLine}</td>
+    <td>${authBadge(c.authority)}</td>
+    <td style="font-size:12.5px;color:var(--ink-3);white-space:nowrap">${fmt(c.certDate)}</td>
+    <td style="font-size:12.5px;white-space:nowrap;${expStyle};${expColor}">${fmt(c.expiryDate)}</td>
+    <td>${daysCell(c)}</td>
+    <td>${statusPill(st)}</td>
+    <td style="white-space:nowrap">${docBtn}<button class="act-btn" onclick="openEdit(${c.id})">Edit</button><button class="act-btn del" onclick="confirmDel(${c.id})">✕</button></td>
+  </tr>`;
+}
+
+function updateHeroKPIs(){
+  let expired=0,soon=0,active=0;
+  certs.forEach(c=>{
+    const s=statusOf(c);
+    if(s==='expired')expired++;
+    else if(s==='soon30'||s==='soon60')soon++;
+    else if(s==='active')active++;
+  });
+  document.getElementById('heroExpired').textContent=expired;
+  document.getElementById('heroSoon').textContent=soon;
+  document.getElementById('heroActive').textContent=active;
+  document.getElementById('heroTotal').textContent=certs.length;
+}
+
+// ── Chips ──────────────────────────────────────────────────────────────────
+document.getElementById('catChips').addEventListener('click',e=>{
+  const chip=e.target.closest('.chip');
+  if(!chip) return;
+  catFilter=chip.dataset.cat;
+  document.querySelectorAll('#catChips .chip').forEach(c=>c.classList.remove('active'));
+  chip.classList.add('active');
+  render();
+});
+document.getElementById('statusChips').addEventListener('click',e=>{
+  const chip=e.target.closest('.chip');
+  if(!chip) return;
+  statusFilter=chip.dataset.st;
+  document.querySelectorAll('#statusChips .chip').forEach(c=>c.classList.remove('active'));
+  chip.classList.add('active');
+  render();
+});
+
+// ── Sort ───────────────────────────────────────────────────────────────────
+document.querySelector('.cert-table thead').addEventListener('click',e=>{
+  const th=e.target.closest('th[data-col]');
+  if(!th) return;
+  const col=th.dataset.col;
+  if(sortCol===col)sortDir*=-1;else{sortCol=col;sortDir=1;}
+  document.querySelectorAll('.cert-table th').forEach(t=>t.classList.remove('sort-asc','sort-desc'));
+  th.classList.add(sortDir===1?'sort-asc':'sort-desc');
+  render();
+});
+
+// ── Modal ──────────────────────────────────────────────────────────────────
+function openAdd(){
+  editId=null;
+  document.getElementById('modalTitle').textContent='Add Certification';
+  document.getElementById('deleteBtn').style.display='none';
+  clearForm();
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function openEdit(id){
+  const c=certs.find(x=>x.id===id);
+  if(!c) return;
+  editId=id;
+  document.getElementById('modalTitle').textContent='Edit Certification';
+  document.getElementById('deleteBtn').style.display='';
+  document.getElementById('fCat').value=c.category;
+  document.getElementById('fName').value=c.name||'';
+  document.getElementById('fSerial').value=c.serialNo||'';
+  document.getElementById('fCertType').value=c.certType||'';
+  document.getElementById('fAuth').value=c.authority||'Other';
+  document.getElementById('fWpq').value=c.wpqCode||'';
+  document.getElementById('fProcess').value=c.process||'';
+  document.getElementById('fMaterial').value=c.material||'';
+  document.getElementById('fLog').value=c.logMaintained?'yes':'no';
+  document.getElementById('fCertDate').value=c.certDate||'';
+  document.getElementById('fExpiry').value=c.expiryDate||'';
+  document.getElementById('fSharePoint').value=c.sharePointUrl||'';
+  document.getElementById('fNotes').value=c.notes||'';
+  onCatChange();
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function clearForm(){
+  document.getElementById('fCat').value='welding';
+  document.getElementById('fAuth').value='ABS';
+  document.getElementById('fLog').value='no';
+  ['fName','fSerial','fCertType','fWpq','fCertDate','fExpiry','fSharePoint','fNotes'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  document.getElementById('fProcess').value='';
+  document.getElementById('fMaterial').value='';
+  onCatChange();
+}
+function onCatChange(){
+  const cat=document.getElementById('fCat').value;
+  document.getElementById('weldingFields').style.display=cat==='welding'?'':'none';
+  document.getElementById('rowSerial').style.display=cat==='equipment'?'':'none';
+  const hints={
+    welding:'ABS Welder Qualification · Lloyd\'s WPQ · RINA · AWS CWI…',
+    safety:'OSHA 10-Hour · Aerial/Scissor Lift · Forklift · First Aid/CPR · Medical Eval · Respirator Fit Test…',
+    specialty:'TWIC · Valve Testing · Shipyard Competent Person (SCP) · Seakeeper · Harken Industrial · Liquid Penetrant…',
+    equipment:'Gauge Calibration · Gas Sensor Calibration · Scale Calibration · Load Cell Calibration…'
+  };
+  document.getElementById('certTypeHint').textContent=hints[cat]||'';
+}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('open');editId=null;}
+document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target===document.getElementById('modalOverlay'))closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+function saveCert(){
+  const name=document.getElementById('fName').value.trim();
+  const certType=document.getElementById('fCertType').value.trim();
+  if(!name||!certType){alert('Name and Cert Type are required');return;}
+  const c={
+    id:editId||Date.now(),
+    category:document.getElementById('fCat').value,
+    name,serialNo:document.getElementById('fSerial').value.trim(),
+    certType,authority:document.getElementById('fAuth').value,
+    wpqCode:document.getElementById('fWpq').value.trim(),
+    process:document.getElementById('fProcess').value,
+    material:document.getElementById('fMaterial').value,
+    logMaintained:document.getElementById('fLog').value==='yes',
+    certDate:document.getElementById('fCertDate').value||null,
+    expiryDate:document.getElementById('fExpiry').value||null,
+    sharePointUrl:document.getElementById('fSharePoint').value.trim(),
+    notes:document.getElementById('fNotes').value.trim(),
+    addedAt:editId?(certs.find(x=>x.id===editId)?.addedAt||Date.now()):Date.now()
+  };
+  if(editId){const i=certs.findIndex(x=>x.id===editId);if(i>=0)certs[i]=c;}
+  else certs.push(c);
+  save();closeModal();render();
+}
+function deleteCert(){if(!editId||!confirm('Delete this certification record?'))return;certs=certs.filter(x=>x.id!==editId);save();closeModal();render();}
+function confirmDel(id){if(!confirm('Delete this certification record?'))return;certs=certs.filter(x=>x.id!==id);save();render();}
+
+// ── Persist ────────────────────────────────────────────────────────────────
+function save(){localStorage.setItem(STORE,JSON.stringify(certs));}
+function load(){
+  const raw=localStorage.getItem(STORE);
+  if(raw){try{const p=JSON.parse(raw);if(p.length){certs=p;return;}}catch{}}
+  certs=SEED_DATA.map((c,i)=>({...c,id:1750000000000+i,addedAt:Date.now()}));
+  save();
+}
+
+// ── SEED DATA — from SharePoint audit 2026-06-27 ───────────────────────────
+const SEED_DATA=[
+  // ── EQUIPMENT / CALIBRATION ─────────────────────────────────────────────
+  {category:'equipment',name:'Valve Testing Gauge',serialNo:'',certType:'Gauge Calibration',authority:'External',certDate:'2024-08-29',expiryDate:'2025-08-29',notes:'Annual calibration required. Source: Calibration & Cert Chart 9.30.25'},
+  {category:'equipment',name:'Harken Testing Scale',serialNo:'Adam Scale LHS-4000A',certType:'Scale Calibration',authority:'External',certDate:'2025-02-03',expiryDate:'2026-02-03',notes:'Annual. Source: Calibration & Cert Chart 9.30.25'},
+  {category:'equipment',name:'Harken Testing Puller',serialNo:'Comm-Ten DFG2W2000',certType:'Load Puller Calibration',authority:'External',certDate:'2025-02-06',expiryDate:'2026-02-06',notes:'Annual. Source: Calibration & Cert Chart 9.30.25'},
+  {category:'equipment',name:'Humidity & Temperature Meter',serialNo:'',certType:'Environmental Meter Calibration',authority:'External',certDate:'2025-04-17',expiryDate:'2026-04-17',notes:'Annual. Source: Calibration & Cert Chart 9.30.25'},
+  {category:'equipment',name:'Gas Free Meter',serialNo:'M02AA04347',certType:'Gas Sensor Calibration',authority:'External',certDate:'2024-11-05',expiryDate:'2025-11-05',notes:'Cert #29076 — 11.12.24. Annual. Source: Calibration & Cert Chart 9.30.25'},
+  {category:'equipment',name:'Gas Free Meter',serialNo:'M02AA01054',certType:'Gas Sensor Calibration',authority:'External',certDate:'2024-11-18',expiryDate:'2025-11-18',notes:'Cert #29217 — 11.21.24. Annual. Source: Calibration & Cert Chart 9.30.25'},
+  // ── SPECIALTY ────────────────────────────────────────────────────────────
+  {category:'specialty',name:'Jerry Clark',serialNo:'',certType:'Valve Testing',authority:'Other',certDate:'2024-10-04',expiryDate:'2027-10-04',notes:'3-year cert.'},
+  {category:'specialty',name:'Jordan Moreno',serialNo:'',certType:'Valve Testing',authority:'Other',certDate:'2024-11-11',expiryDate:'2027-11-11',notes:'3-year cert.'},
+  {category:'specialty',name:'Jhuber Vasquez',serialNo:'',certType:'Valve Testing',authority:'Other',certDate:'2024-11-18',expiryDate:'2027-11-18',notes:'3-year cert.'},
+  {category:'specialty',name:'Chance Herrera',serialNo:'',certType:'Harken Industrial',authority:'Harken',certDate:'2024-08-29',expiryDate:null,notes:'Verify if this cert has an expiry date.'},
+  {category:'specialty',name:'David Brown',serialNo:'',certType:'Harken Industrial',authority:'Harken',certDate:'2024-08-29',expiryDate:null,notes:'Verify if this cert has an expiry date.'},
+  {category:'specialty',name:'Brandon Wezkiewicz',serialNo:'',certType:'Harken Industrial',authority:'Harken',certDate:'2024-08-29',expiryDate:null,notes:'Verify if this cert has an expiry date.'},
+  {category:'specialty',name:'Brandon Wezkiewicz',serialNo:'',certType:'Viega Factory Trained',authority:'Viega',certDate:'2024-11-20',expiryDate:null,notes:'Verify if this cert has an expiry date.'},
+  {category:'specialty',name:'Brandon Wezkiewicz',serialNo:'',certType:'TWIC',authority:'TSA',certDate:'2018-01-24',expiryDate:'2026-02-05',notes:'EXPIRED — renewal needed immediately. 5-year TWIC.'},
+  {category:'specialty',name:'Matt Erb',serialNo:'',certType:'TWIC',authority:'TSA',certDate:'2023-10-01',expiryDate:null,notes:'TWIC cards expire 5 years from issue — verify exact expiry date.'},
+  {category:'specialty',name:'Clinton Wasteney',serialNo:'',certType:'TWIC',authority:'TSA',certDate:'2023-10-01',expiryDate:null,notes:'TWIC cards expire 5 years from issue — verify exact expiry date.'},
+  {category:'specialty',name:'Jordan Moreno',serialNo:'',certType:'TWIC',authority:'TSA',certDate:'2023-10-01',expiryDate:null,notes:'TWIC cards expire 5 years from issue — verify exact expiry date.'},
+  {category:'specialty',name:'Jordan Moreno',serialNo:'',certType:'Shipyard Competent Person (SCP)',authority:'OSHA',certDate:'2024-08-15',expiryDate:null,notes:'Training dates 8/15-16/2024.'},
+  {category:'specialty',name:'Steve DeJacomo',serialNo:'',certType:'Shipyard Competent Person (SCP)',authority:'OSHA',certDate:'2025-09-26',expiryDate:null,notes:'Training dates 9/26-27/2025.'},
+  {category:'specialty',name:'Brandon Wezkiewicz',serialNo:'',certType:'Shipyard Competent Person (SCP)',authority:'OSHA',certDate:null,expiryDate:'2026-12-31',notes:'Expires 2026 — verify exact date.',sharePointUrl:'https://allpointsboats1.sharepoint.com/sites/compliance/Shared%20Documents/Compliance%20Safety/Employee%20Certs/'},
+  {category:'specialty',name:'Jonah Gomes',serialNo:'',certType:'Shipyard Competent Person (SCP)',authority:'OSHA',certDate:null,expiryDate:null,notes:'Verify all dates in SharePoint.'},
+  {category:'specialty',name:'Paul Forsythe',serialNo:'',certType:'Seakeeper Stabilization (Master Technician)',authority:'Other',certDate:'2022-01-07',expiryDate:null,notes:'Master Technician level.'},
+  {category:'specialty',name:'Jonah Gomes',serialNo:'',certType:'Seakeeper Ride',authority:'Other',certDate:'2024-09-04',expiryDate:null,notes:''},
+  // ── SAFETY / OSHA ────────────────────────────────────────────────────────
+  {category:'safety',name:'Brandon Wezkiewicz',serialNo:'',certType:'Aerial/Scissor Lift',authority:'OSHA',certDate:null,expiryDate:'2019-02-15',notes:'Expired 2019 — recertify or confirm role no longer requires it.'},
+  {category:'safety',name:'Brandon Wezkiewicz',serialNo:'',certType:'OSHA 10-Hour',authority:'OSHA',certDate:null,expiryDate:'2026-10-01',notes:''},
+  {category:'safety',name:'Brandon Wezkiewicz',serialNo:'',certType:'Forklift & Telehandler',authority:'Internal',certDate:null,expiryDate:'2029-03-03',notes:'3-year refresher March 3, 2026.'},
+  {category:'safety',name:'Bryce Sander',serialNo:'',certType:'Forklift & Telehandler',authority:'Internal',certDate:null,expiryDate:'2029-03-03',notes:''},
+  {category:'safety',name:'Christian Yancy',serialNo:'',certType:'Aerial/Scissor Lift',authority:'OSHA',certDate:null,expiryDate:'2028-04-23',notes:''},
+  {category:'safety',name:'Christian Yancy',serialNo:'',certType:'Forklift & Telehandler',authority:'Internal',certDate:null,expiryDate:'2029-03-03',notes:''},
+  {category:'safety',name:'Christian Yancy',serialNo:'',certType:'Medical Evaluation',authority:'Other',certDate:null,expiryDate:'2025-09-06',notes:'Expired — schedule recertification.'},
+  {category:'safety',name:'Christian Yancy',serialNo:'',certType:'Respirator Fit Test',authority:'OSHA',certDate:null,expiryDate:'2025-09-09',notes:'Expired — annual requirement.'},
+  {category:'safety',name:'Clinton Wasteney',serialNo:'',certType:'Forklift & Telehandler',authority:'Internal',certDate:null,expiryDate:'2029-03-03',notes:''},
+  {category:'safety',name:'David Brown',serialNo:'',certType:'OSHA 10-Hour',authority:'OSHA',certDate:null,expiryDate:'2026-10-01',notes:''},
+  {category:'safety',name:'David Brown',serialNo:'',certType:'Forklift & Telehandler',authority:'Internal',certDate:null,expiryDate:'2029-03-03',notes:''},
+  {category:'safety',name:'David Brown',serialNo:'',certType:'Respirator Fit Test',authority:'OSHA',certDate:null,expiryDate:'2025-09-09',notes:'Expired — annual requirement.'},
+  {category:'safety',name:'Jason Garcia',serialNo:'',certType:'Forklift & Telehandler',authority:'Internal',certDate:null,expiryDate:'2029-03-03',notes:''},
+  {category:'safety',name:'Javier Sandoval',serialNo:'',certType:'Aerial/Scissor Lift',authority:'OSHA',certDate:null,expiryDate:'2027-09-19',notes:''},
+  {category:'safety',name:'Javier Sandoval',serialNo:'',certType:'Medical Evaluation',authority:'Other',certDate:null,expiryDate:'2025-09-06',notes:'Expired — schedule recertification.'},
+  {category:'safety',name:'Javier Sandoval',serialNo:'',certType:'Respirator Fit Test',authority:'OSHA',certDate:null,expiryDate:'2025-09-09',notes:'Expired — annual requirement.'},
+  {category:'safety',name:'Jerry Clark',serialNo:'',certType:'Aerial/Scissor Lift',authority:'OSHA',certDate:null,expiryDate:'2019-05-19',notes:'Expired 2019 — confirm if still required for role.'},
+  {category:'safety',name:'Jerry Clark',serialNo:'',certType:'OSHA 10-Hour',authority:'OSHA',certDate:null,expiryDate:'2026-10-01',notes:'Instructor status.'},
+  {category:'safety',name:'Jerry Clark',serialNo:'',certType:'Respirator Fit Test',authority:'OSHA',certDate:null,expiryDate:'2025-11-14',notes:'Expired — annual requirement.'},
+  {category:'safety',name:'Jesus Lopez Sanchez',serialNo:'',certType:'Aerial/Scissor Lift',authority:'OSHA',certDate:null,expiryDate:'2025-09-07',notes:'Expired — recertify.'},
+  {category:'safety',name:'Jesus Lopez Sanchez',serialNo:'',certType:'Medical Evaluation',authority:'Other',certDate:null,expiryDate:'2025-09-06',notes:'Expired — schedule recertification.'},
+  {category:'safety',name:'Jesus Lopez Sanchez',serialNo:'',certType:'Respirator Fit Test',authority:'OSHA',certDate:null,expiryDate:'2025-09-09',notes:'Expired — annual requirement.'},
+  {category:'safety',name:'Joey Zammataro',serialNo:'',certType:'Forklift & Telehandler',authority:'Internal',certDate:null,expiryDate:'2029-03-03',notes:'Intern.'},
+  {category:'safety',name:'Joey Zammataro',serialNo:'',certType:'Medical Evaluation',authority:'Other',certDate:null,expiryDate:'2025-09-06',notes:'Expired — schedule recertification.'},
+  {category:'safety',name:'Joey Zammataro',serialNo:'',certType:'Respirator Fit Test',authority:'OSHA',certDate:null,expiryDate:'2025-09-09',notes:'Expired — annual requirement.'},
+  {category:'safety',name:'John Warren',serialNo:'',certType:'Forklift & Telehandler',authority:'Internal',certDate:null,expiryDate:'2029-03-03',notes:''},
+  {category:'safety',name:'Jordan Moreno',serialNo:'',certType:'Aerial/Scissor Lift',authority:'OSHA',certDate:null,expiryDate:'2028-04-23',notes:''},
+  {category:'safety',name:'Jordan Moreno',serialNo:'',certType:'OSHA 10-Hour',authority:'OSHA',certDate:null,expiryDate:'2026-10-01',notes:''},
+  {category:'safety',name:'Jordan Moreno',serialNo:'',certType:'Forklift & Telehandler',authority:'Internal',certDate:null,expiryDate:'2029-03-03',notes:''},
+  {category:'safety',name:'Jordan Moreno',serialNo:'',certType:'Respirator Fit Test',authority:'OSHA',certDate:null,expiryDate:'2025-11-14',notes:'Expired — annual requirement.'},
+  {category:'safety',name:'Jordan Moreno',serialNo:'',certType:'Medical Evaluation',authority:'Other',certDate:null,expiryDate:'2025-09-06',notes:'Expired — schedule recertification.'},
+  {category:'safety',name:'Luis Sanchez',serialNo:'',certType:'OSHA 10-Hour',authority:'OSHA',certDate:null,expiryDate:'2026-10-01',notes:''},
+  {category:'safety',name:'Luis Sanchez',serialNo:'',certType:'Aerial/Scissor Lift',authority:'OSHA',certDate:null,expiryDate:'2027-09-19',notes:''},
+  {category:'safety',name:'Luis Sanchez',serialNo:'',certType:'Medical Evaluation',authority:'Other',certDate:null,expiryDate:'2025-09-09',notes:'Expired — schedule recertification.'},
+  {category:'safety',name:'Roberto Mejias',serialNo:'',certType:'OSHA 10-Hour',authority:'OSHA',certDate:null,expiryDate:'2026-10-01',notes:''},
+  {category:'safety',name:'Roberto Mejias',serialNo:'',certType:'Forklift & Telehandler',authority:'Internal',certDate:null,expiryDate:'2029-03-03',notes:''},
+  {category:'safety',name:'Roberto Mejias',serialNo:'',certType:'Respirator Fit Test',authority:'OSHA',certDate:null,expiryDate:'2025-11-14',notes:'Expired — annual requirement.'},
+  {category:'safety',name:'Steve DeJacomo',serialNo:'',certType:'Aerial/Scissor Lift',authority:'OSHA',certDate:null,expiryDate:'2028-04-23',notes:''},
+  {category:'safety',name:'Steve DeJacomo',serialNo:'',certType:'OSHA 10-Hour',authority:'OSHA',certDate:null,expiryDate:'2026-10-01',notes:''},
+  {category:'safety',name:'Steve DeJacomo',serialNo:'',certType:'Forklift & Telehandler',authority:'Internal',certDate:null,expiryDate:'2029-03-03',notes:''},
+  {category:'safety',name:'Steve DeJacomo',serialNo:'',certType:'Medical Evaluation',authority:'Other',certDate:null,expiryDate:'2025-09-06',notes:'Expired — schedule recertification.'},
+  {category:'safety',name:'Steve DeJacomo',serialNo:'',certType:'Respirator Fit Test',authority:'OSHA',certDate:null,expiryDate:'2025-09-09',notes:'Expired — annual requirement.'},
+  {category:'safety',name:'Tommy Borden',serialNo:'',certType:'Medical Evaluation',authority:'Other',certDate:null,expiryDate:'2025-08-30',notes:'Expired — schedule recertification.'},
+  {category:'safety',name:'Tommy Borden',serialNo:'',certType:'Respirator Fit Test',authority:'OSHA',certDate:null,expiryDate:'2025-09-03',notes:'Expired — annual requirement.'},
+  // ── WELDING ──────────────────────────────────────────────────────────────
+  {category:'welding',name:"APB Company — Lloyd's",serialNo:'',certType:'Welding Procedure Specification (WPS)',authority:'Lloyds',wpqCode:'GTAW06-SS (revised 8-1-25)',certDate:'2025-08-01',expiryDate:'2028-08-01',notes:'Updated Aug 2025. 3-year cert.',sharePointUrl:'https://allpointsboats1.sharepoint.com/sites/operations/Shared%20Documents/Certs/Welding%20Certificates/Lloyds%20revised%20GTAW06%208-1-25'},
+  {category:'welding',name:'APB Company — ABS',serialNo:'',certType:'Welder Performance Qualification (batch test)',authority:'ABS',wpqCode:'Multiple — see SharePoint',certDate:'2024-07-26',expiryDate:'2027-07-26',notes:'Weld Testing 7.26.24. Individual WPQ records in ABS Certificates folder.',sharePointUrl:'https://allpointsboats1.sharepoint.com/sites/operations/Shared%20Documents/Certs/Welding%20Certificates/Weld%20Testing%207.26.24'},
+  {category:'welding',name:"APB Company — Lloyd's",serialNo:'',certType:'Procedure Qualification Record (PQR)',authority:'Lloyds',wpqCode:'See Lloyds Procedures folder',certDate:'2022-06-06',expiryDate:null,notes:"Lloyd's PQR & WPS 6.6.22. PQRs don't expire unless process changes.",sharePointUrl:"https://allpointsboats1.sharepoint.com/sites/operations/Shared%20Documents/Certs/Welding%20Certificates/Lloyds%20Procedures%20PQR%20%26%20WPS%206.6.22"},
+  {category:'welding',name:'APB Company — RINA',serialNo:'',certType:'RINA Welding Certification',authority:'RINA',wpqCode:'See RINA Certificates folder',certDate:null,expiryDate:null,notes:'Verify cert dates in SharePoint → Welding Certificates → RINA Certificates.',sharePointUrl:'https://allpointsboats1.sharepoint.com/sites/operations/Shared%20Documents/Certs/Welding%20Certificates/RINA%20Certificates'},
+];
+
+// ── Init ───────────────────────────────────────────────────────────────────
+load();
+render();
+</script>
+</body>
+</html>
