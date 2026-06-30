@@ -3,300 +3,433 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>APB Time Reports</title>
+<title>APB — Time & Billing Reports</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --bg: #000; --card: #0c0c0e; --card2: #141417; --border: #2a2a2e; --border-bright: #3a3a40;
-  --silver: #c8ccd2; --silver-bright: #e8ebef; --silver-dim: #8a8e96;
-  --metal: linear-gradient(135deg, #d8dce2 0%, #9a9ea6 45%, #c0c4ca 55%, #7a7e86 100%);
-  --text: #f4f5f7; --muted: #72767e; --input-bg: #111114;
-  --danger: #d84848; --ok: #4ac078; --warn: #d8a048; --rd: #7b68ee;
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#EDEEF2; --panel:#fff; --panel-2:#F5F6FA;
+  --ink:#0D1626; --ink-2:#3A4559; --ink-3:#6B7A92; --ink-4:#9BA9BE;
+  --line:#DDE1E8; --line-2:#E8EBF0;
+  --accent:#2457E6; --accent-2:#1B45B8; --accent-soft:#EAF0FE;
+  --green:#0B9E6A; --green-soft:#E4F5EE;
+  --amber:#B86A00; --amber-soft:#FBF0E2;
+  --red:#C43030; --red-soft:#FBEAEA;
+  --violet:#6B3FD4; --violet-soft:#EEE9FC;
+  --shadow-sm:0 1px 3px rgba(13,22,38,.07); --shadow:0 8px 28px -12px rgba(13,22,38,.14);
+  --mono:"DM Mono",ui-monospace,monospace;
 }
-html, body { min-height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; }
-.header { background: var(--card); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
-.header-left { display: flex; align-items: center; gap: 16px; }
-.header h1 { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; letter-spacing: 4px; background: var(--metal); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-.back-btn { background: none; border: 1px solid var(--border-bright); border-radius: 8px; color: var(--silver-dim); padding: 7px 13px; font-size: 12px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
-.main { max-width: 1100px; margin: 0 auto; padding: 24px; }
+html,body{min-height:100%;background:var(--bg);color:var(--ink);font-family:Inter,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
 
-/* Filters */
-.filters { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px; align-items: end; }
-.filter-field label { font-size: 11px; color: var(--silver-dim); font-family: 'DM Mono', monospace; letter-spacing: 1px; display: block; margin-bottom: 6px; }
-.filter-field select, .filter-field input { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 10px 12px; font-size: 13px; font-family: 'DM Sans', sans-serif; -webkit-appearance: none; }
-.run-btn { background: var(--metal); color: #000; border: none; border-radius: 8px; padding: 10px 20px; font-size: 13px; font-weight: 700; cursor: pointer; letter-spacing: 1px; white-space: nowrap; height: 40px; }
+/* Header */
+header{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.92);backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:0 28px;height:62px}
+.brand-text{font-family:var(--mono);font-size:13px;font-weight:500;letter-spacing:.06em;color:var(--ink);text-transform:uppercase}
+.brand-sub{font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--ink-3);margin-top:1px}
+.hdr-sep{width:1px;height:28px;background:var(--line)}
+.spacer{flex:1}
+.btn{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;border:none;font-family:inherit;display:inline-flex;align-items:center;gap:6px;transition:.12s}
+.btn-ghost{background:var(--panel);border:1px solid var(--line);color:var(--ink-2)}.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent-2)}
+.btn-export{background:var(--panel-2);border:1px solid var(--line);color:var(--ink-3)}.btn-export:hover{border-color:var(--green);color:var(--green)}
+
+/* Main */
+main{max-width:1160px;margin:0 auto;padding:24px 24px 80px}
+
+/* Controls panel */
+.controls-panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:20px;box-shadow:var(--shadow-sm);display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
+.ctrl-field{display:flex;flex-direction:column;gap:5px}
+.ctrl-field label{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.ctrl-field select,.ctrl-field input{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:9px 12px;font-size:13px;font-family:inherit;min-width:140px}
+.ctrl-field select:focus,.ctrl-field input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.quick-ranges{display:flex;gap:6px;flex-wrap:wrap}
+.qr-btn{font-size:12px;font-weight:600;padding:6px 12px;border-radius:99px;border:1px solid var(--line);background:var(--panel);color:var(--ink-3);cursor:pointer;transition:.12s}
+.qr-btn:hover{border-color:var(--accent);color:var(--accent)}
+.qr-btn.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-2)}
 
 /* KPI row */
-.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
-.kpi { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
-.kpi-label { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; }
-.kpi-value { font-family: 'DM Mono', monospace; font-size: 26px; color: var(--silver-bright); }
-.kpi-value.ok { color: var(--ok); }
-.kpi-value.warn { color: var(--warn); }
-.kpi-value.rd { color: var(--rd); }
-
-/* Tech summary table */
-.section-title { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--silver-dim); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
-.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 16px; }
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 1.5px; text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); }
-td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
-tr:last-child td { border-bottom: none; }
-tr:hover td { background: var(--card2); }
-
-/* Day detail */
-.day-block { background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
-.day-header { padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); cursor: pointer; }
-.day-header:hover { background: var(--card2); }
-.day-date { font-weight: 600; font-size: 14px; }
-.day-tech { font-size: 12px; color: var(--muted); margin-top: 2px; }
-.day-hrs { font-family: 'DM Mono', monospace; font-size: 18px; color: var(--silver-bright); }
-.day-body { padding: 14px 18px; display: none; }
-.day-block.open .day-body { display: block; }
-.punch-row { display: flex; gap: 12px; font-size: 12px; color: var(--silver-dim); font-family: 'DM Mono', monospace; margin-bottom: 4px; }
-.punch-row .reason { color: var(--muted); }
-.line-item { padding: 10px 0; border-bottom: 1px solid var(--border); }
-.line-item:last-child { border-bottom: none; }
-.line-vessel { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; letter-spacing: 1px; margin-bottom: 3px; }
-.line-job { font-size: 13px; font-weight: 600; color: var(--silver-bright); }
-.line-desc { font-size: 12px; color: var(--silver-dim); margin-top: 3px; line-height: 1.5; }
-.line-hrs { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--silver); float: right; }
-.tag { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-family: 'DM Mono', monospace; letter-spacing: 1px; margin-left: 6px; }
-.tag-rd { background: rgba(123,104,238,.15); color: var(--rd); border: 1px solid rgba(123,104,238,.3); }
-.tag-admin { background: rgba(216,160,72,.1); color: var(--warn); border: 1px solid rgba(216,160,72,.25); }
-.tag-shop { background: rgba(74,192,120,.1); color: var(--ok); border: 1px solid rgba(74,192,120,.25); }
-.tag-billable { background: rgba(200,204,210,.08); color: var(--silver-dim); border: 1px solid var(--border); }
-
-.empty { text-align: center; color: var(--muted); padding: 48px; font-size: 13px; }
-.loading { text-align: center; color: var(--muted); padding: 48px; font-size: 13px; font-family: 'DM Mono', monospace; letter-spacing: 1px; }
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow-sm);position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--line)}
+.kpi.blue::before{background:var(--accent)}
+.kpi.green::before{background:var(--green)}
+.kpi.amber::before{background:var(--amber)}
+.kpi.violet::before{background:var(--violet)}
+.kpi-label{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--ink-3);text-transform:uppercase;margin-bottom:7px}
+.kpi-value{font-family:var(--mono);font-size:28px;font-weight:500;color:var(--ink)}
+.kpi-sub{font-size:11px;color:var(--ink-4);margin-top:4px}
+.kpi.green .kpi-value{color:var(--green)}
+.kpi.amber .kpi-value{color:var(--amber)}
+.kpi.violet .kpi-value{color:var(--violet)}
 
 /* Billable bar */
-.bill-bar-wrap { margin-top: 10px; }
-.bill-bar-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; margin-bottom: 5px; }
-.bill-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
-.bill-bar-fill { height: 100%; background: var(--ok); border-radius: 3px; transition: width 0.4s; }
+.bill-progress{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin-bottom:16px;box-shadow:var(--shadow-sm);display:flex;align-items:center;gap:14px}
+.bill-bar-wrap{flex:1;height:8px;background:var(--line-2);border-radius:99px;overflow:hidden}
+.bill-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--green),#0dd882);transition:width .6s}
+.bill-pct{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--green);white-space:nowrap}
+.bill-label{font-size:12px;font-weight:600;color:var(--ink-2);white-space:nowrap}
+
+/* Section header */
+.section-head{display:flex;align-items:center;gap:10px;margin:24px 0 12px}
+.section-head h2{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--ink-3);text-transform:uppercase;white-space:nowrap}
+.section-head .rule{flex:1;height:1px;background:var(--line)}
+
+/* Tech summary */
+.data-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow-sm);margin-bottom:16px}
+.data-card-head{padding:13px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.data-card-title{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table th{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);padding:9px 14px;text-align:left;border-bottom:1px solid var(--line)}
+.data-table td{padding:11px 14px;border-bottom:1px solid var(--line-2);color:var(--ink-2);vertical-align:middle}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:var(--panel-2)}
+.data-table .mono{font-family:var(--mono)}
+.data-table .tech-name{font-weight:700;color:var(--ink)}
+.data-table .green{color:var(--green)}
+.data-table .amber{color:var(--amber)}
+.data-table .violet{color:var(--violet)}
+.mini-bar-wrap{width:80px;height:6px;background:var(--line-2);border-radius:99px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:6px}
+.mini-bar{height:100%;border-radius:99px;background:var(--green)}
+
+/* Day blocks */
+.day-block{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:8px;overflow:hidden;box-shadow:var(--shadow-sm);transition:border-color .12s}
+.day-block:hover{border-color:var(--accent)}
+.day-header{padding:14px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;user-select:none}
+.day-header:hover{background:var(--panel-2)}
+.day-date{font-size:14px;font-weight:700;color:var(--ink)}
+.day-tech-pill{font-size:11.5px;font-weight:600;background:var(--panel-2);border:1px solid var(--line);color:var(--ink-2);padding:3px 10px;border-radius:99px}
+.day-vessel{font-size:12px;color:var(--ink-3);margin-left:2px}
+.day-spacer{flex:1}
+.day-badges{display:flex;gap:6px;align-items:center}
+.ot-badge{font-size:10px;font-weight:700;background:var(--amber-soft);color:var(--amber);padding:2px 7px;border-radius:99px}
+.day-hrs{font-family:var(--mono);font-size:18px;font-weight:600;color:var(--ink)}
+.day-chevron{color:var(--ink-4);font-size:12px;transition:transform .2s}
+.day-block.open .day-chevron{transform:rotate(180deg)}
+.day-body{display:none;border-top:1px solid var(--line);padding:16px 18px}
+.day-block.open .day-body{display:block}
+
+/* Punch rows */
+.punch-section{margin-bottom:14px;padding-bottom:13px;border-bottom:1px solid var(--line-2)}
+.punch-row{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--ink-3);margin-bottom:5px;font-family:var(--mono)}
+.punch-row .time{color:var(--ink-2);font-weight:500}
+.punch-row .reason{color:var(--ink-4)}
+.punch-row .dur{margin-left:auto;color:var(--ink)}
+
+/* Line items */
+.line-item{padding:10px 0;border-bottom:1px solid var(--line-2)}
+.line-item:last-child{border-bottom:none}
+.line-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:4px}
+.line-job{font-size:13px;font-weight:600;color:var(--ink)}
+.line-hrs-badge{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--ink);flex-shrink:0}
+.line-vessel{font-size:11px;color:var(--ink-4);margin-bottom:3px}
+.line-desc{font-size:12.5px;color:var(--ink-3);line-height:1.5}
+.tag{display:inline-block;padding:2px 7px;border-radius:5px;font-size:10px;font-weight:700;margin-left:6px}
+.tag-rd{background:var(--violet-soft);color:var(--violet)}
+.tag-admin{background:var(--amber-soft);color:var(--amber)}
+.tag-shop{background:var(--green-soft);color:var(--green)}
+.tag-billable{background:var(--accent-soft);color:var(--accent-2)}
+
+/* Empty / loading */
+.empty{text-align:center;color:var(--ink-3);padding:48px;font-size:13.5px}
+.spinner{width:22px;height:22px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:48px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(12px);opacity:0;background:#11151C;color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;box-shadow:var(--shadow);transition:.22s;z-index:9999;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%)}
+
+@media(max-width:900px){.kpi-row{grid-template-columns:repeat(3,1fr)}.controls-panel{flex-direction:column;align-items:stretch}}
+@media(max-width:600px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div class="header-left">
-    <a href="apb-dashboard.html" class="back-btn">← Dashboard</a>
-    <h1>APB TIME REPORTS</h1>
+<header>
+  <div>
+    <div class="brand-text">APB · Time & Billing</div>
+    <div class="brand-sub">Reports</div>
   </div>
-</div>
+  <div class="hdr-sep"></div>
+  <a href="index.html" class="btn btn-ghost">← Hub</a>
+  <div class="spacer"></div>
+  <button class="btn btn-export" onclick="exportCSV()">⬇ Export CSV</button>
+</header>
 
-<div class="main">
-  <!-- Filters -->
-  <div class="filters">
-    <div class="filter-field">
-      <label>TECH</label>
-      <select id="filterTech">
-        <option value="">All Techs</option>
-      </select>
+<main>
+
+  <!-- Controls -->
+  <div class="controls-panel">
+    <div class="ctrl-field">
+      <label>Tech</label>
+      <select id="filterTech" onchange="loadReport()"><option value="">All Techs</option></select>
     </div>
-    <div class="filter-field">
-      <label>DATE FROM</label>
-      <input type="date" id="filterFrom">
+    <div class="ctrl-field">
+      <label>From</label>
+      <input type="date" id="filterFrom" onchange="loadReport()">
     </div>
-    <div class="filter-field">
-      <label>DATE TO</label>
-      <input type="date" id="filterTo">
+    <div class="ctrl-field">
+      <label>To</label>
+      <input type="date" id="filterTo" onchange="loadReport()">
     </div>
-    <div>
-      <button class="run-btn" onclick="loadReport()">RUN REPORT</button>
+    <div class="ctrl-field">
+      <label>Quick Range</label>
+      <div class="quick-ranges">
+        <button class="qr-btn active" onclick="setRange('week',this)">This Week</button>
+        <button class="qr-btn" onclick="setRange('last_week',this)">Last Week</button>
+        <button class="qr-btn" onclick="setRange('month',this)">This Month</button>
+        <button class="qr-btn" onclick="setRange('all',this)">All Time</button>
+      </div>
     </div>
+    <div class="spacer"></div>
+    <button class="btn btn-primary" onclick="loadReport()">Run Report</button>
   </div>
 
   <!-- KPIs -->
-  <div class="kpi-row" id="kpiRow">
-    <div class="kpi"><div class="kpi-label">Total Hours</div><div class="kpi-value" id="kpiTotal">—</div></div>
-    <div class="kpi"><div class="kpi-label">Billable Hours</div><div class="kpi-value ok" id="kpiBillable">—</div></div>
-    <div class="kpi"><div class="kpi-label">Non-Billable</div><div class="kpi-value warn" id="kpiNonBill">—</div></div>
-    <div class="kpi"><div class="kpi-label">R&D Hours</div><div class="kpi-value rd" id="kpiRD">—</div></div>
+  <div class="kpi-row">
+    <div class="kpi blue"><div class="kpi-label">Total Hours</div><div class="kpi-value" id="kpiTotal">—</div><div class="kpi-sub">All logged time</div></div>
+    <div class="kpi green"><div class="kpi-label">Billable</div><div class="kpi-value" id="kpiBill">—</div><div class="kpi-sub">Client work</div></div>
+    <div class="kpi amber"><div class="kpi-label">Non-Billable</div><div class="kpi-value" id="kpiNonBill">—</div><div class="kpi-sub">Admin + shop</div></div>
+    <div class="kpi violet"><div class="kpi-label">R&D</div><div class="kpi-value" id="kpiRD">—</div><div class="kpi-sub">Flagged entries</div></div>
+    <div class="kpi"><div class="kpi-label">Days Worked</div><div class="kpi-value" id="kpiDays">—</div><div class="kpi-sub">Unique dates</div></div>
+  </div>
+
+  <!-- Billable progress -->
+  <div class="bill-progress">
+    <div class="bill-label">Billable utilisation</div>
+    <div class="bill-bar-wrap"><div class="bill-bar-fill" id="billBar" style="width:0%"></div></div>
+    <div class="bill-pct" id="billPct">0%</div>
   </div>
 
   <!-- Tech summary -->
-  <div class="card" id="techSummaryCard" style="display:none;">
-    <div class="section-title">Hours by Tech</div>
-    <table id="techTable">
-      <thead><tr><th>TECH</th><th>DAYS</th><th>TOTAL HRS</th><th>BILLABLE</th><th>NON-BILLABLE</th><th>R&D</th><th>BILLABLE %</th></tr></thead>
-      <tbody id="techTbody"></tbody>
-    </table>
+  <div id="techSummarySection" style="display:none">
+    <div class="section-head"><h2>Hours by Tech</h2><div class="rule"></div></div>
+    <div class="data-card">
+      <div class="data-card-head"><span class="data-card-title">Summary</span></div>
+      <table class="data-table">
+        <thead><tr><th>Tech</th><th>Days</th><th>Total</th><th>Regular</th><th>OT</th><th>Billable</th><th>Non-Bill</th><th>R&D</th><th>Billable %</th></tr></thead>
+        <tbody id="techTbody"></tbody>
+      </table>
+    </div>
   </div>
 
-  <!-- Day details -->
-  <div id="dayDetails"></div>
-</div>
+  <!-- Daily breakdown -->
+  <div class="section-head"><h2>Daily Breakdown</h2><div class="rule"></div></div>
+  <div id="dayDetails"><div class="spinner"></div></div>
+
+</main>
+
+<div class="toast" id="toast"></div>
 
 <script>
-const SUPABASE_URL = 'https://aanrxyiocxxndkvkeocv.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU';
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const SUPABASE_URL='https://aanrxyiocxxndkvkeocv.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-function isRD(name) { return name && /R&D|R and D|Engineering|Design Development|Mechanical Systems|Fabrication/i.test(name); }
-function isAdmin(name) { return name && /Admin|Non-Billable|Planning|Policy|Meeting|Sales|Legal|Project Management \(Non/i.test(name); }
-function isShop(name) { return name && /Shop Maintenance|Equipment Maintenance|Material Processing|Training|Facility|Fabrication & Manufacturing/i.test(name); }
-function isBillable(line) { return line.job_id && !isAdmin(line.shop_category) && !isAdmin(line.job_name); }
+let _visits=[], _allLines=[];
 
-function getTag(line) {
-  const name = line.shop_category || line.apb_jobs?.job_name || '';
-  if (isRD(name)) return '<span class="tag tag-rd">R&D</span>';
-  if (isAdmin(name)) return '<span class="tag tag-admin">ADMIN</span>';
-  if (isShop(name)) return '<span class="tag tag-shop">SHOP</span>';
-  if (line.job_id) return '<span class="tag tag-billable">BILLABLE</span>';
-  return '';
+function isRD(n){return n&&/R&D|R and D|Engineering|Design Development|Mechanical Systems/i.test(n)}
+function isAdmin(n){return n&&/Admin|Non-Billable|Planning|Policy|Meeting|Sales|Legal|Project Management \(Non/i.test(n)}
+function isShop(n){return n&&/Shop Maintenance|Equipment Maintenance|Material Processing|Training|Facility|Fabrication & Manufacturing/i.test(n)}
+function getTag(l){
+  const n=l.shop_category||l.apb_jobs?.job_name||'';
+  if(isRD(n))return'<span class="tag tag-rd">R&D</span>';
+  if(isAdmin(n))return'<span class="tag tag-admin">Admin</span>';
+  if(isShop(n))return'<span class="tag tag-shop">Shop</span>';
+  if(l.job_id)return'<span class="tag tag-billable">Billable</span>';
+  return'';
 }
 
-// Set default date range — current week
-function setDefaultDates() {
-  const today = new Date();
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
-  document.getElementById('filterFrom').value = monday.toISOString().split('T')[0];
-  document.getElementById('filterTo').value = today.toISOString().split('T')[0];
+function setRange(range, btn){
+  document.querySelectorAll('.qr-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const today=new Date();
+  const fmt=d=>d.toISOString().split('T')[0];
+  let from, to=fmt(today);
+  if(range==='week'){
+    const mon=new Date(today);mon.setDate(today.getDate()-((today.getDay()+6)%7));from=fmt(mon);
+  } else if(range==='last_week'){
+    const sun=new Date(today);sun.setDate(today.getDate()-today.getDay());
+    const mon=new Date(sun);mon.setDate(sun.getDate()-6);
+    from=fmt(mon);to=fmt(sun);
+  } else if(range==='month'){
+    from=fmt(new Date(today.getFullYear(),today.getMonth(),1));
+  } else {
+    from=''; to='';
+  }
+  document.getElementById('filterFrom').value=from;
+  document.getElementById('filterTo').value=to;
+  loadReport();
 }
 
-async function loadTechs() {
-  const { data } = await sb.from('apb_techs').select('name').eq('active', true).order('name');
-  const sel = document.getElementById('filterTech');
-  (data || []).forEach(t => { const o = document.createElement('option'); o.value = t.name; o.textContent = t.name; sel.appendChild(o); });
+async function loadTechs(){
+  const{data}=await sb.from('apb_techs').select('name').eq('active',true).order('name');
+  const sel=document.getElementById('filterTech');
+  (data||[]).forEach(t=>{const o=document.createElement('option');o.value=o.textContent=t.name;sel.appendChild(o);});
 }
 
-async function loadReport() {
-  const tech = document.getElementById('filterTech').value;
-  const from = document.getElementById('filterFrom').value;
-  const to = document.getElementById('filterTo').value;
+async function loadReport(){
+  const tech=document.getElementById('filterTech').value;
+  const from=document.getElementById('filterFrom').value;
+  const to=document.getElementById('filterTo').value;
+  document.getElementById('dayDetails').innerHTML='<div class="spinner"></div>';
+  document.getElementById('techSummarySection').style.display='none';
 
-  document.getElementById('dayDetails').innerHTML = '<div class="loading">Loading...</div>';
-  document.getElementById('techSummaryCard').style.display = 'none';
+  let q=sb.from('apb_timesheets').select('*, apb_timesheet_lines(*, apb_jobs(job_name,job_number))').order('visit_date',{ascending:false}).order('tech_name');
+  if(tech)q=q.eq('tech_name',tech);
+  if(from)q=q.gte('visit_date',from);
+  if(to)q=q.lte('visit_date',to);
 
-  let q = sb.from('apb_timesheets').select('*, apb_timesheet_lines(*, apb_jobs(job_name, job_number))').order('visit_date', { ascending: false }).order('tech_name');
-  if (tech) q = q.eq('tech_name', tech);
-  if (from) q = q.gte('visit_date', from);
-  if (to) q = q.lte('visit_date', to);
-
-  const { data: visits, error } = await q;
-  if (error || !visits?.length) {
-    document.getElementById('dayDetails').innerHTML = '<div class="empty">No timesheets found for this period.</div>';
-    updateKPIs([], []);
+  const{data:visits,error}=await q;
+  if(error||!visits?.length){
+    document.getElementById('dayDetails').innerHTML='<div class="empty">No timesheets found for this period.</div>';
+    updateKPIs({totalHrs:0,billHrs:0,nonBillHrs:0,rdHrs:0,days:0});
     return;
   }
+  _visits=visits;
 
-  // Load punches for these visits
-  const ids = visits.map(v => v.id);
-  const { data: punches } = await sb.from('apb_punches').select('*').in('timesheet_id', ids);
-  const punchMap = {};
-  (punches || []).forEach(p => { (punchMap[p.timesheet_id] = punchMap[p.timesheet_id] || []).push(p); });
+  const ids=visits.map(v=>v.id);
+  const{data:punches}=await sb.from('apb_punches').select('*').in('timesheet_id',ids);
+  const punchMap={};
+  (punches||[]).forEach(p=>{(punchMap[p.timesheet_id]=punchMap[p.timesheet_id]||[]).push(p);});
 
-  // Calculate billable/non-billable/RD per line
-  const allLines = visits.flatMap(v => v.apb_timesheet_lines || []);
-  let totalHrs = 0, billHrs = 0, nonBillHrs = 0, rdHrs = 0;
+  let totalHrs=0,billHrs=0,nonBillHrs=0,rdHrs=0;
+  const days=new Set();
+  _allLines=[];
 
-  visits.forEach(v => {
-    totalHrs += parseFloat(v.total_hours || 0);
-    (v.apb_timesheet_lines || []).forEach(l => {
-      const hrs = parseFloat(l.hours || 0);
-      const name = l.shop_category || l.apb_jobs?.job_name || '';
-      if (isRD(name)) rdHrs += hrs;
-      if (isAdmin(name) || isShop(name) || !l.job_id) nonBillHrs += hrs;
-      else billHrs += hrs;
+  visits.forEach(v=>{
+    totalHrs+=parseFloat(v.total_hours||0);
+    if(v.visit_date)days.add(v.visit_date);
+    (v.apb_timesheet_lines||[]).forEach(l=>{
+      _allLines.push({...l, _tech:v.tech_name, _date:v.visit_date, _vessel:v.apb_engagements?.name||v.vessel_name});
+      const hrs=parseFloat(l.hours||0);
+      const n=l.shop_category||l.apb_jobs?.job_name||'';
+      if(isRD(n))rdHrs+=hrs;
+      if(isAdmin(n)||isShop(n)||!l.job_id)nonBillHrs+=hrs;
+      else billHrs+=hrs;
     });
   });
 
-  updateKPIs({ totalHrs, billHrs, nonBillHrs, rdHrs });
+  updateKPIs({totalHrs,billHrs,nonBillHrs,rdHrs,days:days.size});
   renderTechSummary(visits);
-  renderDays(visits, punchMap);
+  renderDays(visits,punchMap);
 }
 
-function updateKPIs({ totalHrs, billHrs, nonBillHrs, rdHrs }) {
-  document.getElementById('kpiTotal').textContent = (totalHrs || 0).toFixed(1) + ' hrs';
-  document.getElementById('kpiBillable').textContent = (billHrs || 0).toFixed(1) + ' hrs';
-  document.getElementById('kpiNonBill').textContent = (nonBillHrs || 0).toFixed(1) + ' hrs';
-  document.getElementById('kpiRD').textContent = (rdHrs || 0).toFixed(1) + ' hrs';
+function updateKPIs({totalHrs,billHrs,nonBillHrs,rdHrs,days}){
+  document.getElementById('kpiTotal').textContent=totalHrs.toFixed(1)+'h';
+  document.getElementById('kpiBill').textContent=billHrs.toFixed(1)+'h';
+  document.getElementById('kpiNonBill').textContent=nonBillHrs.toFixed(1)+'h';
+  document.getElementById('kpiRD').textContent=rdHrs.toFixed(1)+'h';
+  document.getElementById('kpiDays').textContent=days||0;
+  const pct=totalHrs>0?Math.round(billHrs/totalHrs*100):0;
+  document.getElementById('billBar').style.width=pct+'%';
+  document.getElementById('billPct').textContent=pct+'%';
 }
 
-function renderTechSummary(visits) {
-  const techMap = {};
-  visits.forEach(v => {
-    if (!techMap[v.tech_name]) techMap[v.tech_name] = { days: new Set(), total: 0, bill: 0, nonBill: 0, rd: 0 };
-    const t = techMap[v.tech_name];
-    t.days.add(v.visit_date);
-    t.total += parseFloat(v.total_hours || 0);
-    (v.apb_timesheet_lines || []).forEach(l => {
-      const hrs = parseFloat(l.hours || 0);
-      const name = l.shop_category || l.apb_jobs?.job_name || '';
-      if (isRD(name)) t.rd += hrs;
-      if (isAdmin(name) || isShop(name) || !l.job_id) t.nonBill += hrs;
-      else t.bill += hrs;
+function renderTechSummary(visits){
+  const tm={};
+  visits.forEach(v=>{
+    const t=v.tech_name||'Unknown';
+    if(!tm[t])tm[t]={days:new Set(),total:0,reg:0,ot:0,bill:0,nonBill:0,rd:0};
+    const h=parseFloat(v.total_hours||0);
+    tm[t].days.add(v.visit_date);
+    tm[t].total+=h;
+    tm[t].reg+=Math.min(h,8);
+    tm[t].ot+=Math.max(0,h-8);
+    (v.apb_timesheet_lines||[]).forEach(l=>{
+      const hrs=parseFloat(l.hours||0);
+      const n=l.shop_category||l.apb_jobs?.job_name||'';
+      if(isRD(n))tm[t].rd+=hrs;
+      if(isAdmin(n)||isShop(n)||!l.job_id)tm[t].nonBill+=hrs;
+      else tm[t].bill+=hrs;
     });
   });
-
-  const tbody = document.getElementById('techTbody');
-  tbody.innerHTML = Object.entries(techMap).map(([name, t]) => {
-    const pct = t.total > 0 ? Math.round((t.bill / t.total) * 100) : 0;
-    return `<tr>
-      <td><strong>${name}</strong></td>
-      <td>${t.days.size}</td>
-      <td style="font-family:'DM Mono',monospace">${t.total.toFixed(1)}</td>
-      <td style="font-family:'DM Mono',monospace;color:var(--ok)">${t.bill.toFixed(1)}</td>
-      <td style="font-family:'DM Mono',monospace;color:var(--warn)">${t.nonBill.toFixed(1)}</td>
-      <td style="font-family:'DM Mono',monospace;color:var(--rd)">${t.rd.toFixed(1)}</td>
-      <td style="min-width:120px">
-        <div class="bill-bar-label"><span>${pct}% billable</span></div>
-        <div class="bill-bar"><div class="bill-bar-fill" style="width:${pct}%"></div></div>
-      </td>
+  document.getElementById('techTbody').innerHTML=Object.entries(tm).sort((a,b)=>b[1].total-a[1].total).map(([name,d])=>{
+    const pct=d.total>0?Math.round(d.bill/d.total*100):0;
+    return`<tr>
+      <td class="tech-name">${name}</td>
+      <td class="mono">${d.days.size}</td>
+      <td class="mono">${d.total.toFixed(1)}h</td>
+      <td class="mono">${d.reg.toFixed(1)}h</td>
+      <td class="mono ${d.ot>0?'amber':''}">${d.ot>0?d.ot.toFixed(1)+'h <span class="tag tag-admin">OT</span>':'0.0h'}</td>
+      <td class="mono green">${d.bill.toFixed(1)}h</td>
+      <td class="mono amber">${d.nonBill.toFixed(1)}h</td>
+      <td class="mono violet">${d.rd.toFixed(1)}h</td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="mini-bar-wrap"><div class="mini-bar" style="width:${pct}%"></div></div><span style="font-family:var(--mono);font-size:12px;color:var(--green)">${pct}%</span></div></td>
     </tr>`;
   }).join('');
-
-  document.getElementById('techSummaryCard').style.display = 'block';
+  document.getElementById('techSummarySection').style.display='';
 }
 
-function renderDays(visits, punchMap) {
-  const el = document.getElementById('dayDetails');
-  if (!visits.length) { el.innerHTML = '<div class="empty">No timesheets found.</div>'; return; }
+function renderDays(visits,punchMap){
+  if(!visits.length){document.getElementById('dayDetails').innerHTML='<div class="empty">No data.</div>';return;}
+  document.getElementById('dayDetails').innerHTML=visits.map(v=>{
+    const h=parseFloat(v.total_hours||0);
+    const dateStr=v.visit_date?new Date(v.visit_date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric',year:'numeric'}):'—';
+    const lines=v.apb_timesheet_lines||[];
+    const vPunches=punchMap[v.id]||[];
+    const ot=Math.max(0,h-8);
 
-  el.innerHTML = '<div class="section-title" style="margin-bottom:12px;">Daily Breakdown</div>' + visits.map(v => {
-    const d = new Date(v.visit_date + 'T12:00:00');
-    const dateStr = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
-    const lines = v.apb_timesheet_lines || [];
-    const vPunches = punchMap[v.id] || [];
+    const punchHtml=vPunches.length?`<div class="punch-section">${vPunches.map(p=>`
+      <div class="punch-row">
+        <span class="time">${p.punch_in||'--'} → ${p.punch_out||'open'}</span>
+        <span class="reason">${p.reason||'Work'}</span>
+        <span class="dur">${p.duration_hours?parseFloat(p.duration_hours).toFixed(1)+'h':''}</span>
+      </div>`).join('')}</div>`:
+      v.clock_in?`<div class="punch-section"><div class="punch-row"><span class="time">${v.clock_in} → ${v.clock_out||'open'}</span><span class="reason">Work</span></div></div>`:'';
 
-    const punchHtml = vPunches.length
-      ? vPunches.map(p => `<div class="punch-row"><span>${p.punch_in || '--'} → ${p.punch_out || 'open'}</span><span class="reason">${p.reason || 'Work'}</span><span>${p.duration_hours ? parseFloat(p.duration_hours).toFixed(1) + ' hrs' : ''}</span></div>`).join('')
-      : v.clock_in ? `<div class="punch-row"><span>${v.clock_in} → ${v.clock_out || 'open'}</span><span class="reason">Work</span></div>` : '';
-
-    const linesHtml = lines.map(l => {
-      const jobName = l.shop_category || l.apb_jobs?.job_name || '—';
-      const jobNum = l.apb_jobs?.job_number ? l.apb_jobs.job_number + ' — ' : '';
-      const vessel = l.vessel_name || '—';
-      return `<div class="line-item">
+    const linesHtml=lines.map(l=>{
+      const jobName=l.shop_category||l.apb_jobs?.job_name||'—';
+      const jobNum=l.apb_jobs?.job_number?`${l.apb_jobs.job_number} — `:'';
+      const vessel=l.vessel_name||v.apb_engagements?.name||'—';
+      return`<div class="line-item">
         <div class="line-vessel">${vessel}</div>
-        <div class="line-job">${jobNum}${jobName}${getTag(l)}<span class="line-hrs">${parseFloat(l.hours || 0).toFixed(1)} hrs</span></div>
-        <div class="line-desc">${l.work_description || ''}</div>
+        <div class="line-top">
+          <div class="line-job">${jobNum}${jobName}${getTag(l)}</div>
+          <div class="line-hrs-badge">${parseFloat(l.hours||0).toFixed(1)}h</div>
+        </div>
+        ${(l.work_description||l.description)?`<div class="line-desc">${l.work_description||l.description}</div>`:''}
       </div>`;
     }).join('');
 
-    return `<div class="day-block" onclick="this.classList.toggle('open')">
-      <div class="day-header">
-        <div>
-          <div class="day-date">${dateStr}</div>
-          <div class="day-tech">${v.tech_name} &nbsp;·&nbsp; Lunch: ${v.lunch_hours || 0}h deducted</div>
+    return`<div class="day-block" id="db-${v.id}">
+      <div class="day-header" onclick="this.parentElement.classList.toggle('open')">
+        <div class="day-date">${dateStr}</div>
+        <div class="day-tech-pill">${v.tech_name||'—'}</div>
+        <div class="day-spacer"></div>
+        <div class="day-badges">
+          ${ot>0?`<span class="ot-badge">OT: ${ot.toFixed(1)}h</span>`:''}
         </div>
-        <div class="day-hrs">${parseFloat(v.total_hours || 0).toFixed(1)} hrs</div>
+        <div class="day-hrs">${h.toFixed(1)}h</div>
+        <div class="day-chevron">▾</div>
       </div>
       <div class="day-body">
-        ${punchHtml ? `<div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)">${punchHtml}</div>` : ''}
-        ${linesHtml || '<div style="color:var(--muted);font-size:13px">No job lines logged.</div>'}
+        ${punchHtml}
+        ${linesHtml||'<div style="color:var(--ink-3);font-size:13px;padding:8px 0">No job lines logged.</div>'}
+        ${v.lunch_hours?`<div style="font-size:11px;color:var(--ink-4);margin-top:10px">Lunch deducted: ${v.lunch_hours}h</div>`:''}
       </div>
     </div>`;
   }).join('');
 }
 
-(async function init() {
-  setDefaultDates();
+function exportCSV(){
+  const rows=[['Date','Tech','Vessel','Job #','Job Name','Description','Hours','OT Hours','Billable','R&D','Shop/Admin']];
+  _allLines.forEach(l=>{
+    const h=parseFloat(l.hours||0);
+    const n=l.shop_category||l.apb_jobs?.job_name||'';
+    rows.push([l._date||'',l._tech||'',l._vessel||'',l.apb_jobs?.job_number||'',n,l.work_description||l.description||'',h.toFixed(2),Math.max(0,h-8).toFixed(2),l.job_id&&!isAdmin(n)&&!isShop(n)?'Y':'N',isRD(n)?'Y':'N',(isAdmin(n)||isShop(n))?'Y':'N']);
+  });
+  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=`apb-report-${new Date().toISOString().split('T')[0]}.csv`;a.click();
+  showToast('CSV downloaded');
+}
+
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+(async()=>{
+  setRange('week',document.querySelector('.qr-btn.active'));
   await loadTechs();
   await loadReport();
 })();
