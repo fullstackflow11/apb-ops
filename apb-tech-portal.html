@@ -337,6 +337,7 @@ const ADMIN_CATEGORIES=['1.0 General Admin — Email & Communication','2.0 Plann
   const{data:engs}=await sb.from('apb_engagements').select('id,name,status').not('status','in','("Closed","Cancelled")').order('name');
   allEngagements=engs||[];
   addJobLine();
+  updateRemoveButtons();
 })();
 
 // ── Auth ──
@@ -406,7 +407,7 @@ function shopOptionsHtml(){return'<option value="">Select category…</option>'+
 function adminOptionsHtml(){return'<option value="">Select category…</option>'+ADMIN_CATEGORIES.map(c=>`<option value="${c}">${c}</option>`).join('');}
 function jobOptionsHtml(jobs){
   if(!jobs.length)return'<option value="">No active jobs for this vessel</option>';
-  return'<option value="">Select job…</option>'+jobs.map(j=>`<option value="${j.id}" data-job-number="${j.job_number||''}" data-job-name="${j.job_name||''}">${j.job_number?j.job_number+' — ':''}${j.job_name}</option>`).join('');
+  return'<option value="">Select job…</option>'+jobs.map(j=>`<option value="${j.id}" data-job-number="${j.job_number||''}" data-job-name="${j.job_name||''}">${j.job_name}</option>`).join('');
 }
 async function getJobsForEngagement(engId){
   const{data}=await sb.from('apb_jobs').select('id,job_name,job_number,status').eq('engagement_id',engId).not('status','in','("Paid","Cancelled")').order('job_number');
@@ -437,15 +438,17 @@ function addJobLine(){
   const div=document.createElement('div');
   div.className='job-line';div.id=id;
   div.innerHTML=`
-    <div class="job-line-head"><span class="job-line-num">Job Line ${lineCounter}</span><button class="job-line-remove" onclick="removeJobLine('${id}')">Remove</button></div>
+    <div class="job-line-head"><span class="job-line-num">Job Line ${lineCounter}</span>${lineCounter > 1 ? `<button class="job-line-remove" onclick="removeJobLine('${id}')">Remove</button>` : ''}</div>
     <div class="field"><label>Vessel / Project <span class="req">*</span></label><select class="form-select line-vessel" onchange="onLineVesselChange('${id}')">${vesselOptionsHtml()}</select></div>
     <div class="line-job-slot"></div>
     <div class="field"><label>Description of Work <span class="req">*</span></label><textarea class="form-textarea line-desc" placeholder="What did you do on this job? Be specific." rows="3"></textarea></div>
     <div class="field"><label>Hours on this job <span class="req">*</span></label><input type="number" step="0.5" min="0.5" max="24" class="form-input line-hours" placeholder="e.g. 4.0" oninput="updateTotals()"></div>`;
   document.getElementById('jobLines').appendChild(div);
   updateTotals();
+  updateRemoveButtons();
 }
-function removeJobLine(id){const el=document.getElementById(id);if(el)el.remove();updateTotals();}
+function removeJobLine(id){const el=document.getElementById(id);if(el)el.remove();updateTotals();updateRemoveButtons();}
+function updateRemoveButtons(){const lines=document.querySelectorAll('.job-line');lines.forEach((l,i)=>{const btn=l.querySelector('.job-line-remove');if(btn)btn.style.display=lines.length>1?'':'none';});}
 
 // ── Photos ──
 async function handlePhotos(files){
