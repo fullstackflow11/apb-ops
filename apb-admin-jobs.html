@@ -192,7 +192,7 @@ header{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.92);backdr
         <div class="field"><label>Vessel</label><input class="form-input" id="lf_vessel" placeholder="Vessel name"></div>
         <div class="field"><label>Status</label>
           <select class="form-select" id="lf_status">
-            <option>New</option><option>Contacted</option><option>Proposal Sent</option><option>Won</option><option>Lost</option><option>On Hold</option>
+            <option>Lead</option><option>Estimating</option><option>Proposal Created</option><option>Proposal Sent</option><option>Approved</option>
           </select>
         </div>
         <div class="field"><label>Phone</label><input class="form-input" id="lf_phone" type="tel" placeholder="Phone"></div>
@@ -230,7 +230,7 @@ header{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.92);backdr
         <div class="field form-full"><label>Job Name *</label><input class="form-input" id="jf_job_name" placeholder="Brief job title"></div>
         <div class="field"><label>Status</label>
           <select class="form-select" id="jf_status">
-            <option>Approved</option><option>Scheduled</option><option>In Progress</option><option>On Hold</option><option>Ready To Be Billed</option><option>Invoice Sent</option><option>Paid</option><option>Cancelled</option>
+            <option>Lead</option><option>Estimating</option><option>Approved</option><option>In Progress</option><option>Ready To Be Billed</option><option>Invoice In Review</option><option>Invoice Sent</option><option>Paid</option><option>Canceled</option>
           </select>
         </div>
         <div class="field"><label>Job Number</label><input class="form-input" id="jf_job_number" placeholder="e.g. 1.0"></div>
@@ -294,22 +294,22 @@ let allLeads=[], allJobs=[], currentTab='leads', editingLeadId=null, editingJobI
 
 // ── Column definitions ──
 const LEAD_COLS=[
-  {key:'New',        label:'New',           dot:'dot-new',        color:'#94A3B8'},
-  {key:'Contacted',  label:'Contacted',     dot:'dot-contacted',  color:'#2a9fd8'},
-  {key:'Proposal Sent',label:'Proposal Sent',dot:'dot-proposal',  color:'#8B5CF6'},
-  {key:'Won',        label:'Won ✓',         dot:'dot-won',        color:'#0B9E6A'},
-  {key:'Lost',       label:'Lost',          dot:'dot-lost',       color:'#C43030'},
-  {key:'On Hold',    label:'On Hold',       dot:'dot-hold',       color:'#B86A00'},
+  {key:'Lead',            label:'Lead',            dot:'dot-new',       color:'#94A3B8'},
+  {key:'Estimating',      label:'Estimating',      dot:'dot-estimating',color:'#C0A020'},
+  {key:'Proposal Created',label:'Proposal Created',dot:'dot-proposal',  color:'#8B5CF6'},
+  {key:'Proposal Sent',   label:'Proposal Sent',   dot:'dot-contacted', color:'#2a9fd8'},
+  {key:'Approved',        label:'Approved ✓',      dot:'dot-approved',  color:'#0B9E6A'},
 ];
 const JOB_COLS=[
+  {key:'Lead',               label:'Lead',            dot:'dot-new',         color:'#94A3B8'},
+  {key:'Estimating',         label:'Estimating',      dot:'dot-estimating',  color:'#C0A020'},
   {key:'Approved',           label:'Approved',        dot:'dot-approved',    color:'#8B5CF6'},
-  {key:'Scheduled',          label:'Scheduled',       dot:'dot-scheduled',   color:'#3B82F6'},
   {key:'In Progress',        label:'In Progress',     dot:'dot-inprogress',  color:'#2a9fd8'},
-  {key:'On Hold',            label:'On Hold',         dot:'dot-hold',        color:'#B86A00'},
   {key:'Ready To Be Billed', label:'Ready to Bill',   dot:'dot-ready',       color:'#B86A00'},
-  {key:'Invoice Sent',       label:'Invoice Sent',    dot:'dot-invoiced',    color:'#7C3AED'},
+  {key:'Invoice In Review',  label:'Invoice Review',  dot:'dot-invoiced',    color:'#7C3AED'},
+  {key:'Invoice Sent',       label:'Invoice Sent',    dot:'dot-proposal',    color:'#3B82F6'},
   {key:'Paid',               label:'Paid ✓',          dot:'dot-paid',        color:'#0B9E6A'},
-  {key:'Cancelled',          label:'Cancelled',       dot:'dot-cancelled',   color:'#6B7280'},
+  {key:'Canceled',           label:'Canceled',        dot:'dot-cancelled',   color:'#6B7280'},
 ];
 
 // ── Init ──
