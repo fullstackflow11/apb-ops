@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Material Procurement · APB</title>
+<script src="apb-roles.js"></script>
+<script src="apb-demo.js"></script>
+<script>APBRoles.guard(['admin','pm','purchasing'],'Material Procurement');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDEEF2;--panel:#fff;--panel-2:#F5F6FA;
+  --ink:#0D1626;--ink-2:#3A4559;--ink-3:#6B7A92;
+  --line:#DDE1E8;--line-2:#E8EBF0;
+  --accent:#2457E6;--accent-2:#1B45B8;--accent-soft:#EAF0FE;
+  --green:#0B9E6A;--green-soft:#E4F5EE;
+  --amber:#B86A00;--amber-soft:#FBF0E2;
+  --red:#C43030;--red-soft:#FBE7E7;
+  --mm:#C8A04A;--mm-soft:#F6EFDC;
+  --shadow-sm:0 1px 3px rgba(13,22,38,.07);
+  --shadow:0 8px 28px -12px rgba(13,22,38,.14);
+  --shadow-lg:0 20px 56px -12px rgba(13,22,38,.22);
+  --mono:"DM Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:Inter,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;letter-spacing:-.01em;min-height:100vh}
+
+.topbar{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.92);backdrop-filter:saturate(180%) blur(14px);display:flex;align-items:center;gap:14px;padding:0 26px;height:62px;border-bottom:1px solid var(--line)}
+.topbar img{height:36px;width:auto}
+.topbar .t{border-left:1px solid var(--line);padding-left:14px}
+.topbar .t b{font-size:15px}.topbar .t span{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.topbar .sp{flex:1}
+.topbar .now{font-family:var(--mono);font-size:12px;color:var(--ink-3);min-width:150px;text-align:right}
+.navbtn{font-size:12.5px;font-weight:600;color:var(--accent);padding:7px 13px;border:1px solid var(--line);border-radius:8px;background:var(--panel);cursor:pointer;text-decoration:none}
+.navbtn:hover{border-color:var(--accent);background:var(--accent-soft)}
+
+.wrap{max-width:1120px;margin:0 auto;padding:24px 24px 64px}
+
+.hero{position:relative;overflow:hidden;border-radius:20px;color:#fff;padding:30px 34px;margin-bottom:20px;
+  background:radial-gradient(680px 520px at 90% 130%,rgba(200,160,74,.30),transparent 56%),linear-gradient(160deg,#131a24,#0b0f17,#121820);box-shadow:var(--shadow-lg)}
+.hero::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle at 1px 1px,rgba(255,255,255,.06) 1px,transparent 0);background-size:30px 30px}
+.hero-body{position:relative;z-index:1}
+.hero .eyebrow{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:#d4b878;font-weight:700;margin-bottom:9px}
+.hero h1{font-size:29px;font-weight:800;letter-spacing:-.035em;margin:0 0 8px}
+.hero p{color:#adbbd4;font-size:14px;line-height:1.55;max-width:640px;margin:0}
+
+.steps{display:flex;gap:8px;margin-top:20px;position:relative;z-index:1;flex-wrap:wrap}
+.step{font-family:var(--mono);font-size:11px;color:#9fb2cd;display:flex;align-items:center;gap:7px}
+.step b{color:#fff;font-weight:500}
+.step .n{width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.12);color:#cfe;display:grid;place-items:center;font-size:10px}
+.step .ar{color:#5e7fb8;margin:0 2px}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:15px;box-shadow:var(--shadow-sm);padding:20px 22px;margin-bottom:16px}
+.sec{display:flex;align-items:center;gap:12px;margin:0 0 14px}
+.sec h2{font-size:16px;font-weight:800;letter-spacing:-.02em;margin:0}
+.sec .ln{flex:1;height:1px;background:var(--line)}
+.sec .badge{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:2px 8px;color:var(--ink-3)}
+
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+label.fl{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3);display:block;margin-bottom:5px}
+input.in,textarea.in,select.in{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13.5px;font-family:inherit;background:var(--panel);color:var(--ink)}
+input.in:focus,textarea.in:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+textarea.in{resize:vertical;min-height:90px;line-height:1.5}
+.hint{font-size:11.5px;color:var(--ink-3);margin-top:5px;line-height:1.45}
+
+.intake-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.drop{border:1.5px dashed var(--line);border-radius:12px;padding:18px;text-align:center;background:var(--panel-2);transition:.14s}
+.drop.drag{border-color:var(--accent);background:var(--accent-soft)}
+.drop svg{width:30px;height:30px;color:var(--ink-3);margin-bottom:8px}
+.drop b{font-size:13.5px;display:block}
+.drop span{font-size:12px;color:var(--ink-3);display:block;margin-top:3px;line-height:1.45}
+.drop .pick{margin-top:11px;display:inline-block;font-size:12.5px;font-weight:600;color:#fff;background:var(--accent);border:none;border-radius:8px;padding:8px 14px;cursor:pointer}
+.drop .pick:hover{background:var(--accent-2)}
+.claude-tag{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;color:#6B3DBB;background:#F0EBFF;border-radius:5px;padding:2px 7px;margin-top:9px}
+.btn{display:inline-flex;align-items:center;gap:7px;border:none;border-radius:9px;font-size:13.5px;font-weight:600;padding:10px 16px;cursor:pointer}
+.btn.prim{background:var(--accent);color:#fff;box-shadow:0 4px 14px rgba(36,87,230,.35)}
+.btn.prim:hover{background:var(--accent-2)}
+.btn.ghost{background:var(--panel);color:var(--ink-2);border:1px solid var(--line)}
+.btn.ghost:hover{border-color:var(--ink-3)}
+.btn svg{width:15px;height:15px}
+
+/* search-and-add bar */
+.search-bar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.search-field{flex:1;min-width:240px;display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:9px;padding:0 12px;background:var(--panel)}
+.search-field:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.search-field svg{flex-shrink:0}
+.search-field input{flex:1;border:none;outline:none;padding:10px 0;font-size:13.5px;font-family:inherit;background:transparent;color:var(--ink)}
+.search-hint{font-size:11.5px;color:var(--ink-3);margin:-6px 0 14px;padding-left:2px}
+
+/* materials table */
+.mtable{width:100%;border-collapse:collapse;font-size:13px}
+.mtable th{text-align:left;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:700;padding:9px 8px;border-bottom:1px solid var(--line);background:var(--panel-2);white-space:nowrap}
+.mtable td{padding:6px 8px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+.mtable tr.flagged td{background:#fffaf2}
+.mtable input{width:100%;border:1px solid transparent;background:transparent;font-family:inherit;font-size:13px;padding:6px 7px;border-radius:6px;color:var(--ink)}
+.mtable input:focus{outline:none;border-color:var(--accent);background:#fff;box-shadow:0 0 0 2px var(--accent-soft)}
+.mtable input.num{font-family:var(--mono);text-align:right}
+.mtable td.tot{font-family:var(--mono);text-align:right;font-weight:600;white-space:nowrap;padding-right:10px}
+.st{font-family:var(--mono);font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;white-space:nowrap}
+.st.found{background:var(--green-soft);color:var(--green)}
+.st.flag{background:var(--amber-soft);color:var(--amber)}
+.st.manual{background:var(--accent-soft);color:var(--accent)}
+.rowact{display:flex;gap:4px;justify-content:flex-end}
+.ib{width:26px;height:26px;border:1px solid var(--line);border-radius:6px;background:var(--panel);cursor:pointer;display:grid;place-items:center;color:var(--ink-3);flex-shrink:0}
+.ib:hover{border-color:var(--accent);color:var(--accent)}
+.ib.mm:hover{border-color:var(--mm);color:var(--mm)}
+.ib.del:hover{border-color:var(--red);color:var(--red)}
+.ib svg{width:13px;height:13px}
+.tbl-foot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:10px}
+.mt-add{font-size:12.5px;color:var(--accent);background:none;border:1px dashed var(--line);border-radius:8px;padding:8px 13px;cursor:pointer;font-weight:600}
+.mt-add:hover{border-color:var(--accent);background:var(--accent-soft)}
+.sub{font-family:var(--mono);font-size:15px;font-weight:600}
+.sub small{font-size:11px;color:var(--ink-3);font-weight:400;letter-spacing:.04em;text-transform:uppercase}
+.flag-note{display:flex;align-items:center;gap:9px;background:var(--amber-soft);border:1px solid #ecd3a8;border-radius:10px;padding:10px 14px;font-size:12.5px;color:var(--ink-2);margin-top:12px}
+.flag-note b{color:var(--ink)}
+
+/* proposal */
+.prop-grid{display:grid;grid-template-columns:auto 1fr;gap:10px 16px;align-items:center;margin-bottom:14px;max-width:420px}
+.prop-grid label{font-size:12.5px;color:var(--ink-2);font-weight:600}
+.prop-grid input{font-family:var(--mono);text-align:right}
+.totals{margin-left:auto;max-width:340px}
+.trow{display:flex;justify-content:space-between;padding:7px 0;font-size:13.5px;border-bottom:1px solid var(--line-2)}
+.trow.grand{border-bottom:none;border-top:2px solid var(--line);margin-top:4px;padding-top:11px;font-size:17px;font-weight:800}
+.trow .v{font-family:var(--mono);font-weight:600}
+.trow.grand .v{color:var(--green)}
+
+.empty{text-align:center;padding:40px 20px;color:var(--ink-3)}
+.empty svg{width:40px;height:40px;color:var(--line);margin-bottom:12px}
+.empty p{font-size:13.5px;margin:0;line-height:1.5}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:10px;font-size:13.5px;font-weight:500;box-shadow:var(--shadow-lg);opacity:0;transition:.25s;z-index:80;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media(max-width:760px){ .intake-grid,.row2{grid-template-columns:1fr} .mtable{font-size:12px} }
+</style>
+<link rel="stylesheet" href="apb-theme.css">
+</head>
+<body>
+
+<header class="topbar">
+  <img src="apb-logo.png" alt="APB">
+  <div class="t"><b>Material Procurement</b><span>Drawing → Materials → Proposal</span></div>
+  <div class="sp"></div>
+  <a class="navbtn" href="index.html?hub=1">⊞ All Tools</a>
+  <div class="now" id="now"></div>
+</header>
+
+<main class="wrap">
+
+  <section class="hero">
+    <div class="hero-body">
+      <div class="eyebrow">All Points Boats · Estimating</div>
+      <h1>Material Procurement</h1>
+      <p>Drop in a drawing or a materials list, price it against your catalog, look up whatever's missing, and turn the whole thing into a proposal — labor included.</p>
+      <div class="steps">
+        <span class="step"><span class="n">1</span><b>Intake</b></span><span class="ar">→</span>
+        <span class="step"><span class="n">2</span><b>Price &amp; flag</b></span><span class="ar">→</span>
+        <span class="step"><span class="n">3</span><b>Look up unknowns</b></span><span class="ar">→</span>
+        <span class="step"><span class="n">4</span><b>Proposal</b></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 1. INTAKE ── -->
+  <div class="card">
+    <div class="sec"><h2>1 · Intake</h2><span class="ln"></span></div>
+    <div class="row2">
+      <div><label class="fl">Project / Vessel</label><input class="in" id="p_project" placeholder="e.g. Working Platform — Resolve"></div>
+      <div><label class="fl">Job / Quote name</label><input class="in" id="p_job" placeholder="e.g. Aluminum work platform"></div>
+    </div>
+    <div class="intake-grid">
+      <div>
+        <label class="fl">Paste a materials list</label>
+        <textarea class="in" id="p_paste" placeholder="One item per line, e.g.&#10;6  HSS 4x4x1/4 aluminum column  17 ft&#10;10  HSS 3x3x1/4 aluminum post  44 in&#10;1  serrated aluminum grating deck  17x2.75 ft&#10;2  hinged safety gate"></textarea>
+        <div class="hint">Leading number = quantity. The rest is the description. You can fix anything in the table below.</div>
+        <button class="btn prim" id="parseBtn" style="margin-top:10px"><svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>Build materials list</button>
+      </div>
+      <div>
+        <label class="fl">…or upload a drawing</label>
+        <div class="drop" id="drop">
+          <input type="file" id="drawFile" accept="image/*,.pdf,application/pdf" hidden>
+          <svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15h6M9 11h2"/></svg>
+          <b id="dropName">Drop a PDF / image, or choose a file</b>
+          <span>Reading a drawing into a takeoff is an AI vision step.</span>
+          <button class="pick" id="pickBtn">Choose drawing</button>
+          <div class="claude-tag">✦ Analyze with Claude</div>
+        </div>
+        <div class="hint" id="drawHint">Drawings vary — clean title-block PDFs read well, marked-up screenshots need a careful eye. Upload here, then we hand it to Claude to draft the takeoff; you confirm it in the table.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── McMaster API connection (admin) ── -->
+  <div class="card" id="mmCard" style="display:none">
+    <div class="sec" id="mmHead" style="cursor:pointer"><h2>McMaster API <span style="font-weight:400;font-size:13px;color:var(--ink-3)">— live pricing</span></h2><span class="ln"></span><span class="badge" id="mmStatusBadge">checking…</span></div>
+    <div id="mmBody" style="display:none">
+      <p class="hint" style="margin-top:0;margin-bottom:14px">Once McMaster approves API access, enter your credentials and the client-certificate path here (stored on the hub server only — never in the browser). Then "↻ Refresh McMaster prices" pulls live pricing for any row tagged with a McMaster part #.</p>
+      <div class="row2">
+        <div><label class="fl">API Username</label><input class="in" id="mm_user" placeholder="from McMaster" autocomplete="off"></div>
+        <div><label class="fl">API Password</label><input class="in" id="mm_pass" type="password" placeholder="from McMaster" autocomplete="off"></div>
+      </div>
+      <div class="row2">
+        <div><label class="fl">Client certificate (.pfx) path on the hub PC</label><input class="in" id="mm_pfx" placeholder="C:\Users\...\mcmaster-client.pfx"></div>
+        <div><label class="fl">Certificate passphrase</label><input class="in" id="mm_pfxpass" type="password" placeholder="cert passphrase" autocomplete="off"></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:12px;align-items:center;flex-wrap:wrap">
+        <button class="btn prim" id="mmSave">Save</button>
+        <button class="btn ghost" id="mmTest">Test a price (8983K11)</button>
+        <span class="hint" id="mmMsg" style="margin-top:0"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 2. MATERIALS LIST ── -->
+  <div class="card">
+    <div class="sec"><h2>2 · Materials List</h2><span class="ln"></span><span class="badge" id="matBadge">0 items</span></div>
+    <div class="search-bar">
+      <div class="search-field">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="color:var(--ink-3)"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="searchAdd" placeholder="Search a material, or enter a McMaster part # to add…" list="pbList" autocomplete="off">
+        <datalist id="pbList"></datalist>
+      </div>
+      <button class="btn prim" id="searchAddBtn" type="button"><svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add to list</button>
+      <button class="btn ghost" id="searchMM" type="button">Find on McMaster ↗</button>
+    </div>
+    <div class="search-hint">No drawing? Build the order by hand — type to add (it autocompletes from your saved materials), drop in a McMaster part # for a live price, or search McMaster for something new.</div>
+    <div id="matWrap">
+      <div class="empty" id="matEmpty">
+        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+        <p>Build a list from the intake above, or add rows manually.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 3. PROPOSAL ── -->
+  <div class="card" id="propCard" style="display:none">
+    <div class="sec"><h2>3 · Proposal</h2><span class="ln"></span></div>
+    <div class="prop-grid">
+      <label>Material markup</label>
+      <div style="display:flex;align-items:center;gap:8px"><input class="in" id="p_markup" type="number" value="40" style="max-width:90px"><span style="color:var(--ink-3);font-size:13px">% on material cost</span></div>
+    </div>
+
+    <div class="sec" style="margin-top:6px"><h2 style="font-size:14px">Labor &amp; Services</h2><span class="ln"></span></div>
+    <table class="mtable"><thead><tr><th style="width:46%">Description</th><th style="width:90px">Qty</th><th style="width:120px">Rate</th><th style="width:120px">Total</th><th></th></tr></thead><tbody id="laborBody"></tbody></table>
+    <button class="mt-add" id="addLabor" style="margin-top:10px">+ Add labor / service line</button>
+
+    <div class="totals" id="totals" style="margin-top:20px"></div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap">
+      <button class="btn ghost" id="saveDraft"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>Save draft</button>
+      <button class="btn prim" id="genProp"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>Generate Proposal</button>
+    </div>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   MATERIAL PROCUREMENT — drawing/list → priced materials → proposal.
+   • Prices each line against a learned price book (localStorage
+     'apb_price_book'). Unknowns are FLAGGED for manual entry +
+     one-click McMaster / web lookup. Filling one teaches the book.
+   • Reality: McMaster has no open API & blocks scraping, so lookup
+     is a launch-to-search + capture flow (auto-fill drops in later
+     if a McMaster API account is granted).
+   • Rolls into a proposal with material markup + labor line items.
+   ============================================================ */
+const G = document.getElementById.bind(document);
+const PB_KEY='apb_price_book', WORK_KEY='apb_procurement';
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function money(n){ return '$'+(Math.round((+n||0)*100)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function uid(){ return 'm'+Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+
+/* seed price book — APB's common materials so auto-pricing demonstrates */
+const PB_SEED=[
+  {desc:'hss 4x4x1/4 aluminum', partNo:'', source:'Metal supplier', unit:'ft', price:18.50},
+  {desc:'hss 3x3x1/4 aluminum', partNo:'', source:'Metal supplier', unit:'ft', price:12.75},
+  {desc:'aluminum plate 3/8', partNo:'', source:'Metal supplier', unit:'sqft', price:22.00},
+  {desc:'serrated aluminum grating', partNo:'', source:'Grating supplier', unit:'sqft', price:34.00},
+  {desc:'316 stainless plate 1/4', partNo:'8983K', source:'McMaster-Carr', unit:'sqft', price:48.10},
+  {desc:'hinged safety gate', partNo:'', source:'McMaster-Carr', unit:'ea', price:165.00}
+];
+let PB=loadPB();
+function loadPB(){ try{ const v=JSON.parse(localStorage.getItem(PB_KEY)); if(Array.isArray(v)) return v; }catch(e){} localStorage.setItem(PB_KEY,JSON.stringify(PB_SEED)); return PB_SEED.slice(); }
+function savePB(){ try{ localStorage.setItem(PB_KEY,JSON.stringify(PB)); }catch(e){} }
+
+let ROWS=[], LABOR=[];
+
+/* match a description against the price book (all words of a PB entry appear in the desc) */
+function matchPrice(desc){
+  const d=' '+desc.toLowerCase()+' ';
+  let best=null, bestLen=0;
+  PB.forEach(e=>{
+    const words=e.desc.toLowerCase().split(/\s+/).filter(Boolean);
+    if(words.length && words.every(w=>d.indexOf(w)>=0) && e.desc.length>bestLen){ best=e; bestLen=e.desc.length; }
+  });
+  return best;
+}
+
+/* ---- parse pasted list ---- */
+function parseList(){
+  const txt=G('p_paste').value.trim();
+  if(!txt){ toast('Paste a materials list first'); return; }
+  const lines=txt.split('\n').map(s=>s.trim()).filter(Boolean);
+  lines.forEach(line=>{
+    let qty=1, desc=line;
+    const m=line.match(/^\(?\s*(\d+(?:\.\d+)?)\s*\)?[\sx\-\.:]+(.+)$/i);
+    if(m){ qty=parseFloat(m[1])||1; desc=m[2].trim(); }
+    addRow({desc, qty});
+  });
+  render(); toast(lines.length+' item'+(lines.length>1?'s':'')+' added — review & price');
+}
+function addRow(r){
+  r=r||{};
+  const row={ id:uid(), desc:r.desc||'', spec:r.spec||'', qty:r.qty||1, unit:r.unit||'', partNo:r.partNo||'', source:r.source||'', price:r.price||0, status:'flag' };
+  const hit=row.desc?matchPrice(row.desc):null;
+  if(hit){ row.partNo=row.partNo||hit.partNo; row.source=hit.source; row.unit=row.unit||hit.unit; row.price=hit.price; row.status='found'; }
+  ROWS.push(row);
+}
+
+/* ---- search & add (build an order without a drawing) ---- */
+function fillPbList(){
+  const items=[...new Set(PB.map(e=>e.desc))].sort();
+  G('pbList').innerHTML=items.map(d=>`<option value="${esc(d)}">`).join('');
+}
+function looksLikePart(s){ return /^[A-Za-z0-9]{5,10}$/.test(s) && /[A-Za-z]/.test(s) && /[0-9]/.test(s); }
+async function searchAdd(){
+  const q=G('searchAdd').value.trim(); if(!q){ G('searchAdd').focus(); return; }
+  // McMaster part # + API connected → pull the live price
+  if(looksLikePart(q)){
+    try{
+      const d=await fetch('/api/mcmaster/price?part='+encodeURIComponent(q)).then(r=>r.json());
+      if(d && d.connected && d.price!=null){
+        addRow({desc:q, partNo:q, source:'McMaster-Carr', unit:d.unit||'ea', price:d.price});
+        ROWS[ROWS.length-1].status='found';
+        G('searchAdd').value=''; render(); toast('Added '+q+' — live McMaster price'); return;
+      }
+    }catch(e){}
+  }
+  addRow({desc:q});                 // auto-prices from your catalog, else flags
+  G('searchAdd').value=''; render();
+  const last=ROWS[ROWS.length-1];
+  toast(last && last.status==='found' ? 'Added — priced from your catalog' : 'Added — needs a price (use 🔍 to look it up)');
+}
+
+/* ---- render materials table ---- */
+function render(){
+  const wrap=G('matWrap');
+  G('matBadge').textContent=ROWS.length+' item'+(ROWS.length!==1?'s':'');
+  if(!ROWS.length){
+    wrap.innerHTML=`<div class="empty" id="matEmpty"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg><p>Build a list from the intake above, or add rows manually.</p></div>`;
+    G('propCard').style.display='none';
+    return;
+  }
+  const flagged=ROWS.filter(r=>r.status==='flag').length;
+  wrap.innerHTML=`<div style="overflow-x:auto"><table class="mtable"><thead><tr>
+    <th style="min-width:200px">Material</th><th style="width:74px">Qty</th><th style="width:62px">Unit</th>
+    <th style="min-width:130px">Source / Part #</th><th style="width:104px">Unit $</th><th style="width:104px">Line $</th>
+    <th style="width:96px">Status</th><th style="width:96px"></th>
+  </tr></thead><tbody>${ROWS.map(rowHtml).join('')}</tbody></table></div>
+  ${flagged?`<div class="flag-note"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="color:var(--amber);flex-shrink:0"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg><div><b>${flagged} item${flagged>1?'s':''} need a price.</b> Use 🔍 to look it up on McMaster or the web, drop the part # and unit price in, and it's saved for next time.</div></div>`:''}
+  <div class="tbl-foot">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="mt-add" id="addRowBtn">+ Add material</button>
+      <button class="mt-add" id="refreshMM" title="Pull current prices for rows tagged with a McMaster part #">↻ Refresh McMaster prices</button>
+    </div>
+    <div class="sub" id="matSub"></div>
+  </div>`;
+  // wire
+  wrap.querySelectorAll('[data-f]').forEach(inp=> inp.oninput=e=>{ const r=ROWS.find(x=>x.id===inp.dataset.id); if(!r) return; r[inp.dataset.f]=inp.dataset.f==='qty'||inp.dataset.f==='price'?parseFloat(e.target.value)||0:e.target.value; if(inp.dataset.f==='price'&&r.price>0&&r.status==='flag'){ r.status='manual'; learn(r); } recalc(); });
+  wrap.querySelectorAll('[data-mm]').forEach(b=> b.onclick=()=>window.open('https://www.google.com/search?q='+encodeURIComponent('site:mcmaster.com '+rowDesc(b.dataset.mm)),'_blank'));
+  wrap.querySelectorAll('[data-web]').forEach(b=> b.onclick=()=>window.open('https://www.google.com/search?q='+encodeURIComponent(rowDesc(b.dataset.web)+' price buy'),'_blank'));
+  wrap.querySelectorAll('[data-del]').forEach(b=> b.onclick=()=>{ ROWS=ROWS.filter(x=>x.id!==b.dataset.del); render(); });
+  G('addRowBtn').onclick=()=>{ addRow({}); render(); };
+  var rmm=G('refreshMM'); if(rmm) rmm.onclick=refreshMcMaster;
+  recalc();
+  buildLabor(); G('propCard').style.display='';
+}
+function rowDesc(id){ const r=ROWS.find(x=>x.id===id); return r?(r.desc+' '+(r.spec||'')).trim():''; }
+function rowHtml(r){
+  const line=(+r.qty||0)*(+r.price||0);
+  const stCls=r.status==='found'?'found':r.status==='manual'?'manual':'flag';
+  const stTxt=r.status==='found'?'Priced':r.status==='manual'?'Manual':'Flagged';
+  const src=[r.source,r.partNo].filter(Boolean).join(' · ');
+  return `<tr class="${r.status==='flag'?'flagged':''}">
+    <td><input data-id="${r.id}" data-f="desc" value="${esc(r.desc)}" placeholder="Material description"></td>
+    <td><input class="num" data-id="${r.id}" data-f="qty" value="${esc(r.qty)}"></td>
+    <td><input data-id="${r.id}" data-f="unit" value="${esc(r.unit)}" placeholder="ft/ea"></td>
+    <td><input data-id="${r.id}" data-f="source" value="${esc(src)}" placeholder="vendor · part #"></td>
+    <td><input class="num" data-id="${r.id}" data-f="price" value="${r.price?esc(r.price):''}" placeholder="0.00"></td>
+    <td class="tot" data-line="${r.id}">${line?money(line):'—'}</td>
+    <td><span class="st ${stCls}">${stTxt}</span></td>
+    <td><div class="rowact">
+      <button class="ib mm" data-mm="${r.id}" title="Search McMaster"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
+      <button class="ib" data-web="${r.id}" title="Search web"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg></button>
+      <button class="ib del" data-del="${r.id}" title="Remove"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
+    </div></td>
+  </tr>`;
+}
+function recalc(){
+  ROWS.forEach(r=>{ const c=document.querySelector('[data-line="'+r.id+'"]'); if(c){ const l=(+r.qty||0)*(+r.price||0); c.textContent=l?money(l):'—'; } });
+  const sub=materialsSubtotal();
+  const el=G('matSub'); if(el) el.innerHTML=`<small>Material cost</small> &nbsp;${money(sub)}`;
+  buildTotals();
+}
+function materialsSubtotal(){ return ROWS.reduce((a,r)=>a+(+r.qty||0)*(+r.price||0),0); }
+function learn(r){
+  if(!r.desc||!r.price) return;
+  const key=r.desc.toLowerCase();
+  let e=PB.find(x=>x.desc.toLowerCase()===key);
+  if(e){ e.price=r.price; e.partNo=r.partNo||e.partNo; e.source=r.source||e.source; e.unit=r.unit||e.unit; }
+  else PB.push({desc:r.desc.toLowerCase(), partNo:r.partNo||'', source:r.source||'', unit:r.unit||'', price:r.price});
+  savePB();
+  fillPbList();
+}
+
+/* ---- McMaster live-price refresh (lights up once the API account is approved) ---- */
+async function refreshMcMaster(){
+  let st=null; try{ st=await fetch('/api/mcmaster/status').then(r=>r.json()); }catch(e){}
+  if(!st || !st.configured){
+    toast('McMaster API not connected yet — request access first. Once approved, this pulls live prices automatically.');
+    return;
+  }
+  let n=0;
+  for(const r of ROWS){
+    if(!r.partNo || !/mcmaster/i.test(r.source||'')) continue;
+    try{ const d=await fetch('/api/mcmaster/price?part='+encodeURIComponent(r.partNo)).then(x=>x.json());
+      if(d && d.price>0){ r.price=d.price; r.status='found'; learn(r); n++; } }catch(e){}
+  }
+  render();
+  toast(n? ('Updated '+n+' McMaster price'+(n>1?'s':'')+' to current') : 'No McMaster prices were updated');
+}
+
+/* ---- labor lines ---- */
+function buildLabor(){
+  const tb=G('laborBody');
+  tb.innerHTML=LABOR.map(l=>`<tr>
+    <td><input data-lid="${l.id}" data-lf="desc" value="${esc(l.desc)}" placeholder="e.g. Fabrication labor / Field install"></td>
+    <td><input class="num" data-lid="${l.id}" data-lf="qty" value="${esc(l.qty)}"></td>
+    <td><input class="num" data-lid="${l.id}" data-lf="rate" value="${esc(l.rate)}"></td>
+    <td class="tot">${money((+l.qty||0)*(+l.rate||0))}</td>
+    <td><div class="rowact"><button class="ib del" data-ldel="${l.id}" title="Remove"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button></div></td>
+  </tr>`).join('');
+  tb.querySelectorAll('[data-lid]').forEach(inp=> inp.oninput=e=>{ const l=LABOR.find(x=>x.id===inp.dataset.lid); if(!l) return; l[inp.dataset.lf]=inp.dataset.lf==='desc'?e.target.value:(parseFloat(e.target.value)||0); buildLabor(); buildTotals(); });
+  tb.querySelectorAll('[data-ldel]').forEach(b=> b.onclick=()=>{ LABOR=LABOR.filter(x=>x.id!==b.dataset.ldel); buildLabor(); buildTotals(); });
+}
+function laborTotal(){ return LABOR.reduce((a,l)=>a+(+l.qty||0)*(+l.rate||0),0); }
+function buildTotals(){
+  const mat=materialsSubtotal();
+  const markup=parseFloat(G('p_markup').value)||0;
+  const matSell=mat*(1+markup/100);
+  const lab=laborTotal();
+  const grand=matSell+lab;
+  G('totals').innerHTML=`
+    <div class="trow"><span>Material cost</span><span class="v">${money(mat)}</span></div>
+    <div class="trow"><span>Material + ${markup}% markup</span><span class="v">${money(matSell)}</span></div>
+    <div class="trow"><span>Labor &amp; services</span><span class="v">${money(lab)}</span></div>
+    <div class="trow grand"><span>Proposal total</span><span class="v">${money(grand)}</span></div>`;
+}
+
+/* ---- proposal output ---- */
+function genProposal(){
+  if(!ROWS.length){ toast('Add materials first'); return; }
+  const mat=materialsSubtotal(), markup=parseFloat(G('p_markup').value)||0, matSell=mat*(1+markup/100), lab=laborTotal(), grand=matSell+lab;
+  const proj=G('p_project').value||'—', job=G('p_job').value||'Materials & Fabrication';
+  const today=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  const matRows=ROWS.map(r=>{ const cost=(+r.qty||0)*(+r.price||0); const sell=cost*(1+markup/100); return `<tr><td>${esc(r.desc)}${r.spec?' — '+esc(r.spec):''}</td><td style="text-align:right">${esc(r.qty)} ${esc(r.unit)}</td><td style="text-align:right">${money(sell)}</td></tr>`; }).join('');
+  const labRows=LABOR.filter(l=>l.desc).map(l=>`<tr><td>${esc(l.desc)}</td><td style="text-align:right">${esc(l.qty)}</td><td style="text-align:right">${money((+l.qty||0)*(+l.rate||0))}</td></tr>`).join('');
+  const w=window.open('','_blank'); if(!w){ toast('Allow pop-ups to generate the proposal'); return; }
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Proposal — ${esc(proj)}</title>
+  <style>body{font-family:Inter,Arial,sans-serif;color:#0D1626;max-width:760px;margin:0 auto;padding:40px}
+  h1{font-size:24px;margin:0 0 4px}.muted{color:#6B7A92;font-size:13px}
+  .hd{display:flex;justify-content:space-between;border-bottom:3px solid #0E6E8C;padding-bottom:16px;margin-bottom:20px}
+  table{width:100%;border-collapse:collapse;margin:14px 0}th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#6B7A92;border-bottom:1px solid #DDE1E8;padding:8px}
+  td{padding:8px;border-bottom:1px solid #EEF1F5;font-size:13px}.sec{font-size:13px;font-weight:700;margin:22px 0 4px;text-transform:uppercase;letter-spacing:.05em;color:#0E6E8C}
+  .tot{display:flex;justify-content:space-between;padding:6px 8px;font-size:14px}.grand{font-size:20px;font-weight:800;border-top:2px solid #0D1626;margin-top:6px;padding-top:10px}
+  @media print{body{padding:0}}</style></head><body>
+  <div class="hd"><div><h1>Proposal</h1><div class="muted">${esc(job)}</div></div>
+  <div style="text-align:right"><b>All Points Boats, Inc.</b><div class="muted">900 SW 21st Terrace, Fort Lauderdale, FL 33312<br>(954) 767-8255 · info@apb1.com</div></div></div>
+  <div class="muted"><b>Project:</b> ${esc(proj)} &nbsp;·&nbsp; <b>Date:</b> ${today}</div>
+  <div class="sec">Materials</div>
+  <table><thead><tr><th>Item</th><th style="text-align:right">Qty</th><th style="text-align:right">Amount</th></tr></thead><tbody>${matRows}</tbody></table>
+  ${labRows?`<div class="sec">Labor &amp; Services</div><table><thead><tr><th>Item</th><th style="text-align:right">Qty</th><th style="text-align:right">Amount</th></tr></thead><tbody>${labRows}</tbody></table>`:''}
+  <div style="margin-top:18px;margin-left:auto;max-width:320px">
+    <div class="tot"><span>Materials</span><span>${money(matSell)}</span></div>
+    <div class="tot"><span>Labor &amp; services</span><span>${money(lab)}</span></div>
+    <div class="tot grand"><span>Total</span><span>${money(grand)}</span></div></div>
+  <p class="muted" style="margin-top:26px">Pricing valid 30 days. Material prices subject to change at time of order. Excludes engineering, permitting, and field installation unless listed above.</p>
+  <script>setTimeout(function(){window.print()},300)<\/script></body></html>`);
+  w.document.close();
+  saveDraft(true);
+}
+
+/* ---- persistence ---- */
+function saveDraft(quiet){
+  try{ localStorage.setItem(WORK_KEY, JSON.stringify({project:G('p_project').value,job:G('p_job').value,markup:G('p_markup').value,rows:ROWS,labor:LABOR})); }catch(e){}
+  if(!quiet) toast('Draft saved');
+}
+function loadDraft(){
+  try{ const d=JSON.parse(localStorage.getItem(WORK_KEY)); if(d){ G('p_project').value=d.project||''; G('p_job').value=d.job||''; if(d.markup) G('p_markup').value=d.markup; ROWS=d.rows||[]; LABOR=d.labor||[]; } }catch(e){}
+}
+
+let toastT;
+function toast(m){ const t=G('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2300); }
+
+/* ---- intake: drawing upload (Claude handoff) ---- */
+function handleDraw(file){
+  if(!file) return;
+  G('dropName').textContent=file.name;
+  G('drawHint').innerHTML='<b>'+esc(file.name)+'</b> ready. Drawing-to-takeoff is an AI vision step — for now, open this drawing in your Claude chat and ask for the materials takeoff, then paste the list into the box on the left. (Auto-extract lands here once wired to Claude.)';
+}
+G('pickBtn').onclick=()=>G('drawFile').click();
+G('drop').onclick=e=>{ if(e.target.id!=='pickBtn') G('drawFile').click(); };
+G('drawFile').onchange=e=>handleDraw(e.target.files[0]);
+['dragover','dragenter'].forEach(ev=>G('drop').addEventListener(ev,e=>{e.preventDefault();G('drop').classList.add('drag');}));
+['dragleave','dragend'].forEach(ev=>G('drop').addEventListener(ev,e=>{e.preventDefault();G('drop').classList.remove('drag');}));
+G('drop').addEventListener('drop',e=>{ e.preventDefault(); G('drop').classList.remove('drag'); handleDraw(e.dataTransfer.files[0]); });
+
+/* ---- wire ---- */
+G('parseBtn').onclick=parseList;
+G('searchAddBtn').onclick=searchAdd;
+G('searchAdd').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); searchAdd(); } });
+G('searchMM').onclick=()=>{ const q=G('searchAdd').value.trim(); window.open('https://www.google.com/search?q='+encodeURIComponent('site:mcmaster.com '+q),'_blank'); };
+G('addLabor').onclick=()=>{ LABOR.push({id:uid(),desc:'',qty:1,rate:0}); buildLabor(); buildTotals(); };
+G('p_markup').oninput=buildTotals;
+G('saveDraft').onclick=()=>saveDraft(false);
+G('genProp').onclick=genProposal;
+(function(){ const n=G('now'); function t(){ n.textContent=new Date().toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); } t(); setInterval(t,30000); })();
+
+/* ---- McMaster connection panel (admin only) ---- */
+(function mmSetup(){
+  var isAdmin = false; try{ isAdmin = APBRoles.role()==='admin'; }catch(e){}
+  if(!isAdmin) return;
+  G('mmCard').style.display='';
+  async function mmCheck(){
+    var b=G('mmStatusBadge');
+    try{ var s=await fetch('/api/mcmaster/status').then(r=>r.json());
+      if(s.configured){ b.textContent = s.certFound?'Connected':'Cert file not found'; b.style.color = s.certFound?'var(--green)':'var(--amber)'; }
+      else { b.textContent='Not connected'; b.style.color='var(--ink-3)'; }
+    }catch(e){ b.textContent='server offline'; }
+  }
+  G('mmHead').onclick=function(){ var x=G('mmBody'); x.style.display = x.style.display==='none'?'':'none'; };
+  G('mmSave').onclick=async function(){
+    G('mmMsg').textContent='Saving…';
+    try{
+      await fetch('/api/mcmaster/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+        user:G('mm_user').value.trim(), pass:G('mm_pass').value.trim(),
+        pfxPath:G('mm_pfx').value.trim(), pfxPass:G('mm_pfxpass').value.trim()
+      })});
+      G('mm_pass').value=''; G('mm_pfxpass').value='';
+      G('mmMsg').textContent='Saved (credentials kept on the server).'; mmCheck();
+    }catch(e){ G('mmMsg').textContent='Error: '+e.message; }
+  };
+  G('mmTest').onclick=async function(){
+    G('mmMsg').textContent='Testing…';
+    try{ var d=await fetch('/api/mcmaster/price?part=8983K11').then(r=>r.json());
+      if(d.connected===false) G('mmMsg').textContent='Not connected yet.';
+      else if(d.price!=null) G('mmMsg').textContent='✓ Live price for 8983K11: $'+d.price+' / '+(d.unit||'ea');
+      else G('mmMsg').textContent='Reached McMaster, but: '+(d.error||'no price returned');
+    }catch(e){ G('mmMsg').textContent='Error: '+e.message; }
+  };
+  mmCheck();
+})();
+
+/* init */
+loadDraft();
+fillPbList();
+render();
+</script>
+</body>
+</html>
