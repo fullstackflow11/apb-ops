@@ -106,6 +106,16 @@
   .history-line { font-size: 12.5px; color: var(--text); margin-top: 6px; padding-left: 10px; border-left: 2px solid var(--border-bright); line-height: 1.5; }
   .history-line .ln-job { font-family: 'DM Mono', monospace; color: var(--silver); }
   .history-line .ln-hrs { color: var(--silver-dim); }
+  .history-line { position: relative; padding-right: 56px; }
+  .ln-edit-btn { position: absolute; top: 6px; right: 0; font-size: 10px; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-bright); background: transparent; color: var(--silver); cursor: pointer; }
+  .ln-edit-btn:hover { border-color: var(--silver); }
+  .ln-locked { position: absolute; top: 6px; right: 0; font-size: 10px; color: var(--muted); }
+  .ln-edit-form { margin-top: 8px; padding: 10px; background: var(--bg); border-radius: 8px; border: 1px solid var(--border-bright); }
+  .ln-edit-form textarea, .ln-edit-form input { width: 100%; box-sizing: border-box; background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font-size: 12.5px; margin-top: 4px; }
+  .ln-edit-actions { display: flex; gap: 8px; margin-top: 8px; }
+  .ln-edit-actions button { font-size: 11px; padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border-bright); background: transparent; color: var(--text); cursor: pointer; }
+  .ln-edit-actions button.save { background: var(--silver); color: #0a0a0a; border-color: var(--silver); }
+  .ln-edited-tag { font-size: 10px; color: var(--muted); margin-top: 4px; }
   .history-photos { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
   .history-photos img { width: 56px; height: 56px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
   .empty-state { text-align: center; color: var(--muted); padding: 40px 20px; font-size: 13px; line-height: 1.7; }
@@ -460,12 +470,55 @@ function resetForm() {
 }
 function showMsg(type, text) { const el = document.getElementById('logMsg'); el.textContent = text; el.className = 'msg-box ' + type; if (type === 'success') setTimeout(() => { el.className = 'msg-box'; }, 6000); }
 
+function openLineEdit(lineId) {
+  const l = window.__lineCache[lineId];
+  if (!l || l.reviewed) return;
+  document.getElementById('editform-' + lineId).innerHTML = `
+    <div class="ln-edit-form">
+      <label style="font-size:11px;color:var(--muted)">Hours</label>
+      <input type="number" step="0.1" min="0.1" id="edithrs-${lineId}" value="${l.hours}">
+      <label style="font-size:11px;color:var(--muted)">Work description</label>
+      <textarea id="editdesc-${lineId}" rows="2">${l.work_description || ''}</textarea>
+      <div class="ln-edit-actions">
+        <button class="save" onclick="saveLineEdit('${lineId}')">Save Correction</button>
+        <button onclick="cancelLineEdit('${lineId}')">Cancel</button>
+      </div>
+    </div>`;
+}
+function cancelLineEdit(lineId) { document.getElementById('editform-' + lineId).innerHTML = ''; }
+async function saveLineEdit(lineId) {
+  const l = window.__lineCache[lineId];
+  // re-check reviewed status fresh from DB right before writing, so an in-flight manager review can't be clobbered
+  const { data: fresh } = await sb.from('apb_timesheet_lines').select('reviewed, hours').eq('id', lineId).single();
+  if (!fresh || fresh.reviewed) { alert('This entry was just reviewed by a manager and can no longer be edited. Refreshing your history.'); loadHistory(); return; }
+  const newHours = parseFloat(document.getElementById('edithrs-' + lineId).value);
+  const newDesc = document.getElementById('editdesc-' + lineId).value.trim();
+  if (!newHours || newHours <= 0) return alert('Enter hours greater than 0.');
+  if (!newDesc) return alert('Description cannot be empty.');
+  const updates = {
+    hours: newHours,
+    work_description: newDesc,
+    edited_by: currentTech.name,
+    edited_at: new Date().toISOString(),
+    original_hours: l.original_hours !== null && l.original_hours !== undefined ? l.original_hours : l.hours,
+    edit_note: 'Self-correction by tech after submission'
+  };
+  const { error } = await sb.from('apb_timesheet_lines').update(updates).eq('id', lineId);
+  if (error) return alert('Save failed: ' + error.message);
+  // keep the parent visit's total_hours in sync with the corrected line
+  const { data: siblingLines } = await sb.from('apb_timesheet_lines').select('hours').eq('timesheet_id', l.timesheet_id);
+  const newTotal = (siblingLines || []).reduce((s, x) => s + parseFloat(x.hours || 0), 0);
+  await sb.from('apb_timesheets').update({ total_hours: newTotal }).eq('id', l.timesheet_id);
+  cancelLineEdit(lineId);
+  loadHistory();
+}
 async function loadHistory() {
   const { data: visits } = await sb.from('apb_timesheets').select('*, apb_engagements(name)').eq('tech_name', currentTech.name).order('visit_date', {ascending:false}).limit(30);
   const el = document.getElementById('historyContent');
   if (!visits || !visits.length) { el.innerHTML = '<div class="empty-state">No timesheets logged yet.</div>'; document.getElementById('weekSummary').innerHTML = ''; return; }
   const ids = visits.map(v => v.id);
   const { data: allLines } = await sb.from('apb_timesheet_lines').select('*, apb_jobs(job_name, job_number)').in('timesheet_id', ids).order('created_at');
+  window.__lineCache = Object.fromEntries((allLines||[]).map(l => [l.id, l]));
   const linesByVisit = {};
   (allLines || []).forEach(l => { (linesByVisit[l.timesheet_id] = linesByVisit[l.timesheet_id] || []).push(l); });
   const today = new Date(); const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay()+6)%7)); monday.setHours(0,0,0,0);
@@ -478,7 +531,12 @@ async function loadHistory() {
     const photos = v.photo_urls ? v.photo_urls.split(',').filter(Boolean) : [];
     return `<div class="history-entry">
       <div class="history-header"><div><div class="history-vessel">${v.apb_engagements?.name || v.vessel_name || '—'}</div><div class="history-meta">${dateStr}</div></div><div class="history-hours">${parseFloat(v.total_hours||0).toFixed(1)}h</div></div>
-      ${lines.map(l => { const jNum = l.job_number || l.apb_jobs?.job_number || ''; const jName = l.job_name || l.apb_jobs?.job_name || l.shop_category || ''; const label = [jNum, jName].filter(Boolean).join(' — '); return `<div class="history-line"><span class="ln-job">${label || 'No job info'}</span> <span class="ln-hrs">· ${parseFloat(l.hours).toFixed(1)}h</span><br>${l.work_description}</div>`; }).join('')}
+      ${lines.map(l => { const jNum = l.job_number || l.apb_jobs?.job_number || ''; const jName = l.job_name || l.apb_jobs?.job_name || l.shop_category || ''; const label = [jNum, jName].filter(Boolean).join(' — '); const locked = !!l.reviewed; return `<div class="history-line" id="line-${l.id}">
+        ${locked ? `<span class="ln-locked">🔒 reviewed</span>` : `<button class="ln-edit-btn" onclick="openLineEdit('${l.id}')">Edit</button>`}
+        <span class="ln-job">${label || 'No job info'}</span> <span class="ln-hrs" id="hrs-${l.id}">· ${parseFloat(l.hours).toFixed(1)}h</span><br><span id="desc-${l.id}">${l.work_description}</span>
+        ${l.edited_by ? `<div class="ln-edited-tag">✎ edited by ${l.edited_by} · ${new Date(l.edited_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</div>` : ''}
+        <div id="editform-${l.id}"></div>
+      </div>`; }).join('')}
       ${photos.length ? `<div class="history-photos">${photos.map(p => `<img src="${p}">`).join('')}</div>` : ''}
     </div>`;
   }).join('');
