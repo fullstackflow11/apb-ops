@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Access guard: Admin only (financials/insurance) -->
+<script src="apb-roles.js"></script>
+<script src="apb-demo.js"></script>
+<script>APBRoles.guard('admin','Compliance Hub');</script>
+<title>Compliance Hub · APB</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDEEF2;--panel:#fff;--panel-2:#F5F6FA;
+  --ink:#0D1626;--ink-2:#3A4559;--ink-3:#6B7A92;
+  --line:#DDE1E8;--line-2:#E8EBF0;
+  --accent:#2457E6;--accent-2:#1B45B8;--accent-soft:#EAF0FE;
+  --green:#0B9E6A;--green-soft:#E4F5EE;
+  --amber:#B86A00;--amber-soft:#FBF0E2;
+  --red:#C43030;--red-soft:#FDEAEA;
+  --shadow-sm:0 1px 3px rgba(13,22,38,.07);
+  --shadow:0 8px 28px -12px rgba(13,22,38,.14);
+  --mono:"DM Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:Inter,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;letter-spacing:-.01em;min-height:100vh}
+
+/* ── Topbar ── */
+.topbar{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.90);backdrop-filter:saturate(180%) blur(14px);display:flex;align-items:center;gap:14px;padding:0 28px;height:62px;border-bottom:1px solid var(--line)}
+.topbar img{height:38px;width:auto;display:block}
+.topbar .t{border-left:1px solid var(--line);padding-left:14px}
+.topbar .t b{font-size:15px;color:var(--ink)}
+.topbar .t span{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.topbar .sp{flex:1}
+.topbar .now{font-family:var(--mono);font-size:12px;color:var(--ink-3);min-width:160px;text-align:right}
+.topbar .navbtn{font-size:12.5px;font-weight:600;color:var(--accent);padding:7px 13px;border:1px solid var(--line);border-radius:8px;background:var(--panel);cursor:pointer;text-decoration:none;transition:.12s;white-space:nowrap}
+.topbar .navbtn:hover{border-color:var(--accent);background:var(--accent-soft)}
+
+/* ── Layout ── */
+.wrap{max-width:1080px;margin:0 auto;padding:28px 24px 52px}
+
+/* ── Summary strip ── */
+.summary-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.metric{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px 20px;display:flex;flex-direction:column;gap:4px}
+.metric .val{font-family:var(--mono);font-size:28px;font-weight:500;letter-spacing:-.03em;line-height:1}
+.metric .lbl{font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-top:2px}
+.metric.green{border-top:3px solid var(--green)}.metric.green .val{color:var(--green)}
+.metric.amber{border-top:3px solid var(--amber)}.metric.amber .val{color:var(--amber)}
+.metric.red{border-top:3px solid var(--red)}.metric.red .val{color:var(--red)}
+.metric.neutral{border-top:3px solid var(--line)}.metric.neutral .val{color:var(--ink)}
+
+/* ── Section labels ── */
+.sec{display:flex;align-items:center;gap:10px;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin:28px 2px 14px}
+.sec .ln{flex:1;height:1px;background:var(--line)}
+
+/* ── Toolbar ── */
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.toolbar .search-wrap{position:relative;flex:1;min-width:180px}
+.toolbar .search-wrap svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--ink-3);pointer-events:none}
+.search-input{width:100%;padding:9px 12px 9px 35px;border:1px solid var(--line);border-radius:9px;font-size:13.5px;font-family:Inter,sans-serif;background:var(--panel);color:var(--ink);outline:none;transition:.12s}
+.search-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(36,87,230,.1)}
+.sort-wrap{display:flex;gap:4px;background:var(--panel-2);border:1px solid var(--line);border-radius:24px;padding:3px}
+.sort-btn{font-size:12px;font-weight:700;letter-spacing:.02em;padding:5px 13px;border-radius:20px;border:1px solid transparent;background:transparent;color:var(--ink-3);cursor:pointer;transition:all .12s;line-height:1;white-space:nowrap}
+.sort-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.sort-btn:not(.active):hover{background:var(--accent-soft);color:var(--accent)}
+.add-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 17px;background:var(--accent);color:#fff;border:none;border-radius:9px;font-size:13.5px;font-weight:600;cursor:pointer;transition:.12s;white-space:nowrap;text-decoration:none}
+.add-btn:hover{background:var(--accent-2);transform:translateY(-1px)}
+.add-btn svg{width:15px;height:15px;stroke-width:2.5}
+
+/* ── Facilities grid ── */
+.fac-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* ── Facility card ── */
+.fac-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm);padding:20px 22px;display:flex;gap:16px;transition:.12s}
+.fac-card:hover{box-shadow:var(--shadow);border-color:#c8d2e0}
+.fac-dot{width:40px;height:40px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;margin-top:2px}
+.fac-dot.green{background:var(--green-soft);color:var(--green)}
+.fac-dot.amber{background:var(--amber-soft);color:var(--amber)}
+.fac-dot.red{background:var(--red-soft);color:var(--red)}
+.fac-dot.none{background:var(--panel-2);color:var(--ink-3)}
+.fac-dot svg{width:20px;height:20px;stroke-width:2.2}
+.fac-body{flex:1;min-width:0}
+.fac-name{font-size:15.5px;font-weight:700;letter-spacing:-.02em;margin:0 0 2px;color:var(--ink)}
+.fac-addr{font-size:12px;color:var(--ink-3);margin:0 0 12px}
+.fac-certs{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.cert-row{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.cert-type{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--ink-3);width:32px;flex-shrink:0;letter-spacing:.02em}
+.cert-date{color:var(--ink-2);flex:1}
+.cert-badge{font-size:11px;font-weight:600;font-family:var(--mono);padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.cert-badge.green{background:var(--green-soft);color:var(--green)}
+.cert-badge.amber{background:var(--amber-soft);color:var(--amber)}
+.cert-badge.red{background:var(--red-soft);color:var(--red)}
+.no-certs{font-size:12.5px;color:var(--ink-3);font-style:italic;margin-bottom:10px}
+.fac-projects{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+.proj-chip{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:var(--accent-soft);color:var(--accent-2);border:1px solid #c7d7f8}
+.no-projects{font-size:11.5px;color:var(--ink-3)}
+.fac-actions{display:flex;gap:6px}
+.fac-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;font-size:12px;font-weight:600;border-radius:7px;cursor:pointer;border:1px solid var(--line);background:var(--panel-2);color:var(--ink-2);transition:.12s}
+.fac-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.fac-btn.del:hover{border-color:var(--red);color:var(--red);background:var(--red-soft)}
+.fac-btn svg{width:13px;height:13px;stroke-width:2}
+
+/* ── Request-COI row (lapsing coverages) ── */
+.coi-req-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:12px;padding:9px 11px;background:var(--panel-2);border:1px solid var(--line-2);border-radius:10px}
+.coi-req-lbl{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3)}
+.req-btn{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;font-size:12px;font-weight:700;border-radius:7px;cursor:pointer;border:1px solid;transition:.12s;background:#fff}
+.req-btn svg{width:13px;height:13px;stroke-width:2}
+.req-btn.red{color:var(--red);border-color:#eecac7;background:var(--red-soft)}
+.req-btn.red:hover{background:var(--red);color:#fff;border-color:var(--red)}
+.req-btn.amber{color:var(--amber);border-color:#ecd8b4;background:var(--amber-soft)}
+.req-btn.amber:hover{background:var(--amber);color:#fff;border-color:var(--amber)}
+
+/* ── Empty state ── */
+.empty-state{grid-column:1/-1;text-align:center;padding:52px 24px;color:var(--ink-3)}
+.empty-state svg{width:48px;height:48px;stroke:var(--line);stroke-width:1.5;display:block;margin:0 auto 16px}
+.empty-state p{font-size:14px;margin:0 0 18px}
+.empty-state b{color:var(--ink-2)}
+
+/* ── Form panel ── */
+.form-panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:28px 28px 24px;margin-bottom:24px;display:none}
+.form-panel.open{display:block}
+.form-title{font-size:16px;font-weight:700;color:var(--ink);margin:0 0 22px;letter-spacing:-.02em}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group label{font-size:12px;font-weight:600;color:var(--ink-2);letter-spacing:.04em;text-transform:uppercase}
+.form-group input{padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13.5px;font-family:Inter,sans-serif;color:var(--ink);background:var(--panel);outline:none;transition:.12s}
+.form-group input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(36,87,230,.1)}
+.cert-inputs{margin-bottom:18px}
+.cert-inputs-label{font-size:12px;font-weight:600;color:var(--ink-2);letter-spacing:.04em;text-transform:uppercase;margin-bottom:10px;display:block}
+.cert-input-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.cert-input-type{padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:var(--mono);color:var(--ink);background:var(--panel);outline:none;width:80px;transition:.12s}
+.cert-input-type:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(36,87,230,.1)}
+.cert-input-date{padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:Inter,sans-serif;color:var(--ink);background:var(--panel);outline:none;flex:1;transition:.12s}
+.cert-input-date:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(36,87,230,.1)}
+.cert-remove-btn{width:28px;height:28px;display:grid;place-items:center;border:1px solid var(--line);border-radius:7px;background:var(--panel-2);cursor:pointer;color:var(--ink-3);flex-shrink:0;transition:.12s}
+.cert-remove-btn:hover{border-color:var(--red);color:var(--red);background:var(--red-soft)}
+.cert-remove-btn svg{width:13px;height:13px;stroke-width:2.5}
+.add-cert-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;font-size:12.5px;font-weight:600;border:1px dashed var(--line);border-radius:8px;background:var(--panel-2);color:var(--ink-3);cursor:pointer;transition:.12s}
+.add-cert-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.add-cert-btn svg{width:13px;height:13px;stroke-width:2.5}
+.form-actions{display:flex;align-items:center;gap:10px;margin-top:22px;padding-top:18px;border-top:1px solid var(--line-2)}
+.save-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 20px;background:var(--accent);color:#fff;border:none;border-radius:9px;font-size:13.5px;font-weight:600;cursor:pointer;transition:.12s}
+.save-btn:hover{background:var(--accent-2)}
+.cancel-btn{padding:9px 16px;background:var(--panel-2);border:1px solid var(--line);border-radius:9px;font-size:13.5px;font-weight:600;color:var(--ink-3);cursor:pointer;transition:.12s}
+.cancel-btn:hover{border-color:var(--ink-3);color:var(--ink-2)}
+
+/* ── Compliance notes ── */
+.notes-panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px 26px;margin-top:32px}
+.notes-title{font-size:13px;font-weight:700;color:var(--ink);margin:0 0 14px;letter-spacing:.03em;text-transform:uppercase}
+.notes-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:9px}
+.notes-list li{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--ink-2);line-height:1.5}
+.note-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.note-dot.green{background:var(--green)}
+.note-dot.amber{background:var(--amber)}
+.note-dot.red{background:var(--red)}
+.note-dot.gray{background:var(--ink-3)}
+.notes-rule{font-size:12.5px;color:var(--ink-3);margin:14px 0 0;padding-top:13px;border-top:1px solid var(--line-2);line-height:1.5}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:#1a202c;color:#fff;padding:11px 22px;border-radius:12px;font-size:13.5px;font-weight:500;z-index:999;transition:transform .25s cubic-bezier(.16,1,.3,1),opacity .25s;opacity:0;pointer-events:none;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.green{background:#0a7a52}
+.toast.red{background:var(--red)}
+
+/* ── Footer ── */
+.foot{max-width:1080px;margin:0 auto;padding:20px 24px;color:var(--ink-3);font-size:12px;border-top:1px solid var(--line);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.foot b{color:var(--ink-2);font-weight:600}
+
+/* ── Master policies ── */
+.mp-section{margin-bottom:26px}
+.mp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.mp-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px 20px;position:relative;overflow:hidden;border-top:3px solid var(--green)}
+.mp-card.warn{border-top-color:var(--amber)}
+.mp-card.late{border-top-color:var(--red)}
+.mp-card.tbd{border-top-color:var(--ink-3)}
+.mp-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.mp-abbr{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;padding:3px 9px;border-radius:6px;background:var(--accent-soft);color:var(--accent-2)}
+.mp-name{font-size:14px;font-weight:700;color:var(--ink);letter-spacing:-.02em}
+.mp-exp{font-family:var(--mono);font-size:22px;font-weight:500;color:var(--ink);letter-spacing:-.02em;line-height:1;margin-bottom:5px}
+.mp-sub{font-size:11.5px;color:var(--ink-3)}
+.mp-badge{position:absolute;top:16px;right:16px;font-family:var(--mono);font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:20px}
+.mp-badge.green{background:var(--green-soft);color:var(--green)}
+.mp-badge.amber{background:var(--amber-soft);color:var(--amber)}
+.mp-badge.red{background:var(--red-soft);color:var(--red)}
+.mp-badge.tbd{background:var(--panel-2);color:var(--ink-3)}
+.mp-broker{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-3);margin-top:12px;line-height:1.5}
+.mp-broker b{color:var(--ink-2);font-weight:600}
+
+/* ── Source bar ── */
+.src-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-sm);padding:11px 16px;margin-bottom:22px;font-size:12.5px;color:var(--ink-3)}
+.src-bar .src-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0}
+.src-bar b{color:var(--ink-2);font-weight:600}
+.src-bar .sp-link{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.src-link{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--line);border-radius:8px;font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;background:var(--panel-2);transition:.12s;white-space:nowrap}
+.src-link:hover{border-color:var(--accent);background:var(--accent-soft)}
+.src-link svg{width:13px;height:13px;stroke-width:2}
+
+/* topbar source buttons */
+.topbar .navbtn.sp{display:inline-flex;align-items:center;gap:6px}
+.topbar .navbtn.sp svg{width:13px;height:13px;stroke-width:2;vertical-align:middle}
+
+/* holder sharepoint link in card */
+.fac-btn.sp:hover{border-color:var(--green);color:var(--green);background:var(--green-soft)}
+
+/* ════════ REVAMP: command hero ════════ */
+.hero{position:relative;overflow:hidden;border-radius:20px;color:#fff;padding:34px 38px 0;margin:22px 0 26px;
+  background:radial-gradient(680px 520px at 88% 120%,rgba(36,87,230,.42) 0%,transparent 56%),
+    radial-gradient(320px 260px at -5% -10%,rgba(100,140,255,.18) 0%,transparent 55%),
+    linear-gradient(160deg,#131a24,#0b0f17,#121820);
+  box-shadow:var(--shadow-lg)}
+.hero-body{position:relative;z-index:1}
+.hero .eyebrow{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:#6a90d0;font-weight:700;margin-bottom:10px}
+.hero h1{font-size:34px;font-weight:800;letter-spacing:-.04em;margin:0 0 10px;line-height:1.04}
+.hero .tagline{color:#adbbd4;font-size:14px;line-height:1.55;max-width:520px;margin:0}
+.hero-actions{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap;position:relative;z-index:1}
+.ha{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:9px;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer;border:none;white-space:nowrap;transition:all .13s;line-height:1}
+.ha svg{width:14px;height:14px;stroke-width:2.2}
+.ha.prim{background:var(--accent);color:#fff}
+.ha.ghost{background:rgba(255,255,255,.08);color:#d4dfef;border:1px solid rgba(255,255,255,.14)}
+.ha.ghost:hover{background:rgba(255,255,255,.15);color:#fff}
+.hero-kpis{display:grid;grid-template-columns:repeat(4,1fr);position:relative;z-index:1;margin-top:28px;border-top:1px solid rgba(255,255,255,.1)}
+.hk{padding:16px 20px;border-right:1px solid rgba(255,255,255,.1)}
+.hk:last-child{border-right:none}
+.hk .hk-n{display:block;font-family:var(--mono);font-size:25px;font-weight:600;color:#fff;letter-spacing:-.02em;line-height:1;margin-bottom:5px}
+.hk .hk-n.red{color:#ff8a82}.hk .hk-n.green{color:#5fdcab}.hk .hk-n.amber{color:#ffc46a}
+.hk .hk-l{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#6e94a0;font-weight:700}
+.hero-anchor{position:absolute;right:34px;top:30px;width:150px;height:150px;opacity:.06;pointer-events:none;z-index:0}
+
+/* ════════ alert banner ════════ */
+.alert{display:flex;align-items:center;gap:13px;background:linear-gradient(90deg,var(--red-soft),#fff);border:1px solid #ecc9c6;border-left:4px solid var(--red);border-radius:13px;padding:14px 18px;margin-bottom:24px;box-shadow:var(--shadow-sm)}
+.alert .a-ic{width:34px;height:34px;border-radius:9px;background:var(--red);color:#fff;display:grid;place-items:center;flex-shrink:0}
+.alert .a-ic svg{width:18px;height:18px;stroke-width:2.3}
+.alert .a-tx{flex:1;font-size:13.5px;color:var(--ink-2);line-height:1.45}
+.alert .a-tx b{color:var(--red);font-weight:700}
+.alert .a-btn{padding:8px 15px;border-radius:8px;background:var(--red);color:#fff;border:none;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;transition:.12s}
+.alert .a-btn:hover{filter:brightness(.93)}
+
+/* ════════ master-policy gauges ════════ */
+.gauge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.gauge{position:relative;background:var(--steel-face);border:1px solid var(--steel-edge);border-radius:16px;box-shadow:var(--steel-bevel);padding:20px;display:flex;align-items:center;gap:18px;overflow:hidden}
+.gauge::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px}
+.gauge.ok::before{background:var(--green)}.gauge.warn::before{background:var(--amber)}.gauge.late::before{background:var(--red)}.gauge.tbd::before{background:var(--ink-3)}
+.gauge-ring{position:relative;width:84px;height:84px;flex-shrink:0}
+.gauge-ring svg{transform:rotate(-90deg)}
+.gauge-ring .gr-track{fill:none;stroke:var(--line-2);stroke-width:8}
+.gauge-ring .gr-prog{fill:none;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 1s cubic-bezier(.4,0,.2,1)}
+.gauge.ok .gr-prog{stroke:var(--green)}.gauge.warn .gr-prog{stroke:var(--amber)}.gauge.late .gr-prog{stroke:var(--red)}.gauge.tbd .gr-prog{stroke:var(--ink-3)}
+.gauge-ring .gr-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.gauge-ring .gr-days{font-family:var(--mono);font-size:18px;font-weight:600;color:var(--ink);line-height:1}
+.gauge-ring .gr-unit{font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin-top:2px}
+.gauge-info{flex:1;min-width:0}
+.gauge-abbr{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.06em;padding:2px 8px;border-radius:5px;background:var(--accent-soft);color:var(--accent-2);margin-bottom:7px}
+.gauge-name{font-size:14.5px;font-weight:700;color:var(--ink);letter-spacing:-.02em;margin-bottom:3px}
+.gauge-date{font-family:var(--mono);font-size:13px;color:var(--ink-2);margin-bottom:6px}
+.gauge-note{font-size:11px;color:var(--ink-3);line-height:1.4}
+.gauge-badge{position:absolute;top:14px;right:14px;font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.06em;padding:3px 8px;border-radius:20px}
+.gauge.ok .gauge-badge{background:var(--green-soft);color:var(--green)}
+.gauge.warn .gauge-badge{background:var(--amber-soft);color:var(--amber)}
+.gauge.late .gauge-badge{background:var(--red-soft);color:var(--red)}
+.gauge.tbd .gauge-badge{background:var(--gray-soft);color:var(--ink-3)}
+
+/* ════════ renewal timeline ════════ */
+.timeline{background:var(--steel-face);border:1px solid var(--steel-edge);border-radius:16px;box-shadow:var(--steel-bevel);padding:26px 26px 20px;position:relative;overflow:hidden}
+.tl-track{position:relative;height:3px;background:repeating-linear-gradient(90deg,var(--line) 0 5px,transparent 5px 9px);margin:42px 8px 30px}
+.tl-now{position:absolute;top:-40px;bottom:-22px;width:2px;background:var(--accent);opacity:.5}
+.tl-now::before{content:"TODAY";position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.1em;color:var(--accent);white-space:nowrap}
+.tl-mark{position:absolute;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center}
+.tl-dot{width:15px;height:15px;border-radius:50%;border:3px solid var(--panel);box-shadow:0 0 0 1px var(--steel-edge);z-index:1}
+.tl-dot.ok{background:var(--green)}.tl-dot.warn{background:var(--amber)}.tl-dot.late{background:var(--red)}
+.tl-flag{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);text-align:center;white-space:nowrap}
+.tl-flag .tf-abbr{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--ink)}
+.tl-flag .tf-date{font-size:9.5px;color:var(--ink-3);font-family:var(--mono)}
+.tl-cap{position:absolute;top:14px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:9.5px;font-weight:600;color:var(--ink-3);white-space:nowrap}
+.tl-months{display:flex;justify-content:space-between;padding:0 4px}
+.tl-months span{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);letter-spacing:.04em}
+
+/* ════════ coverage chips on holder cards ════════ */
+.cov-chips{display:flex;gap:5px;margin-bottom:11px;flex-wrap:wrap}
+.cov-chip{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.04em;padding:3px 8px;border-radius:6px;border:1px solid var(--line)}
+.cov-chip .cc-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.cov-chip.ok{background:var(--green-soft);color:var(--green);border-color:transparent}.cov-chip.ok .cc-dot{background:var(--green)}
+.cov-chip.warn{background:var(--amber-soft);color:var(--amber);border-color:transparent}.cov-chip.warn .cc-dot{background:var(--amber)}
+.cov-chip.late{background:var(--red-soft);color:var(--red);border-color:transparent}.cov-chip.late .cc-dot{background:var(--red)}
+
+/* ── Responsive ── */
+@media(max-width:840px){
+  .summary-strip{grid-template-columns:1fr 1fr}
+  .mp-grid,.gauge-grid{grid-template-columns:1fr}
+  .fac-grid{grid-template-columns:1fr}
+  .form-row{grid-template-columns:1fr}
+  .src-bar .sp-link{margin-left:0;width:100%}
+  .hero-kpis{grid-template-columns:1fr 1fr}
+  .hk:nth-child(2){border-right:none}
+  .hk:nth-child(3),.hk:nth-child(4){border-top:1px solid rgba(255,255,255,.1)}
+  .hero h1{font-size:27px}
+}
+@media(max-width:540px){
+  .summary-strip{grid-template-columns:1fr 1fr}
+  .topbar{padding:0 16px;gap:10px}
+  .wrap{padding:18px 14px 40px}
+  .toolbar{flex-direction:column;align-items:stretch}
+  .sort-wrap{align-self:flex-start}
+}
+</style>
+<link rel="stylesheet" href="apb-theme.css">
+</head>
+<body>
+
+<header class="topbar">
+  <img src="apb-logo.png" alt="APB">
+  <div class="t"><b>Compliance Hub</b><span>APB Insurance & COI Tracker</span></div>
+  <div class="sp"></div>
+  <a class="navbtn sp" href="https://allpointsboats1.sharepoint.com/:f:/s/compliance/IgAlbMz5gL_YTKzmOMVjM-hNAbPR_OKZIdJREFP9_kQoBJ0?e=305p1F" target="_blank" rel="noopener" title="Open the COI library in SharePoint">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+    COI Library
+  </a>
+  <a class="navbtn sp" href="https://teams.microsoft.com/l/entity/26bc2873-6023-480c-a11b-76b66605ce8c/_djb2_msteams_prefix_1822217122?context=%7B%22channelId%22%3A%2219%3AiJ44DvLfBf_knrzTbdFrW5EXtqd6sR9tF2DrkxurlEk1%40thread.tacv2%22%7D&tenantId=dc62709a-5508-4fc5-8181-5c8d83399c16" target="_blank" rel="noopener" title="Open the compliance channel in Teams">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-6 0v4M5 9h14l-1 11H6L5 9z"/></svg>
+    Teams
+  </a>
+  <a class="navbtn" href="index.html">⌂ Home</a>
+  <div class="now" id="now"></div>
+</header>
+
+<main class="wrap">
+
+  <!-- ── Command hero ── -->
+  <section class="hero">
+    <svg class="hero-anchor" viewBox="0 0 100 100" fill="white" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M50 18a6 6 0 1 0 0 12 6 6 0 0 0 0-12zm0 12v52M28 44h44M28 44c-4 22 10 34 22 38 12-4 26-16 22-38" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="hero-body">
+      <div class="eyebrow">All Points Boats · Insurance &amp; COI Compliance</div>
+      <h1>Insurance Command</h1>
+      <p class="tagline">APB's three master policies and every certificate holder — live renewal status, gaps flagged, sources one click away.</p>
+      <div class="hero-actions">
+        <button class="ha prim" onclick="openAddForm()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          Add Holder
+        </button>
+        <a class="ha ghost" href="https://allpointsboats1.sharepoint.com/:f:/s/compliance/IgAlbMz5gL_YTKzmOMVjM-hNAbPR_OKZIdJREFP9_kQoBJ0?e=305p1F" target="_blank" rel="noopener">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          COI Library
+        </a>
+        <a class="ha ghost" href="https://teams.microsoft.com/l/entity/26bc2873-6023-480c-a11b-76b66605ce8c/_djb2_msteams_prefix_1822217122?context=%7B%22channelId%22%3A%2219%3AiJ44DvLfBf_knrzTbdFrW5EXtqd6sR9tF2DrkxurlEk1%40thread.tacv2%22%7D&tenantId=dc62709a-5508-4fc5-8181-5c8d83399c16" target="_blank" rel="noopener">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-6 0v4M5 9h14l-1 11H6L5 9z"/></svg>
+          Teams Tracker
+        </a>
+      </div>
+    </div>
+    <div class="hero-kpis">
+      <div class="hk"><span class="hk-n" id="kpiTotal">0</span><span class="hk-l">Certificate Holders</span></div>
+      <div class="hk"><span class="hk-n green" id="kpiGreen">0</span><span class="hk-l">Coverage Current</span></div>
+      <div class="hk"><span class="hk-n red" id="kpiRed">0</span><span class="hk-l">Need Action</span></div>
+      <div class="hk"><span class="hk-n" id="kpiNext">—</span><span class="hk-l">Next Policy Renewal</span></div>
+    </div>
+  </section>
+
+  <span id="kpiAmber" style="display:none"></span>
+
+  <!-- ── Alert banner ── -->
+  <div class="alert" id="alertBar" style="display:none">
+    <div class="a-ic"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></div>
+    <div class="a-tx" id="alertTx"></div>
+    <button class="a-btn" onclick="filterExpired()">Review expired</button>
+  </div>
+
+  <!-- ── New-COI-required banner (raised from Project Console) ── -->
+  <div id="coiReqBar" style="display:none;align-items:flex-start;gap:12px;background:linear-gradient(90deg,var(--accent-soft,#EAF0FE),#f6f9ff);border:1px solid #cfe0fb;border-radius:14px;padding:14px 16px;margin-bottom:16px"></div>
+
+  <!-- ── Master policy gauges ── -->
+  <div class="sec">APB Master Policies <span class="ln"></span></div>
+  <div class="gauge-grid" id="mpGrid"></div>
+  <div class="mp-broker" style="margin:14px 0 26px;padding-left:2px">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="color:var(--ink-3)"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+    GL placed through <b>Brown &amp; Brown</b> · WC via <b>FrankCrum / Zurich</b> · Auto <b>State Farm</b> · broker contact Nanette Le Hardy · (954)&nbsp;776-2222
+  </div>
+
+  <!-- ── Renewal timeline ── -->
+  <div class="sec">Renewal Calendar <span class="ln"></span></div>
+  <div class="timeline" id="timeline"></div>
+
+  <!-- ── Source / sync bar ── -->
+  <div class="src-bar" style="margin-top:22px">
+    <span class="src-dot" id="srcDot"></span>
+    <span id="srcMode"><b>Snapshot</b> — local data</span>
+    <span id="srcWhen" style="color:var(--ink-3)"></span>
+    <span class="sp-link">
+      <button class="src-link" id="syncBtn" onclick="syncNow()" style="cursor:pointer;font:inherit">⟳ Sync now</button>
+      <button class="src-link" onclick="toggleSetup()" style="cursor:pointer;font:inherit">⚙ Live sync</button>
+      <a class="src-link" href="https://allpointsboats1.sharepoint.com/:f:/s/compliance/IgAlbMz5gL_YTKzmOMVjM-hNAbPR_OKZIdJREFP9_kQoBJ0?e=305p1F" target="_blank" rel="noopener">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        COI Library
+      </a>
+    </span>
+  </div>
+
+  <!-- ── Live-sync setup (one-time) ── -->
+  <div class="form-panel" id="graphSetup" style="margin-top:14px">
+    <div class="form-title">Connect SharePoint — live COI sync</div>
+    <p style="font-size:13px;color:var(--ink-2);line-height:1.62;margin:0 0 16px">
+      One-time setup. In <b>Entra admin center → App registrations</b>, create an app, add the Microsoft Graph
+      <b>application</b> permission <b>Sites.Read.All</b> and grant admin consent, then create a client secret.
+      Paste the three values below — they're stored on the hub server only, <b>never in the browser</b>, and the page
+      will pull the <b>Facility Requirements</b> list directly from SharePoint.
+    </p>
+    <div class="form-row">
+      <div class="form-group"><label>Application (client) ID</label><input id="gClientId" type="text" placeholder="00000000-0000-0000-0000-000000000000"></div>
+      <div class="form-group"><label>Directory (tenant) ID</label><input id="gTenantId" type="text" value="dc62709a-5508-4fc5-8181-5c8d83399c16"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Client secret (value)</label><input id="gSecret" type="password" placeholder="••••••••••••"></div>
+      <div class="form-group"><label>List ID (optional — auto-detected)</label><input id="gListId" type="text" placeholder="leave blank to auto-detect"></div>
+    </div>
+    <div class="form-actions">
+      <button class="save-btn" onclick="saveGraphConfig()">Save &amp; Connect</button>
+      <button class="cancel-btn" onclick="toggleSetup()">Close</button>
+      <span id="graphMsg" style="font-size:12.5px;color:var(--ink-3)"></span>
+    </div>
+  </div>
+
+  <!-- ── Form panel (add / edit) ── -->
+  <div class="form-panel" id="formPanel">
+    <div class="form-title" id="formTitle">Add Facility</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Facility Name *</label>
+        <input type="text" id="fName" placeholder="e.g. Lauderdale Marine Center">
+      </div>
+      <div class="form-group">
+        <label>Address (optional)</label>
+        <input type="text" id="fAddr" placeholder="e.g. 1900 SE 15th St, Fort Lauderdale, FL">
+      </div>
+    </div>
+    <div class="cert-inputs">
+      <span class="cert-inputs-label">Certificates of Insurance</span>
+      <div id="certRows"></div>
+      <button class="add-cert-btn" onclick="addCertRow()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Add Cert
+      </button>
+    </div>
+    <div class="form-actions">
+      <button class="save-btn" onclick="saveFacility()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="15" height="15" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+        Save Facility
+      </button>
+      <button class="cancel-btn" onclick="closeForm()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- ── Certificate holders ── -->
+  <div class="sec">Certificate Holders <span class="ln"></span></div>
+
+  <!-- ── Toolbar ── -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input class="search-input" type="text" id="searchInput" placeholder="Search certificate holders…" oninput="renderFacilities()">
+    </div>
+    <div class="sort-wrap">
+      <button class="sort-btn active" id="sortStatus" onclick="setSort('status')">Status</button>
+      <button class="sort-btn" id="sortName" onclick="setSort('name')">Name</button>
+      <button class="sort-btn" id="sortSoon" onclick="setSort('soon')">Expiring Soonest</button>
+    </div>
+    <button class="add-btn" onclick="openAddForm()">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      Add Holder
+    </button>
+  </div>
+
+  <!-- ── Facilities grid ── -->
+  <div class="fac-grid" id="facGrid">
+    <div class="empty-state">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <p>No facilities on file yet.<br><b>Add your first facility below.</b></p>
+      <button class="add-btn" onclick="openAddForm()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Add Facility
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Compliance notes ── -->
+  <div class="notes-panel">
+    <div class="notes-title">How This Works</div>
+    <ul class="notes-list">
+      <li><span class="note-dot green"></span><span><b>Master Policies</b> are APB's own coverage. When General Liability (1/1) or Workers Comp (6/1) renews, <b>every</b> certificate holder below needs a fresh COI issued — that's the trigger for the annual reissue cycle.</span></li>
+      <li><span class="note-dot green"></span><span><b>Certificate Holders</b> are the marinas, yards, and clients APB has issued a Certificate of Insurance to. Each card shows the coverages on file (GL / WC / Auto) and their controlling expiration date.</span></li>
+      <li><span class="note-dot amber"></span><span><b>Amber — Expiring ≤30d:</b> A holder's COI lapses within 30 days. Request a renewal from Brown &amp; Brown before it expires.</span></li>
+      <li><span class="note-dot red"></span><span><b>Red — Expired:</b> The COI on file has lapsed. APB may not be cleared to work at that location until a current certificate is delivered.</span></li>
+    </ul>
+    <p class="notes-rule">Source of truth is the <b>APB 2026 COIs</b> library in SharePoint (linked above), mirrored in the Compliance channel in Teams. To add a new holder or update a date here, use <b>Add Holder</b> — then upload the actual certificate to the matching SharePoint folder. GL = General Liability · WC = Workers Comp · Auto = Commercial Auto.</p>
+  </div>
+
+</main>
+
+<footer class="foot">
+  <span><b>All Points Boats, Inc.</b> · 900 SW 21st Terrace, Fort Lauderdale, FL 33312</span>
+  <span>(954) 767-8255 · info@apb1.com · apb1.com</span>
+</footer>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Constants ──────────────────────────────────────────────────────────────
+const DAY = 86400000;
+const LS_FAC = 'apb_facilities';
+const LS_PROJ_FAC = 'apb_project_facilities';
+const GL_URL = 'https://allpointsboats1.sharepoint.com/sites/compliance/Shared%20Documents/General/APB%202026%20COIs/1%20General%20Liability';
+const WC_URL = 'https://allpointsboats1.sharepoint.com/sites/compliance/Shared%20Documents/General/APB%202026%20COIs/2%20Workers%20Comp';
+
+// ── APB master policies (drive the whole reissue cycle) ─────────────────────
+const MASTER_POLICIES = [
+  { abbr:'GL',   name:'General Liability',    expiry:'2027-01-01', note:'Mitsui Sumitomo · renewal reissues all GL certs' },
+  { abbr:'WC',   name:'Workers Compensation', expiry:'2027-06-01', note:'Zurich / FrankCrum · renewal reissues all WC certs' },
+  { abbr:'Auto', name:'Commercial Auto',      expiry:'2026-10-31', note:'State Farm fleet · policy 0938071-SFP-59' },
+];
+
+// ── Certificate holders — mirrored from the APB 2026 COIs SharePoint library ──
+// Refreshed 2026-06-28: GL roster all current→1/1/27, WC→6/1/27, Auto (State Farm)
+// current→10/31/26, prior/expired→4/30/26, GL gaps→1/1/26 (+ Nautical Ventures 6/1/26).
+const SNAPSHOT_DATE = 'Jun 28, 2026';
+const SEED_HOLDERS = [
+  // Full coverage, all current
+  { name:'FLYHOpCo, LLC dba Bradford Marine', certs:{GL:'2027-01-01', WC:'2027-06-01', Auto:'2026-10-31'}, spUrl:GL_URL },
+  { name:'MarineMax, Inc. and Subsidiaries',  certs:{GL:'2027-01-01', WC:'2027-06-01', Auto:'2026-10-31'}, spUrl:GL_URL },
+  { name:'Port 32 Fort Lauderdale / Marinas', certs:{GL:'2027-01-01', WC:'2027-06-01', Auto:'2026-10-31'}, spUrl:GL_URL },
+  { name:'Seahaven SMI OpCo, LLC',            certs:{GL:'2027-01-01', WC:'2027-06-01', Auto:'2026-10-31'}, spUrl:GL_URL },
+  { name:'Marina del Ray, LLC',               certs:{GL:'2027-01-01', WC:'2027-06-01', Auto:'2026-10-31'}, spUrl:GL_URL },
+  // Full coverage but EXPIRED auto (State Farm L82 policies lapsed 4/30/26)
+  { name:'Cable Marine, Inc.',                certs:{GL:'2027-01-01', WC:'2027-06-01', Auto:'2026-04-30'}, spUrl:GL_URL },
+  { name:'Directors of Florida',              certs:{GL:'2027-01-01', WC:'2027-06-01', Auto:'2026-04-30'}, spUrl:GL_URL },
+  { name:'Taylor Lane Yacht and Ship',        certs:{GL:'2027-01-01', WC:'2027-06-01', Auto:'2026-04-30'}, spUrl:GL_URL },
+  // GL + WC current
+  { name:'Azimut Benetti Service USA, Inc.',  certs:{GL:'2027-01-01', WC:'2027-06-01'}, spUrl:GL_URL },
+  { name:'Ferretti Group of America',         certs:{GL:'2027-01-01', WC:'2027-06-01'}, spUrl:GL_URL },
+  { name:'Seakeeper, Inc. (Dealer Program)',  certs:{GL:'2027-01-01', WC:'2027-06-01'}, spUrl:GL_URL },
+  { name:'SHM Holdco, LLC and Subsidiaries',  certs:{GL:'2027-01-01', WC:'2027-06-01'}, spUrl:GL_URL },
+  { name:'Marrone Investments',               certs:{GL:'2027-01-01', WC:'2027-06-01'}, spUrl:GL_URL },
+  { name:'Suntex Marina Investors, LLC',      certs:{GL:'2027-01-01', WC:'2027-06-01', Auto:'2026-10-31'}, spUrl:GL_URL },
+  // WC only, current
+  { name:'Carnival Corporation',              certs:{WC:'2027-06-01'}, spUrl:WC_URL },
+  { name:'Diplomat Oceanfront Residences',    certs:{WC:'2027-06-01'}, spUrl:WC_URL },
+  { name:'Yachting Promotions, Inc.',         certs:{WC:'2027-06-01'}, spUrl:WC_URL },
+  { name:'Palm Harbor Marina',                certs:{WC:'2027-06-01'}, spUrl:WC_URL },
+  { name:'Rahn Marinas, LLC',                 certs:{WC:'2027-06-01'}, spUrl:WC_URL },
+  { name:'North Beach Marina',                certs:{WC:'2027-06-01'}, spUrl:WC_URL },
+  // EXPIRED / GAP — GL cert lapsed 1/1/2026, never renewed (flagged in list)
+  { name:'Broward Shipyard',                  certs:{GL:'2026-01-01', WC:'2027-06-01'}, spUrl:GL_URL },
+  { name:'Seminole Marine',                   certs:{GL:'2026-01-01', WC:'2027-06-01'}, spUrl:GL_URL },
+  { name:'Burger Boat Company',               certs:{GL:'2026-01-01', WC:'2027-06-01'}, spUrl:GL_URL },
+  { name:'Pier 66 Marina',                    certs:{GL:'2026-01-01'}, spUrl:GL_URL },
+  { name:'Sun Communities',                   certs:{GL:'2026-01-01'}, spUrl:GL_URL },
+  { name:'Indiantown Marina',                 certs:{GL:'2026-01-01'}, spUrl:GL_URL },
+  { name:'Savannah Yacht Center',             certs:{GL:'2026-01-01'}, spUrl:GL_URL },
+  { name:'Skyworks / Pendry',                 certs:{GL:'2026-01-01'}, spUrl:GL_URL },
+  { name:'Nautical Ventures Group, Inc.',      certs:{GL:'2026-06-01'}, spUrl:GL_URL },
+];
+
+// ── COI providers — who APB requests each coverage from ─────────────────────
+// (Pulled from Chris's actual COI-request emails in Sent Items.)
+const COI_PROVIDERS = {
+  GL:   { label:'General Liability',     broker:'Brown & Brown', to:'053.certs@bbrown.com',                cc:'marinecerts@bbrown.com' },
+  WC:   { label:"Workers' Compensation", broker:'FrankCrum',     to:'certs@frankcrum.com',                 cc:'' },
+  Auto: { label:'Commercial Auto',       broker:'State Farm (Carley Brattland)', to:'carley.l.brattland.kb9i@statefarm.com', cc:'joseph.chiaramonte.vah6ad@statefarm.com' },
+};
+const APB_SIGNATURE =
+  'Thank you,\n' +
+  'Christopher Collins\n' +
+  'Director of Business Operations & Development\n' +
+  'All Points Boats\n\n' +
+  '900 SW 21st Terrace\n' +
+  'Fort Lauderdale, FL. 33312\n' +
+  'M: (954) 224-4458\n' +
+  'Christopher@apb1.com\n' +
+  'www.apb1.com';
+
+// Build the request-COI email draft (mirrors the wording Chris normally sends).
+function coiDraft(fac, type) {
+  const p = COI_PROVIDERS[type];
+  if (!p) return null;
+  const holderLines = [fac.name].concat(fac.address ? [fac.address] : []).join('\n');
+  const subject = `${p.label} COI Request – ${fac.name}`;
+  const body =
+    'Hello,\n\n' +
+    "I hope you're doing well.\n\n" +
+    `We need a ${p.label} COI for ${fac.name.replace(/\.\s*$/, '')}. They have requested the following certificate holder information:\n\n` +
+    holderLines + '\n\n' +
+    (fac.address ? '' : '(Please confirm the certificate holder mailing address.)\n\n') +
+    'Please let me know if you need anything else from me.\n\n' +
+    APB_SIGNATURE;
+  return { to: p.to, cc: p.cc, subject, body, broker: p.broker };
+}
+
+// Open the draft in the user's mail client (a DRAFT — never auto-sent).
+function requestCOI(facId, type) {
+  const fac = load().find(x => x.id === facId);
+  if (!fac) return;
+  const d = coiDraft(fac, type);
+  if (!d) return;
+  let href = 'mailto:' + encodeURIComponent(d.to) + '?subject=' + encodeURIComponent(d.subject) + '&body=' + encodeURIComponent(d.body);
+  if (d.cc) href += '&cc=' + encodeURIComponent(d.cc);
+  window.location.href = href;
+  showToast(`Drafting ${type} request to ${d.broker} →`, 'green');
+}
+
+// ── State ─────────────────────────────────────────────────────────────────
+let editingId = null;
+let sortMode = 'status';
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+function load() {
+  try { return JSON.parse(localStorage.getItem(LS_FAC) || '[]'); } catch { return []; }
+}
+function save(arr) {
+  localStorage.setItem(LS_FAC, JSON.stringify(arr));
+}
+function projFacMap() {
+  try { return JSON.parse(localStorage.getItem(LS_PROJ_FAC) || '{}'); } catch { return {}; }
+}
+
+function facStatus(fac) {
+  const certs = Object.values(fac.certs || {}).filter(Boolean);
+  if (!certs.length) return 'none';
+  const now = Date.now();
+  let expired = false, soon = false;
+  certs.forEach(d => {
+    const t = pdate(d).getTime();
+    if (t < now) expired = true;
+    else if (t < now + 30 * DAY) soon = true;
+  });
+  if (expired) return 'red';
+  if (soon) return 'amber';
+  return 'green';
+}
+
+function statusOrder(s) { return {red:0, amber:1, green:2, none:3}[s] ?? 4; }
+
+function daysLabel(dateStr) {
+  if (!dateStr) return null;
+  const now = Date.now();
+  const t = pdate(dateStr).getTime();
+  const diff = t - now;
+  const days = Math.round(diff / DAY);
+  if (days < 0) {
+    const ago = Math.abs(days);
+    return { text: ago === 0 ? 'EXPIRED today' : `${ago}d ago`, cls: 'red' };
+  }
+  if (days === 0) return { text: 'Expires today', cls: 'red' };
+  if (days <= 30) return { text: `${days}d`, cls: 'amber' };
+  return { text: `${days}d`, cls: 'green' };
+}
+
+// Parse a YYYY-MM-DD string as LOCAL midnight (avoids UTC day-shift)
+function pdate(s) { return new Date(s + 'T00:00:00'); }
+
+function fmtDate(d) {
+  if (!d) return '—';
+  return pdate(d).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+// ── Nearest expiry for sort ────────────────────────────────────────────────
+function nearestExpiry(fac) {
+  const certs = Object.values(fac.certs || {}).filter(Boolean);
+  if (!certs.length) return Infinity;
+  return Math.min(...certs.map(d => pdate(d).getTime()));
+}
+
+// ── KPIs ──────────────────────────────────────────────────────────────────
+function updateKPIs(facilities) {
+  let g = 0, a = 0, r = 0;
+  facilities.forEach(f => {
+    const s = facStatus(f);
+    if (s === 'green') g++;
+    else if (s === 'amber') a++;
+    else if (s === 'red') r++;
+  });
+  const set = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
+  set('kpiGreen', g); set('kpiAmber', a); set('kpiRed', r); set('kpiTotal', facilities.length);
+  const future = MASTER_POLICIES.filter(p => p.expiry && pdate(p.expiry).getTime() > Date.now())
+    .sort((x,y) => pdate(x.expiry) - pdate(y.expiry));
+  set('kpiNext', future.length ? pdate(future[0].expiry).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—');
+}
+
+// ── Projects for each facility ─────────────────────────────────────────────
+function projectsForFacility(facId) {
+  const map = projFacMap();
+  return Object.entries(map)
+    .filter(([, ids]) => Array.isArray(ids) ? ids.includes(facId) : ids === facId)
+    .map(([proj]) => proj);
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function renderFacilities() {
+  const all = load();
+  updateKPIs(all);
+
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  let facs = q ? all.filter(f => f.name.toLowerCase().includes(q) || (f.address||'').toLowerCase().includes(q)) : all.slice();
+
+  if (sortMode === 'status') {
+    facs.sort((a, b) => statusOrder(facStatus(a)) - statusOrder(facStatus(b)) || a.name.localeCompare(b.name));
+  } else if (sortMode === 'name') {
+    facs.sort((a, b) => a.name.localeCompare(b.name));
+  } else if (sortMode === 'soon') {
+    facs.sort((a, b) => nearestExpiry(a) - nearestExpiry(b));
+  }
+
+  const grid = document.getElementById('facGrid');
+
+  if (!facs.length) {
+    if (q) {
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><p>No facilities match "<b>${q}</b>"</p></div>`;
+    } else {
+      grid.innerHTML = `<div class="empty-state"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><p>No facilities on file yet.<br><b>Add your first facility above.</b></p></div>`;
+    }
+    return;
+  }
+
+  grid.innerHTML = facs.map(f => cardHTML(f)).join('');
+}
+
+function cardHTML(f) {
+  const status = facStatus(f);
+  const dotIcon = {
+    green: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>`,
+    amber: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M12 2L2 20h20L12 2z"/></svg>`,
+    red:   `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>`,
+    none:  `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
+  }[status];
+
+  const certs = Object.entries(f.certs || {});
+  const CLS = { green:'ok', amber:'warn', red:'late' };
+
+  let certRowsHTML = '';
+  if (certs.length === 0) {
+    certRowsHTML = `<p class="no-certs">No COI on file — add a coverage to enable tracking.</p>`;
+  } else {
+    certRowsHTML = `<div class="cov-chips">` + certs.map(([type, date]) => {
+      const dl = date ? daysLabel(date) : null;
+      const cls = dl ? (CLS[dl.cls] || '') : '';
+      return `<span class="cov-chip ${cls}" title="${escHtml(type)} expires ${fmtDate(date)}">
+        <span class="cc-dot"></span>${escHtml(type)} · ${fmtDate(date)}
+      </span>`;
+    }).join('') + `</div>`;
+  }
+
+  // Request-COI buttons for any coverage that's expired or expiring (≤30d).
+  const lapsing = certs.filter(([type, date]) => {
+    if (!COI_PROVIDERS[type] || !date) return false;
+    const dl = daysLabel(date);
+    return dl && (dl.cls === 'red' || dl.cls === 'amber');
+  });
+  const reqRowHTML = lapsing.length ? `<div class="coi-req-row">
+      <span class="coi-req-lbl">Request renewal:</span>
+      ${lapsing.map(([type, date]) => {
+        const dl = daysLabel(date);
+        const p = COI_PROVIDERS[type];
+        return `<button class="req-btn ${dl.cls}" onclick="requestCOI('${f.id}','${type}')" title="Draft a ${p.label} COI request to ${escHtml(p.broker)}">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4h16v16H4z" fill="none"/><path d="M22 6l-10 7L2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
+          Request ${escHtml(type)}</button>`;
+      }).join('')}
+    </div>` : '';
+
+  return `<div class="fac-card" id="card-${f.id}">
+    <div class="fac-dot ${status}">${dotIcon}</div>
+    <div class="fac-body">
+      <p class="fac-name">${escHtml(f.name)}</p>
+      ${f.address ? `<p class="fac-addr">${escHtml(f.address)}</p>` : '<p class="fac-addr" style="margin-bottom:10px"></p>'}
+      ${certRowsHTML}
+      ${reqRowHTML}
+      <div class="fac-actions" style="margin-top:12px">
+        ${f.spUrl ? `<a class="fac-btn sp" href="${escHtml(f.spUrl)}" target="_blank" rel="noopener" title="Open in SharePoint">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          Cert
+        </a>` : ''}
+        <button class="fac-btn" onclick="openEditForm('${f.id}')">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Edit
+        </button>
+        <button class="fac-btn del" onclick="deleteFacility('${f.id}')">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Sort ──────────────────────────────────────────────────────────────────
+function setSort(mode) {
+  sortMode = mode;
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sort' + mode.charAt(0).toUpperCase() + mode.slice(1))?.classList.add('active');
+  renderFacilities();
+}
+
+// ── Form ──────────────────────────────────────────────────────────────────
+function openAddForm() {
+  editingId = null;
+  document.getElementById('formTitle').textContent = 'Add Facility';
+  document.getElementById('fName').value = '';
+  document.getElementById('fAddr').value = '';
+  document.getElementById('certRows').innerHTML = '';
+  addCertRow('GL', '');
+  addCertRow('WC', '');
+  const panel = document.getElementById('formPanel');
+  panel.classList.add('open');
+  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+  document.getElementById('fName').focus();
+}
+
+function openEditForm(id) {
+  const facs = load();
+  const f = facs.find(x => x.id === id);
+  if (!f) return;
+  editingId = id;
+  document.getElementById('formTitle').textContent = `Edit — ${f.name}`;
+  document.getElementById('fName').value = f.name;
+  document.getElementById('fAddr').value = f.address || '';
+  document.getElementById('certRows').innerHTML = '';
+  const certs = Object.entries(f.certs || {});
+  if (certs.length === 0) {
+    addCertRow('GL', '');
+    addCertRow('WC', '');
+  } else {
+    certs.forEach(([type, date]) => addCertRow(type, date || ''));
+  }
+  const panel = document.getElementById('formPanel');
+  panel.classList.add('open');
+  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+  document.getElementById('fName').focus();
+}
+
+function closeForm() {
+  document.getElementById('formPanel').classList.remove('open');
+  editingId = null;
+}
+
+function addCertRow(type = '', date = '') {
+  const row = document.createElement('div');
+  row.className = 'cert-input-row';
+  row.innerHTML = `
+    <input type="text" class="cert-input-type" placeholder="GL" value="${escHtml(type)}" maxlength="10">
+    <input type="date" class="cert-input-date" value="${date}">
+    <button class="cert-remove-btn" onclick="this.closest('.cert-input-row').remove()" title="Remove">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>`;
+  document.getElementById('certRows').appendChild(row);
+}
+
+function saveFacility() {
+  const name = document.getElementById('fName').value.trim();
+  if (!name) { showToast('Facility name is required.', 'red'); document.getElementById('fName').focus(); return; }
+
+  const certs = {};
+  document.querySelectorAll('.cert-input-row').forEach(row => {
+    const type = row.querySelector('.cert-input-type').value.trim().toUpperCase();
+    const date = row.querySelector('.cert-input-date').value;
+    if (type) certs[type] = date || '';
+  });
+
+  const facs = load();
+  if (editingId) {
+    const idx = facs.findIndex(f => f.id === editingId);
+    if (idx !== -1) {
+      facs[idx] = { ...facs[idx], name, address: document.getElementById('fAddr').value.trim(), certs };
+    }
+    showToast(`Saved "${name}"`, 'green');
+  } else {
+    facs.push({ id: uid(), name, address: document.getElementById('fAddr').value.trim(), certs });
+    showToast(`Added "${name}"`, 'green');
+  }
+  save(facs);
+  closeForm();
+  renderFacilities();
+}
+
+// ── Delete ────────────────────────────────────────────────────────────────
+function deleteFacility(id) {
+  const facs = load();
+  const f = facs.find(x => x.id === id);
+  if (!f) return;
+  if (!confirm(`Delete "${f.name}"? This cannot be undone.`)) return;
+  save(facs.filter(x => x.id !== id));
+  showToast(`Deleted "${f.name}"`, 'red');
+  if (editingId === id) closeForm();
+  renderFacilities();
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────
+let toastTimer = null;
+function showToast(msg, cls = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (cls ? ' ' + cls : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.classList.remove('show'); }, 3000);
+}
+
+// ── Clock ─────────────────────────────────────────────────────────────────
+(function(){
+  const n = document.getElementById('now');
+  function t(){ n.textContent = new Date().toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }
+  t(); setInterval(t, 30000);
+})();
+
+// ── Master policies render ──────────────────────────────────────────────────
+function policyStatus(p){
+  if(!p.expiry) return 'tbd';
+  const d = Math.round((pdate(p.expiry).getTime() - Date.now())/DAY);
+  if(d < 0) return 'late';
+  if(d <= 45) return 'warn';
+  return 'ok';
+}
+const RING_C = 2 * Math.PI * 38;  // circumference for r=38
+
+function renderMasterPolicies(){
+  const grid = document.getElementById('mpGrid');
+  if(!grid) return;
+  grid.innerHTML = MASTER_POLICIES.map(p => {
+    const st = policyStatus(p);
+    const badge = {ok:'Active', warn:'Renew Soon', late:'Expired', tbd:'Verify'}[st];
+    let days = null, frac = 0, daysText = '—', unit = '';
+    if(p.expiry){
+      days = Math.round((pdate(p.expiry).getTime() - Date.now())/DAY);
+      frac = Math.max(0, Math.min(1, days/365));
+      if(days < 0){ daysText = Math.abs(days); unit = 'days over'; }
+      else { daysText = days; unit = 'days left'; }
+    }
+    const offset = RING_C * (1 - frac);
+    return `<div class="gauge ${st}">
+      <div class="gauge-badge">${badge}</div>
+      <div class="gauge-ring">
+        <svg width="84" height="84" viewBox="0 0 84 84">
+          <circle class="gr-track" cx="42" cy="42" r="38"/>
+          <circle class="gr-prog" cx="42" cy="42" r="38" stroke-dasharray="${RING_C.toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}"/>
+        </svg>
+        <div class="gr-center"><span class="gr-days">${daysText}</span><span class="gr-unit">${unit||'—'}</span></div>
+      </div>
+      <div class="gauge-info">
+        <span class="gauge-abbr">${p.abbr}</span>
+        <div class="gauge-name">${escHtml(p.name)}</div>
+        <div class="gauge-date">${p.expiry ? fmtDate(p.expiry) : 'Confirm date'}</div>
+        <div class="gauge-note">${escHtml(p.note)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Renewal timeline ────────────────────────────────────────────────────────
+function coverageCount(abbr){
+  return load().filter(f => f.certs && f.certs[abbr]).length;
+}
+function renderTimeline(){
+  const el = document.getElementById('timeline');
+  if(!el) return;
+  const start = new Date(); start.setDate(1); start.setHours(0,0,0,0);
+  const end = new Date(start); end.setMonth(end.getMonth() + 12);
+  const span = end - start;
+  const pos = d => Math.max(1, Math.min(99, ((pdate(d) - start)/span)*100));
+  const nowPos = Math.max(1, Math.min(99, ((Date.now() - start)/span)*100));
+
+  let months = '';
+  for(let i=0;i<12;i++){ const m=new Date(start); m.setMonth(m.getMonth()+i); months += `<span>${m.toLocaleDateString('en-US',{month:'short'}).toUpperCase()}</span>`; }
+
+  const marks = MASTER_POLICIES.filter(p=>p.expiry).map(p=>{
+    const cls = {ok:'ok',warn:'warn',late:'late',tbd:'ok'}[policyStatus(p)];
+    const x = pos(p.expiry);
+    const n = coverageCount(p.abbr);
+    return `<div class="tl-mark" style="left:${x}%">
+      <div class="tl-cap">${n} ${p.abbr} certs</div>
+      <div class="tl-dot ${cls}"></div>
+      <div class="tl-flag"><div class="tf-abbr">${p.abbr} renews</div><div class="tf-date">${fmtDate(p.expiry)}</div></div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `<div class="tl-track"><div class="tl-now" style="left:${nowPos}%"></div>${marks}</div><div class="tl-months">${months}</div>`;
+}
+
+// ── Alert + quick filter ────────────────────────────────────────────────────
+function refreshAlert(){
+  const all = load();
+  const red = all.filter(f => facStatus(f) === 'red').length;
+  const bar = document.getElementById('alertBar');
+  if(!bar) return;
+  if(red > 0){
+    document.getElementById('alertTx').innerHTML = `<b>${red} certificate holder${red===1?'':'s'}</b> ${red===1?'has':'have'} an expired or lapsed COI on file — request renewals from the broker before these locations need clearance.`;
+    bar.style.display = 'flex';
+  } else { bar.style.display = 'none'; }
+}
+function filterExpired(){
+  sortMode = 'soon';
+  document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sortSoon')?.classList.add('active');
+  renderFacilities();
+  document.getElementById('facGrid')?.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// ── New-COI-required requests (raised when a facility is added on a project) ──
+const COI_REQ_KEY = 'apb_coi_requests';
+function getCoiRequests(){ try { return JSON.parse(localStorage.getItem(COI_REQ_KEY) || '[]'); } catch { return []; } }
+function saveCoiRequests(r){ try { localStorage.setItem(COI_REQ_KEY, JSON.stringify(r)); } catch {} }
+
+function refreshCoiRequests(){
+  let reqs = getCoiRequests();
+  const facs = load();
+  // auto-clear any request whose facility now has a certificate on file
+  let changed = false;
+  reqs.forEach(r => {
+    if(r.status !== 'pending') return;
+    const f = facs.find(x => x.id === r.facilityId) || facs.find(x => (x.name||'').toLowerCase() === (r.facility||'').toLowerCase());
+    if(f && Object.values(f.certs || {}).filter(Boolean).length > 0){ r.status = 'resolved'; changed = true; }
+  });
+  if(changed) saveCoiRequests(reqs);
+
+  const pending = reqs.filter(r => r.status === 'pending');
+  const bar = document.getElementById('coiReqBar');
+  if(!bar) return;
+  if(!pending.length){ bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  bar.innerHTML = `
+    <div style="flex-shrink:0;color:var(--accent);margin-top:1px"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4M12 16h.01"/></svg></div>
+    <div style="flex:1;font-size:13px;color:var(--ink-2);line-height:1.5">
+      <b style="color:var(--ink)">${pending.length} new COI${pending.length===1?'':'s'} required</b> — a facility was added on a project with no certificate on file. Request the COI from the broker, then add the coverage here to clear the flag.
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:7px">
+        ${pending.map(r => `<div style="display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:8px 11px;flex-wrap:wrap">
+          <span style="font-weight:700;font-size:13px">${escHtml(r.facility)}</span>
+          ${r.project ? `<span style="font-size:12px;color:var(--ink-3)">· for ${escHtml(r.project)}</span>` : ''}
+          <span style="flex:1"></span>
+          <button onclick="resolveCoiReq('${r.id}')" style="font-size:12px;font-weight:600;color:var(--accent);background:var(--accent-soft,#EAF0FE);border:1px solid #cfe0fb;border-radius:7px;padding:5px 10px;cursor:pointer">Add COI now →</button>
+          <button onclick="dismissCoiReq('${r.id}')" title="Dismiss" style="font-size:16px;line-height:1;color:var(--ink-3);background:none;border:none;cursor:pointer;padding:0 4px">×</button>
+        </div>`).join('')}
+      </div>
+    </div>`;
+}
+function resolveCoiReq(id){
+  const r = getCoiRequests().find(x => x.id === id);
+  if(!r) return;
+  const facs = load();
+  const f = facs.find(x => x.id === r.facilityId) || facs.find(x => (x.name||'').toLowerCase() === (r.facility||'').toLowerCase());
+  if(f) openEditForm(f.id); else openAddForm();
+}
+function dismissCoiReq(id){
+  const reqs = getCoiRequests().map(r => r.id === id ? { ...r, status:'dismissed' } : r);
+  saveCoiRequests(reqs);
+  refreshCoiRequests();
+  showToast('COI request dismissed');
+}
+
+// ── Seed certificate holders on first load ──────────────────────────────────
+function seedIfEmpty(){
+  const existing = load();
+  if(existing.length) return;
+  const seeded = SEED_HOLDERS.map(h => ({ id: uid(), name: h.name, address:'', certs: h.certs, spUrl: h.spUrl }));
+  save(seeded);
+}
+
+// ── Live sync (Microsoft Graph via hub server) ──────────────────────────────
+function mapLiveHolders(holders){
+  return holders.map(h => ({
+    id: uid(), name: h.name, address: '', certs: h.certs || {},
+    spUrl: (h.certs && h.certs.GL) ? GL_URL : ((h.certs && h.certs.WC) ? WC_URL : ''),
+    status: h.status || '', live: true
+  }));
+}
+function timeAgo(ts){
+  if(!ts) return '';
+  const s = Math.round((Date.now()-ts)/1000);
+  if(s < 60) return s+'s ago';
+  const m = Math.round(s/60); if(m < 60) return m+'m ago';
+  const h = Math.round(m/60); if(h < 24) return h+'h ago';
+  return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+function setSource(mode, when){
+  const dot = document.getElementById('srcDot');
+  const m = document.getElementById('srcMode');
+  const w = document.getElementById('srcWhen');
+  if(!dot) return;
+  const ago = when ? ('· synced ' + timeAgo(when)) : '';
+  if(mode === 'live'){ dot.style.background = 'var(--green)'; m.innerHTML = '<b>Live</b> — Facility Requirements list, direct from SharePoint'; w.textContent = ago; }
+  else if(mode === 'stale'){ dot.style.background = 'var(--amber)'; m.innerHTML = '<b>Live (cached)</b> — last good sync'; w.textContent = ago; }
+  else { dot.style.background = 'var(--ink-3)'; m.innerHTML = '<b>Snapshot</b> — SharePoint COI library'; w.textContent = '· refreshed ' + (typeof SNAPSHOT_DATE!=='undefined'?SNAPSHOT_DATE:'') + ' · connect for live sync'; }
+}
+async function loadLiveOrSeed(){
+  try{
+    const ctrl = new AbortController();
+    const to = setTimeout(() => ctrl.abort(), 4500);
+    const r = await fetch('/api/graph/coi', { signal: ctrl.signal });
+    clearTimeout(to);
+    if(r.ok){
+      const d = await r.json();
+      if(Array.isArray(d.holders) && d.holders.length){
+        save(mapLiveHolders(d.holders));
+        setSource(d.stale ? 'stale' : 'live', d.syncedAt);
+        return;
+      }
+    }
+  }catch(e){ /* hub server offline or not configured → fall back */ }
+  seedIfEmpty();
+  setSource('snapshot', null);
+}
+async function syncNow(){
+  const btn = document.getElementById('syncBtn');
+  if(btn){ btn.textContent = '⟳ Syncing…'; btn.disabled = true; }
+  try{
+    const r = await fetch('/api/graph/coi?refresh=1');
+    const d = await r.json();
+    if(r.ok && Array.isArray(d.holders) && d.holders.length){
+      save(mapLiveHolders(d.holders));
+      setSource(d.stale ? 'stale' : 'live', d.syncedAt);
+      renderAll();
+      showToast('Synced ' + d.holders.length + ' holders from SharePoint', 'green');
+    } else {
+      showToast(d.error ? ('Sync error — ' + d.error.slice(0,60)) : 'No live data — open ⚙ Live sync to connect', 'red');
+    }
+  }catch(e){ showToast('Sync failed — start the hub server, then connect Live sync', 'red'); }
+  if(btn){ btn.textContent = '⟳ Sync now'; btn.disabled = false; }
+}
+function toggleSetup(){ document.getElementById('graphSetup')?.classList.toggle('open'); }
+async function checkGraphStatus(){
+  try{
+    const r = await fetch('/api/graph/status');
+    if(!r.ok) return;
+    const d = await r.json();
+    const ci = document.getElementById('gClientId');
+    if(d.configured && ci){ ci.placeholder = 'configured ✓ — re-enter to change'; }
+  }catch(e){}
+}
+async function saveGraphConfig(){
+  const clientId = document.getElementById('gClientId').value.trim();
+  const clientSecret = document.getElementById('gSecret').value.trim();
+  const tenantId = document.getElementById('gTenantId').value.trim();
+  const listId = document.getElementById('gListId').value.trim();
+  const msg = document.getElementById('graphMsg');
+  if(!clientId || !clientSecret){ msg.textContent = 'Client ID and secret are required.'; return; }
+  msg.textContent = 'Saving…';
+  try{
+    const r = await fetch('/api/graph/config', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({clientId, clientSecret, tenantId, listId}) });
+    if(!r.ok){ msg.textContent = 'Save failed (' + r.status + ').'; return; }
+    msg.textContent = 'Saved — syncing…';
+    await syncNow();
+    msg.textContent = 'Connected.';
+  }catch(e){ msg.textContent = 'Error: ' + e.message; }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+function renderAll(){ renderMasterPolicies(); renderTimeline(); renderFacilities(); refreshAlert(); refreshCoiRequests(); }
+(async function boot(){
+  await loadLiveOrSeed();
+  renderAll();
+  checkGraphStatus();
+})();
+</script>
+</body>
+</html>
