@@ -211,9 +211,154 @@ body {
   <div class="topbar-spacer"></div>
   <div class="live-badge"><div class="dot"></div> Live</div>
   <div class="clock" id="clock"></div>
+<div class="weather-chip" style="margin-left:8px;">
+    <div><div class="temp" id="wtemp">--°</div><div class="meta" style="font-size:10px;">FT LAUDERDALE</div></div>
+    <div><div class="desc" id="wdesc" style="font-size:12px;color:var(--ink-2);">…</div><div class="meta" id="wwind" style="font-size:10px;color:var(--ink-3);"></div></div>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+    <div class="updated" id="lastUpdated">…</div>
+    <button class="btn-refresh" onclick="loadAll()">↻ Refresh</button>
+  </div>
 </header>
 
 <main class="wrap">
+
+  <!-- ── Business KPIs ── -->
+  <div class="section-head"><h2>Business Overview</h2><div class="rule"></div></div>
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-label">Active Engagements</div><div class="kpi-value loading-pulse" id="kpiActive">—</div><div class="kpi-sub">Vessels & projects open</div></div>
+    <div class="kpi blue"><div class="kpi-label">Jobs In Progress</div><div class="kpi-value loading-pulse" id="kpiOpen">—</div><div class="kpi-sub">Active work underway</div></div>
+    <div class="kpi amber"><div class="kpi-label">Ready To Bill</div><div class="kpi-value loading-pulse" id="kpiBill">—</div><div class="kpi-sub">Awaiting invoice</div></div>
+    <div class="kpi red"><div class="kpi-label">Invoice In Review</div><div class="kpi-value loading-pulse" id="kpiNir">—</div><div class="kpi-sub">Needs attention</div></div>
+    <div class="kpi green"><div class="kpi-label">Open Leads</div><div class="kpi-value loading-pulse" id="kpiLeads">—</div><div class="kpi-sub">Pipeline leads</div></div>
+    <div class="kpi violet"><div class="kpi-label">R&D Pending</div><div class="kpi-value loading-pulse" id="kpiRd">—</div><div class="kpi-sub">Flagged for approval</div></div>
+  </div>
+  <div class="alert-banner amber" id="rdAlert">
+    <span>🔬</span>
+    <div><strong id="rdAlertCount">0</strong> jobs flagged as potential R&D — review below before tax filing.</div>
+    <span class="alert-link" onclick="document.getElementById('rdSection').scrollIntoView({behavior:'smooth'})">Review ↓</span>
+  </div>
+
+  <!-- ── Quick Launch ── -->
+  <div class="section-head"><h2>Quick Launch</h2><div class="rule"></div></div>
+  <div class="launch-tabs">
+    <div class="launch-tab active" onclick="switchLaunch('comm',this)">Communication</div>
+    <div class="launch-tab" onclick="switchLaunch('social',this)">Social Media</div>
+    <div class="launch-tab" onclick="switchLaunch('marine',this)">Marine & Weather</div>
+    <div class="launch-tab" onclick="switchLaunch('tools',this)">Tools & Files</div>
+  </div>
+  <div class="launch-panel active" id="lp-comm">
+    <div class="tile-grid">
+      <a class="tile" href="https://outlook.office.com/mail/" target="_blank"><span class="ico">📧</span><span class="name">Outlook</span><span class="sub">Email</span></a>
+      <a class="tile" href="https://mail.google.com" target="_blank"><span class="ico">✉️</span><span class="name">Gmail</span><span class="sub">Email</span></a>
+      <a class="tile" href="https://teams.microsoft.com" target="_blank"><span class="ico">💬</span><span class="name">Teams</span><span class="sub">Chat & calls</span></a>
+    </div>
+  </div>
+  <div class="launch-panel" id="lp-social">
+    <div class="tile-grid">
+      <a class="tile" href="https://www.facebook.com/allpointsboats/" target="_blank"><span class="ico">📘</span><span class="name">Facebook</span><span class="sub">@allpointsboats</span></a>
+      <a class="tile" href="https://www.instagram.com/allpointsboats/" target="_blank"><span class="ico">📸</span><span class="name">Instagram</span><span class="sub">@allpointsboats</span></a>
+      <a class="tile" href="https://www.linkedin.com/company/all-points-boats" target="_blank"><span class="ico">💼</span><span class="name">LinkedIn</span><span class="sub">Company page</span></a>
+      <a class="tile" href="https://www.youtube.com/results?search_query=all+points+boats+fort+lauderdale" target="_blank"><span class="ico">▶️</span><span class="name">YouTube</span><span class="sub">Channel</span></a>
+    </div>
+  </div>
+  <div class="launch-panel" id="lp-marine">
+    <div class="tile-grid">
+      <a class="tile" href="https://www.marinetraffic.com/en/ais/home/centerx:-80.14/centery:26.12/zoom:11" target="_blank"><span class="ico">🚢</span><span class="name">MarineTraffic</span><span class="sub">Live vessel map</span></a>
+      <a class="tile" href="https://forecast.weather.gov/MapClick.php?lat=26.12&lon=-80.14" target="_blank"><span class="ico">🌊</span><span class="name">Marine Forecast</span><span class="sub">NWS Miami</span></a>
+      <a class="tile" href="https://www.windy.com/?26.122,-80.137,11" target="_blank"><span class="ico">💨</span><span class="name">Windy</span><span class="sub">Wind & waves</span></a>
+      <a class="tile" href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722956" target="_blank"><span class="ico">🌙</span><span class="name">Tides</span><span class="sub">NOAA Ft Lauderdale</span></a>
+    </div>
+  </div>
+  <div class="launch-panel" id="lp-tools">
+    <div class="tile-grid">
+      <a class="tile" href="https://quickbooks.intuit.com" target="_blank"><span class="ico">💰</span><span class="name">QuickBooks</span><span class="sub">Invoices & A/R</span></a>
+      <a class="tile" href="https://www.office.com/launch/sharepoint" target="_blank"><span class="ico">📁</span><span class="name">SharePoint</span><span class="sub">Docs & Jobs</span></a>
+      <a class="tile" href="https://onedrive.live.com" target="_blank"><span class="ico">☁️</span><span class="name">OneDrive</span><span class="sub">Files</span></a>
+      <a class="tile" href="https://claude.ai" target="_blank"><span class="ico">✦</span><span class="name">Claude</span><span class="sub">AI assistant</span></a>
+      <a class="tile" href="apb-tech-portal.html" target="_blank"><span class="ico">🔧</span><span class="name">Tech Portal</span><span class="sub">Timesheets</span></a>
+      <a class="tile" href="apb-admin-review.html" target="_blank"><span class="ico">✅</span><span class="name">Review</span><span class="sub">Timesheet review</span></a>
+      <a class="tile" href="apb-admin-jobs.html" target="_blank"><span class="ico">📋</span><span class="name">CRM</span><span class="sub">Leads & Jobs</span></a>
+      <a class="tile" href="https://supabase.com/dashboard/project/aanrxyiocxxndkvkeocv/editor" target="_blank"><span class="ico">🗄️</span><span class="name">Database</span><span class="sub">Supabase</span></a>
+    </div>
+  </div>
+
+  <!-- ── Live Maps ── -->
+  <div class="section-head" style="margin-top:28px;"><h2>Live</h2><div class="rule"></div></div>
+  <div class="widget-grid">
+    <div class="dash-panel">
+      <div class="dash-panel-header"><span class="dash-panel-title">Marine Traffic — Ft Lauderdale</span></div>
+      <div><iframe class="embed" height="340" src="https://www.marinetraffic.com/en/ais/embed/zoom:11/centery:26.12/centerx:-80.14/maptype:4/shownames:true/mmsi:0/shipid:0/fleet:/fleet_id:/vtypes:/showmenu:false/remember:false" allowfullscreen></iframe></div>
+    </div>
+    <div class="dash-panel">
+      <div class="dash-panel-header"><span class="dash-panel-title">Wind & Sea — Windy</span></div>
+      <div><iframe class="embed" height="340" src="https://embed.windy.com/embed2.html?lat=26.122&lon=-80.137&detailLat=26.122&detailLon=-80.137&width=650&height=360&zoom=10&level=surface&overlay=wind&menu=&message=&marker=&calendar=12&pressure=&type=map&location=coordinates&detail=&metricWind=mph&metricTemp=%C2%B0F&radarRange=-1"></iframe></div>
+    </div>
+  </div>
+  <div class="widget-grid" style="margin-top:12px;">
+    <div class="dash-panel">
+      <div class="dash-panel-header"><span class="dash-panel-title">Marine Forecast</span><a class="dash-panel-count" href="https://forecast.weather.gov/MapClick.php?lat=26.12&lon=-80.14" target="_blank">NWS ↗</a></div>
+      <div class="dash-panel-body pad" id="marineForecast"><div class="spinner"></div></div>
+    </div>
+    <div class="dash-panel">
+      <div class="dash-panel-header"><span class="dash-panel-title">Tides — Ft Lauderdale</span><a class="dash-panel-count" href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722956" target="_blank">NOAA ↗</a></div>
+      <div class="dash-panel-body pad" id="tideInfo"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+  <!-- ── My Day ── -->
+  <div class="section-head" style="margin-top:28px;"><h2>My Day</h2><div class="rule"></div></div>
+  <div class="widget-grid">
+    <div class="dash-panel">
+      <div class="dash-panel-header"><span class="dash-panel-title">To-Do</span><span class="dash-panel-count" id="todoCount">0</span></div>
+      <div class="todo-input-row">
+        <input class="todo-input" id="todoInput" placeholder="Add a task..." onkeydown="if(event.key==='Enter')addTodo()">
+        <button class="todo-add" onclick="addTodo()">+</button>
+      </div>
+      <div class="dash-panel-body" id="todoList"></div>
+    </div>
+    <div class="dash-panel">
+      <div class="dash-panel-header"><span class="dash-panel-title">Calendar</span></div>
+      <div class="dash-panel-body">
+        <div class="calendar-placeholder">
+          <div class="big">📅</div>
+          Outlook calendar not connected yet.<br>
+          <a href="https://outlook.office.com/calendar/" target="_blank" style="color:var(--accent);font-size:12px;font-weight:600;">Open Outlook Calendar →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Jobs ── -->
+  <div class="section-head" style="margin-top:28px;"><h2>Jobs</h2><div class="rule"></div></div>
+  <div class="widget-grid">
+    <div class="dash-panel">
+      <div class="dash-panel-header"><span class="dash-panel-title">Pipeline</span><span class="dash-panel-count" id="pipelineTotal">—</span></div>
+      <div class="pipeline-chart" id="pipelineChart"></div>
+    </div>
+    <div class="dash-panel">
+      <div class="dash-panel-header"><span class="dash-panel-title">Ready To Bill</span><span class="dash-panel-count amber" id="billCount">—</span></div>
+      <div class="dash-panel-body" id="billList"><div class="spinner"></div></div>
+    </div>
+  </div>
+  <div class="widget-grid" style="margin-top:12px;">
+    <div class="dash-panel">
+      <div class="dash-panel-header"><span class="dash-panel-title">In Progress</span><span class="dash-panel-count" id="ipCount">—</span></div>
+      <div class="dash-panel-body" id="ipList"><div class="spinner"></div></div>
+    </div>
+    <div class="dash-panel">
+      <div class="dash-panel-header"><span class="dash-panel-title">Recent Timesheets</span><span class="dash-panel-count" id="tsCount">—</span></div>
+      <div class="dash-panel-body" id="tsList"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+  <!-- ── R&D Section ── -->
+  <div class="section-head" id="rdSection" style="margin-top:28px;"><h2>R&D Review</h2><div class="rule"></div></div>
+  <div class="dash-panel">
+    <div class="dash-panel-header"><span class="dash-panel-title">Flagged Items</span><span class="dash-panel-count amber" id="rdPendingCount">—</span></div>
+    <div class="dash-panel-body" id="rdList"><div class="spinner"></div></div>
+  </div>
+
 
   <!-- ── Live stats ── -->
   <div class="section-head"><h2>Today</h2><div class="rule"></div></div>
@@ -501,6 +646,236 @@ async function loadStats() {
   }).join('');
 }
 
+// ── LAUNCHER TABS ──
+function switchLaunch(key,el){ document.querySelectorAll('.launch-tab').forEach(t=>t.classList.remove('active')); document.querySelectorAll('.launch-panel').forEach(p=>p.classList.remove('active')); el.classList.add('active'); document.getElementById('lp-'+key).classList.add('active'); }
+
+// ── TODO ──
+let todos=[];
+function loadTodos(){ try{ todos=JSON.parse(localStorage.getItem('apb_todos')||'[]'); }catch(e){todos=[];} renderTodos(); }
+function saveTodos(){ try{ localStorage.setItem('apb_todos',JSON.stringify(todos)); }catch(e){} }
+function addTodo(){ const inp=document.getElementById('todoInput'); const v=inp.value.trim(); if(!v)return; todos.unshift({id:Date.now(),text:v,done:false}); inp.value=''; saveTodos(); renderTodos(); }
+function toggleTodo(id){ const t=todos.find(x=>x.id===id); if(t)t.done=!t.done; saveTodos(); renderTodos(); }
+function delTodo(id){ todos=todos.filter(x=>x.id!==id); saveTodos(); renderTodos(); }
+function renderTodos(){ const el=document.getElementById('todoList'); const open=todos.filter(t=>!t.done).length; document.getElementById('todoCount').textContent=open;
+if(!todos.length){el.innerHTML='<div class="empty-state">No tasks yet. Add one above.</div>';return;}
+el.innerHTML=todos.map(t=>`<div class="todo-item ${t.done?'done':''}"><input type="checkbox" ${t.done?'checked':''} onchange="toggleTodo(${t.id})"><span class="txt">${t.text.replace(/</g,'&lt;')}</span><span class="del" onclick="delTodo(${t.id})">×</span></div>`).join(''); }
+
+// ── WEATHER ──
+async function loadWeather(){ try{
+const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude=26.1224&longitude=-80.1373&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=mph');
+const d=await r.json(); const w=d.current_weather;
+const map={0:'Clear',1:'Mostly Clear',2:'Partly Cloudy',3:'Overcast',45:'Foggy',51:'Light Drizzle',61:'Light Rain',63:'Rain',65:'Heavy Rain',80:'Showers',95:'T-Storm'};
+document.getElementById('wtemp').textContent=Math.round(w.temperature)+'°F';
+document.getElementById('wdesc').textContent=map[w.weathercode]||'Fair';
+document.getElementById('wwind').textContent='Wind '+Math.round(w.windspeed)+' mph';
+}catch(e){document.getElementById('wdesc').textContent='—';} }
+
+// ── STATUS CONFIG ──
+const STATUS_COLORS={'Ready To Be Billed':'#d8a048','In Progress':'#2a9fd8','Approved':'#9a7ae0','Invoice Sent':'#4ac078','Invoice In Review':'#d84848','Lead':'#555','Estimating':'#c0c020','Proposal Sent':'#d87a35','Proposal Created':'#d87a35','Paid':'#4ac078','Canceled':'#555','Active':'#4ac078','On Hold':'#a06020'};
+const STATUS_BADGE={'Ready To Be Billed':'badge-rtbb','In Progress':'badge-ip','Invoice In Review':'badge-nir','Invoice Sent':'badge-is','Approved':'badge-app','Lead':'badge-lead','Estimating':'badge-lead'};
+function statusBadge(s){ return `<span class="badge ${STATUS_BADGE[s]||'badge-lead'}">${s}</span>`; }
+
+// ── MAIN LOAD ──
+async function loadAll(){
+  document.getElementById('lastUpdated').textContent='Updating...';
+  await Promise.all([loadJobs(), loadTimesheets(), loadWeather(), loadRdReviews()]);
+  document.getElementById('lastUpdated').textContent='Updated '+new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+}
+
+// ── JOBS — reads from apb_engagements + apb_jobs ──
+async function loadJobs(){
+  // Load engagements
+  const {data:engs, error:e1} = await sb.from('apb_engagements').select('*');
+  if(e1){console.error('engagements:', e1); return;}
+
+  // Load jobs with engagement name joined
+  const {data:jobs, error:e2} = await sb.from('apb_jobs').select('id, job_name, job_number, job_type, status, job_status_pct, start_date, completion_date, ms_list_item_id, apb_engagements(name, rep, engagement_type)');
+  if(e2){console.error('jobs:', e2); return;}
+
+  // Load leads for pipeline
+  const {data:leads, error:e3} = await sb.from('apb_leads').select('*');
+
+  // KPIs
+  const activeEngs = engs.filter(e=>e.status==='Active');
+  const inProgressJobs = jobs.filter(j=>j.status==='In Progress');
+  const billJobs = jobs.filter(j=>j.status==='Ready To Be Billed');
+  const nirJobs = jobs.filter(j=>j.status==='Invoice In Review');
+  const openLeads = leads ? leads.filter(l=>!l.converted).length : 0;
+
+  document.getElementById('kpiActive').textContent = activeEngs.length;
+  document.getElementById('kpiOpen').textContent = inProgressJobs.length;
+  document.getElementById('kpiBill').textContent = billJobs.length;
+  document.getElementById('kpiNir').textContent = nirJobs.length;
+  document.getElementById('kpiLeads').textContent = openLeads;
+  ['kpiActive','kpiOpen','kpiBill','kpiNir','kpiLeads'].forEach(id=>document.getElementById(id).classList.remove('loading-pulse'));
+
+  // Pipeline chart — group jobs by status (exclude paid/canceled)
+  const activeJobs = jobs.filter(j=>!['Paid','Canceled'].includes(j.status));
+  const sc={};
+  activeJobs.forEach(j=>{sc[j.status]=(sc[j.status]||0)+1;});
+  const sorted = Object.entries(sc).sort((a,b)=>b[1]-a[1]);
+  const max = sorted[0]?.[1]||1;
+  document.getElementById('pipelineTotal').textContent = activeJobs.length+' jobs';
+  document.getElementById('pipelineChart').innerHTML = sorted.map(([s,n])=>`
+    <div class="pipeline-row">
+      <div class="pipeline-label">${s}</div>
+      <div class="pipeline-bar-wrap"><div class="pipeline-bar" style="width:${(n/max*100).toFixed(0)}%;background:${STATUS_COLORS[s]||'#666'}"></div></div>
+      <div class="pipeline-count">${n}</div>
+    </div>`).join('');
+
+  // Ready to bill list
+  document.getElementById('billCount').textContent = billJobs.length;
+  document.getElementById('billList').innerHTML = billJobs.length
+    ? billJobs.map(j=>`
+      <div class="job-item">
+        <div class="status-dot" style="background:${STATUS_COLORS[j.status]||'#666'}"></div>
+        <div class="job-engagement"><a href="${j.apb_engagements?.name ? 'https://allpointsboats1.sharepoint.com/sites/operations/Lists/Jobs/Grouped%20by%20Project.aspx?FilterField1=Parent%5Fx0020%5FProject&FilterValue1='+encodeURIComponent(j.apb_engagements.name)+'&FilterType1=Text&FilterDisplay1='+encodeURIComponent(j.apb_engagements.name)+'&viewid=3af2d7b3%2D0ba9%2D4ab5%2Dbed7%2Dbc4bdf461cb9' : '#'}" target="_blank" onclick="event.stopPropagation()" title="Open in SharePoint" style="color:inherit;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${j.apb_engagements?.name||'—'}</a></div>
+        <div class="job-num">${j.job_number||''}</div>
+        <div class="job-name">${j.job_name}${j.ms_list_item_id ? '<a href="https://allpointsboats1.sharepoint.com/sites/operations/Lists/Jobs/DispForm.aspx?ID='+j.ms_list_item_id+'" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:var(--muted);margin-left:5px;text-decoration:none;" title="Open in SharePoint">↗</a>' : ''}</div>
+        ${statusBadge(j.status)}
+        <div class="job-rep">${j.apb_engagements?.rep||''}</div>
+      </div>`).join('')
+    : '<div class="empty-state">No jobs ready to bill</div>';
+
+  // In progress list
+  document.getElementById('ipCount').textContent = inProgressJobs.length;
+  document.getElementById('ipList').innerHTML = inProgressJobs.length
+    ? inProgressJobs.map(j=>`
+      <div class="job-item">
+        <div class="status-dot" style="background:${STATUS_COLORS[j.status]||'#666'}"></div>
+        <div class="job-engagement"><a href="${j.apb_engagements?.name ? 'https://allpointsboats1.sharepoint.com/sites/operations/Lists/Jobs/Grouped%20by%20Project.aspx?FilterField1=Parent%5Fx0020%5FProject&FilterValue1='+encodeURIComponent(j.apb_engagements.name)+'&FilterType1=Text&FilterDisplay1='+encodeURIComponent(j.apb_engagements.name)+'&viewid=3af2d7b3%2D0ba9%2D4ab5%2Dbed7%2Dbc4bdf461cb9' : '#'}" target="_blank" onclick="event.stopPropagation()" title="Open in SharePoint" style="color:inherit;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${j.apb_engagements?.name||'—'}</a></div>
+        <div class="job-num">${j.job_number||''}</div>
+        <div class="job-name">${j.job_name}${j.ms_list_item_id ? '<a href="https://allpointsboats1.sharepoint.com/sites/operations/Lists/Jobs/DispForm.aspx?ID='+j.ms_list_item_id+'" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:var(--muted);margin-left:5px;text-decoration:none;" title="Open in SharePoint">↗</a>' : ''}</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);flex-shrink:0;">${j.job_status_pct!=null?j.job_status_pct+'%':''}</div>
+        <div class="job-rep">${j.apb_engagements?.rep||''}</div>
+      </div>`).join('')
+    : '<div class="empty-state">No jobs in progress</div>';
+}
+
+// ── TIMESHEETS ──
+async function loadTimesheets(){
+  const {data,error} = await sb.from('apb_timesheets').select('*, apb_jobs(job_name), apb_engagements(name)').order('created_at',{ascending:false}).limit(20);
+  if(error||!data){ document.getElementById('tsList').innerHTML='<div class="empty-state">No timesheets yet</div>'; return; }
+  document.getElementById('tsCount').textContent = data.length+' recent';
+  document.getElementById('tsList').innerHTML = data.length
+    ? data.map(t=>`
+      <div class="ts-row">
+        <div class="ts-tech">${t.tech_name||'—'}</div>
+        <div class="ts-job">${t.apb_engagements?.name||t.vessel_name||'—'}${t.apb_jobs?.job_name?' — '+t.apb_jobs.job_name:''}</div>
+        <div class="ts-hours">${t.total_hours||0}h</div>
+        <div class="ts-date">${t.visit_date ? new Date(t.visit_date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—'}</div>
+      </div>`).join('')
+    : '<div class="empty-state">No timesheets logged yet</div>';
+}
+
+// ── R&D REVIEWS ──
+async function loadRdReviews(){
+  const {data,error} = await sb.from('apb_rd_reviews').select('*').order('created_at',{ascending:false});
+  if(error||!data){ document.getElementById('rdList').innerHTML='<div class="empty-state">No R&D flags found</div>'; return; }
+
+  const pending = data.filter(r=>r.decision==='pending');
+  const count = pending.length;
+
+  document.getElementById('kpiRd').textContent = count;
+  document.getElementById('kpiRd').classList.remove('loading-pulse');
+  document.getElementById('rdPendingCount').textContent = count+' pending';
+
+  if(count > 0){
+    document.getElementById('rdAlert').style.display = 'flex';
+    document.getElementById('rdAlertCount').textContent = count;
+  }
+
+  if(!data.length){
+    document.getElementById('rdList').innerHTML='<div class="empty-state">No R&D items flagged yet. Items will appear here when AI flags potential R&D activity.</div>';
+    return;
+  }
+
+  document.getElementById('rdList').innerHTML = data.map(r=>`
+    <div class="rd-item" id="rd-${r.id}">
+      <div class="rd-item-header">
+        <div class="rd-entity">${r.entity_name||'—'}</div>
+        <span class="rd-type">${r.entity_type?.toUpperCase()||'—'}</span>
+        <span class="${r.ai_confidence==='high'?'rd-conf-high':'rd-conf-medium'}">${(r.ai_confidence||'').toUpperCase()} CONFIDENCE</span>
+      </div>
+      <div class="rd-reason">${r.ai_flag_reason||'—'}</div>
+      <div class="rd-actions">
+        ${r.decision==='pending'
+          ? `<button class="rd-btn rd-btn-approve" onclick="decideRd('${r.id}','approved')">✓ Approve R&D</button>
+             <button class="rd-btn rd-btn-reject" onclick="decideRd('${r.id}','rejected')">✕ Not R&D</button>`
+          : `<span class="rd-decided ${r.decision}">${r.decision==='approved'?'✓ Approved':'✕ Rejected'}</span>
+             <span style="font-size:11px;color:var(--muted);margin-left:8px;">by ${r.reviewed_by||'unknown'}</span>`
+        }
+      </div>
+    </div>`).join('');
+}
+
+async function decideRd(id, decision){
+  const reviewer = _currentUser || 'admin';
+  const {error} = await sb.from('apb_rd_reviews').update({
+    decision, reviewed_by: reviewer, reviewed_at: new Date().toISOString()
+  }).eq('id', id);
+  if(error){ alert('Error saving decision: '+error.message); return; }
+  // Update source entity flag too
+  const {data:review} = await sb.from('apb_rd_reviews').select('entity_type,entity_id').eq('id',id).single();
+  if(review){
+    const table = review.entity_type==='engagement' ? 'apb_engagements' : review.entity_type==='job' ? 'apb_jobs' : 'apb_leads';
+    await sb.from(table).update({rd_flag:decision, rd_reviewed_by:reviewer, rd_reviewed_at:new Date().toISOString()}).eq('id',review.entity_id);
+  }
+  loadRdReviews();
+}
+
+// ── MARINE FORECAST ──
+async function loadMarineForecast(){
+  try{
+    const r = await fetch('https://api.weather.gov/zones/forecast/FLZ168/forecast');
+    const d = await r.json();
+    const periods = (d.properties&&d.properties.periods)?d.properties.periods.slice(0,4):[];
+    if(!periods.length) throw new Error('no periods');
+    document.getElementById('marineForecast').innerHTML = periods.map(p=>`
+      <div style="padding:9px 0;border-bottom:1px solid var(--line);">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:1px;margin-bottom:3px;">${p.name}${p.temperature&&p.temperatureUnit?' · '+p.temperature+'°'+p.temperatureUnit:''}</div>
+        <div style="font-size:13px;color:var(--text);line-height:1.5;">${p.detailedForecast}</div>
+      </div>`).join('');
+  }catch(e){
+    try{
+      const r2 = await fetch('https://api.weather.gov/gridpoints/MFL/110,61/forecast');
+      const d2 = await r2.json();
+      const periods = (d2.properties&&d2.properties.periods)?d2.properties.periods.slice(0,4):[];
+      document.getElementById('marineForecast').innerHTML = periods.map(p=>`
+        <div style="padding:9px 0;border-bottom:1px solid var(--line);">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--accent);margin-bottom:3px;">${p.name}${p.temperature&&p.temperatureUnit?' · '+p.temperature+'°'+p.temperatureUnit:''}</div>
+          <div style="font-size:13px;color:var(--text);line-height:1.5;">${p.detailedForecast}</div>
+        </div>`).join('');
+    }catch(e2){
+      document.getElementById('marineForecast').innerHTML='<div class="empty-state">Forecast unavailable<br><a href="https://forecast.weather.gov/MapClick.php?lat=26.12&lon=-80.14" target="_blank" style="color:var(--accent);font-size:12px;">Open NWS ↗</a></div>';
+    }
+  }
+}
+
+// ── TIDES ──
+async function loadTides(){
+  try{
+    const today = new Date().toISOString().split('T')[0].replace(/-/g,'');
+    const url = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&application=apb&begin_date=${today}&end_date=${today}&datum=MLLW&station=8722956&time_zone=lst_ldt&units=english&interval=hilo&format=json`;
+    const r = await fetch(url); const d = await r.json();
+    const preds = d.predictions||[];
+    if(!preds.length){document.getElementById('tideInfo').innerHTML='<div class="empty-state">Tide data unavailable</div>';return;}
+    document.getElementById('tideInfo').innerHTML = preds.map(p=>{
+      const t=new Date(p.t.replace(' ','T')); const time=t.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+      const hi=p.type==='H';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);">
+        <span style="font-family:var(--mono);font-size:13px;color:${hi?'var(--accent)':'var(--silver-dim)'};">${hi?'▲ HIGH':'▼ LOW'}</span>
+        <span style="font-size:13px;color:var(--text);">${time}</span>
+        <span style="font-family:var(--mono);font-size:13px;color:var(--ink);">${parseFloat(p.v).toFixed(1)} ft</span>
+      </div>`;
+    }).join('');
+  }catch(e){document.getElementById('tideInfo').innerHTML='<div class="empty-state">Tide data unavailable</div>';}
+}
+
+setInterval(loadAll, 5*60*1000);
+
+
+loadAll(); loadTodos(); loadMarineForecast(); loadTides();
 loadStats().catch(e => {
   document.getElementById('tsBody').innerHTML = '<tr><td colspan="4" class="empty">Could not load live data.</td></tr>';
 });
