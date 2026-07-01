@@ -407,7 +407,8 @@ function shopOptionsHtml(){return'<option value="">Select category…</option>'+
 function adminOptionsHtml(){return'<option value="">Select category…</option>'+ADMIN_CATEGORIES.map(c=>`<option value="${c}">${c}</option>`).join('');}
 function jobOptionsHtml(jobs){
   if(!jobs.length)return'<option value="">No active jobs for this vessel</option>';
-  return'<option value="">Select job…</option>'+jobs.map(j=>`<option value="${j.id}" data-job-number="${j.job_number||''}" data-job-name="${j.job_name||''}">${j.job_name}</option>`).join('');
+  const label=j=>j.job_name||(j.job_number||'—');
+  return'<option value="">Select job…</option>'+jobs.map(j=>`<option value="${j.id}" data-job-number="${j.job_number||''}" data-job-name="${j.job_name||''}">${label(j)}</option>`).join('');
 }
 async function getJobsForEngagement(engId){
   const{data}=await sb.from('apb_jobs').select('id,job_name,job_number,status').eq('engagement_id',engId).not('status','in','("Paid","Cancelled")').order('job_number');
@@ -610,7 +611,7 @@ async function loadHistory(){
       ${lines.map(l=>{
         const jNum=l.job_number||l.apb_jobs?.job_number||'';
         const jName=l.job_name||l.apb_jobs?.job_name||l.shop_category||'';
-        const label=[jNum,jName].filter(Boolean).join(' — ');
+        const label=jNum&&jName&&jName.startsWith(jNum)?jName:[jNum,jName].filter(Boolean).join(' — ');
         const locked=!!l.reviewed;
         return`<div class="history-line" id="line-${l.id}">
           ${locked?`<span class="ln-locked">✓ reviewed</span>`:`<button class="ln-edit-btn" onclick="openLineEdit('${l.id}')">Edit</button>`}
