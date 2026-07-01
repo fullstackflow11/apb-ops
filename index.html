@@ -323,6 +323,29 @@ body {
 .auth-back:hover{color:var(--ink)}
 .auth-step{display:none}.auth-step.active{display:block}
 
+
+/* ── Quick Add Job ── */
+.qaj-scrim{position:fixed;inset:0;background:rgba(13,22,38,.45);backdrop-filter:blur(3px);z-index:600;display:none;align-items:center;justify-content:center;padding:20px}
+.qaj-scrim.open{display:flex}
+.qaj-modal{background:var(--panel);border-radius:16px;box-shadow:0 30px 70px -20px rgba(13,22,38,.4);width:540px;max-width:100%;max-height:90vh;overflow:hidden;display:flex;flex-direction:column}
+.qaj-header{padding:20px 24px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.qaj-title{font-size:16px;font-weight:700;color:var(--ink)}
+.qaj-close{background:none;border:none;font-size:22px;color:var(--ink-4);cursor:pointer;padding:0 2px;line-height:1}
+.qaj-close:hover{color:var(--ink)}
+.qaj-body{padding:20px 24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px}
+.qaj-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.qaj-field{display:flex;flex-direction:column;gap:5px}
+.qaj-field.full{grid-column:1/-1}
+.qaj-label{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.qaj-input,.qaj-select{width:100%;background:var(--panel-2);border:1.5px solid var(--line);border-radius:8px;color:var(--ink);padding:10px 12px;font:inherit;font-size:13.5px;-webkit-appearance:none}
+.qaj-input:focus,.qaj-select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.qaj-footer{padding:16px 24px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center}
+.qaj-msg{font-size:13px;color:var(--red);flex:1;display:none}
+.qaj-btn-cancel{background:var(--panel-2);border:1px solid var(--line);color:var(--ink-3);padding:9px 16px;border-radius:8px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.qaj-btn-save{background:var(--accent);color:#fff;border:none;padding:9px 18px;border-radius:8px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;margin-left:auto}
+.qaj-btn-save:hover{background:var(--accent-2)}
+.qaj-btn-save:disabled{opacity:.5;cursor:not-allowed}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -388,7 +411,7 @@ body {
 
 <main class="wrap">
   <!-- ── Business KPIs ── -->
-  <div class="section-head"><h2>Business Overview</h2><div class="rule"></div></div>
+  <div class="section-head" style="display:flex;align-items:center;gap:12px"><h2>Business Overview</h2><div class="rule"></div><button onclick="openQAJ()" style="flex-shrink:0;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:7px 14px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px">＋ Add Job</button></div>
   <div class="kpi-row">
     <div class="kpi"><div class="kpi-label">Active Engagements</div><div class="kpi-value loading-pulse" id="kpiActive">—</div><div class="kpi-sub">Vessels & projects open</div></div>
     <div class="kpi blue"><div class="kpi-label">Jobs In Progress</div><div class="kpi-value loading-pulse" id="kpiOpen">—</div><div class="kpi-sub">Active work underway</div></div>
@@ -1159,10 +1182,145 @@ document.body.style.overflow = 'hidden';
 initAuth();
 
 
+
+// ── Quick Add Job ──
+async function openQAJ(){
+  // Load engagements into dropdown
+  const sel = document.getElementById('qajVessel');
+  if(sel.options.length <= 1){
+    const{data}=await sb.from('apb_engagements').select('id,name').eq('status','Active').order('name');
+    (data||[]).forEach(e=>{
+      const o=document.createElement('option');
+      o.value=e.id; o.textContent=e.name;
+      sel.appendChild(o);
+    });
+  }
+  // Clear fields
+  ['qajJobNum','qajJobName','qajNotes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('qajStatus').value='Approved';
+  document.getElementById('qajJobType').value='';
+  document.getElementById('qajRep').value='';
+  document.getElementById('qajMsg').style.display='none';
+  document.getElementById('qajScrim').classList.add('open');
+  document.getElementById('qajJobNum').focus();
+}
+function closeQAJ(){document.getElementById('qajScrim').classList.remove('open');}
+async function saveQAJ(){
+  const engId=document.getElementById('qajVessel').value;
+  const jobNum=document.getElementById('qajJobNum').value.trim();
+  const jobName=document.getElementById('qajJobName').value.trim();
+  const status=document.getElementById('qajStatus').value;
+  const jobType=document.getElementById('qajJobType').value;
+  const rep=document.getElementById('qajRep').value;
+  const notes=document.getElementById('qajNotes').value.trim();
+  const msg=document.getElementById('qajMsg');
+  if(!engId){msg.textContent='Select a vessel/project.';msg.style.display='block';return;}
+  if(!jobNum){msg.textContent='Job number is required.';msg.style.display='block';return;}
+  if(!jobName){msg.textContent='Job name is required.';msg.style.display='block';return;}
+  const btn=document.getElementById('qajSaveBtn');
+  btn.disabled=true; btn.textContent='Saving…';
+  const{error}=await sb.from('apb_jobs').insert({
+    engagement_id:engId,
+    job_number:jobNum,
+    job_name:jobName,
+    job_type:jobType||null,
+    status:status,
+    pm_notes:notes||null,
+    rep:rep||null
+  });
+  btn.disabled=false; btn.textContent='Add Job';
+  if(error){msg.textContent=error.message;msg.style.display='block';return;}
+  closeQAJ();
+  showToast('Job added ✓');
+  await loadAll();
+}
+// Close on backdrop click
+document.getElementById('qajScrim').addEventListener('click',e=>{if(e.target===e.currentTarget)closeQAJ();});
+
+
 loadAll(); loadTodos(); loadMarineForecast(); loadTides();
 loadStats().catch(e => {
   document.getElementById('tsBody').innerHTML = '<tr><td colspan="4" class="empty">Could not load live data.</td></tr>';
 });
 </script>
+
+<!-- ── Quick Add Job Modal ── -->
+<div class="qaj-scrim" id="qajScrim">
+  <div class="qaj-modal">
+    <div class="qaj-header">
+      <div class="qaj-title">Add Job to Active List</div>
+      <button class="qaj-close" onclick="closeQAJ()">×</button>
+    </div>
+    <div class="qaj-body">
+      <div class="qaj-row">
+        <div class="qaj-field full">
+          <label class="qaj-label">Vessel / Project *</label>
+          <select class="qaj-select" id="qajVessel">
+            <option value="">Select engagement…</option>
+          </select>
+        </div>
+      </div>
+      <div class="qaj-row">
+        <div class="qaj-field">
+          <label class="qaj-label">Job Number *</label>
+          <input class="qaj-input" id="qajJobNum" placeholder="e.g. 1.0, 2.0, 3.0">
+        </div>
+        <div class="qaj-field">
+          <label class="qaj-label">Status</label>
+          <select class="qaj-select" id="qajStatus">
+            <option>Lead</option>
+            <option>Estimating</option>
+            <option selected>Approved</option>
+            <option>In Progress</option>
+            <option>Ready To Be Billed</option>
+            <option>Invoice In Review</option>
+            <option>Invoice Sent</option>
+            <option>Paid</option>
+            <option>Canceled</option>
+          </select>
+        </div>
+      </div>
+      <div class="qaj-field">
+        <label class="qaj-label">Job Name *</label>
+        <input class="qaj-input" id="qajJobName" placeholder="e.g. 1.0 Hull Repair">
+      </div>
+      <div class="qaj-row">
+        <div class="qaj-field">
+          <label class="qaj-label">Job Type</label>
+          <select class="qaj-select" id="qajJobType">
+            <option value="">Select…</option>
+            <option>Mechanical</option>
+            <option>Electrical</option>
+            <option>Fabrication</option>
+            <option>Fiberglass</option>
+            <option>Paint / Refinishing</option>
+            <option>Carpentry</option>
+            <option>Project Management</option>
+            <option>R&D</option>
+            <option>Tow Eye</option>
+            <option>General</option>
+          </select>
+        </div>
+        <div class="qaj-field">
+          <label class="qaj-label">Rep</label>
+          <select class="qaj-select" id="qajRep">
+            <option value="">Select…</option>
+            <option>BW</option><option>BS</option><option>JC</option><option>JM</option><option>CC</option>
+          </select>
+        </div>
+      </div>
+      <div class="qaj-field">
+        <label class="qaj-label">Notes</label>
+        <input class="qaj-input" id="qajNotes" placeholder="Optional notes">
+      </div>
+    </div>
+    <div class="qaj-footer">
+      <div class="qaj-msg" id="qajMsg"></div>
+      <button class="qaj-btn-cancel" onclick="closeQAJ()">Cancel</button>
+      <button class="qaj-btn-save" id="qajSaveBtn" onclick="saveQAJ()">Add Job</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
