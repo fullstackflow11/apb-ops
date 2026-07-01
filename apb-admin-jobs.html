@@ -291,7 +291,7 @@ const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 // ── Auth Gate ──
-const ALLOWED_EMAILS=['christinaayala0430@gmail.com','christinadarocco@gmail.com','jerry@apb1.com','nate@apb1.com','christopher@apb1.com','chelsea@apb1.com','brandon@apb1.com'];
+const ALLOWED_EMAILS=['christina@apb1.com','jerry@apb1.com','nate@apb1.com','christopher@apb1.com','chelsea@apb1.com','brandon@apb1.com'];
 (async()=>{
   await new Promise(r=>setTimeout(r,300)); // let sb init
   const{data:{session}}=await sb.auth.getSession();
