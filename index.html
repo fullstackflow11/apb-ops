@@ -1112,10 +1112,18 @@ async function initAuth(){
   }
   // Check stored session
   sb.auth.onAuthStateChange((event, session) => {
-    if(event === 'SIGNED_IN' && session && ALLOWED_EMAILS.includes(session.user?.email)){
+    if((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session && ALLOWED_EMAILS.includes(session.user?.email)){
       hideGate(session.user.email);
+    } else if(event === 'SIGNED_IN' && session && !ALLOWED_EMAILS.includes(session.user?.email)){
+      sb.auth.signOut();
     }
   });
+  // Handle magic link redirect — token is already in URL hash, getSession picks it up
+  const hashParams = new URLSearchParams(window.location.hash.substring(1));
+  if(hashParams.get('access_token') || hashParams.get('type') === 'magiclink'){
+    // Supabase JS processes the hash automatically — just wait for onAuthStateChange
+    window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+  }
 }
 
 async function sendOTP(){
@@ -1124,7 +1132,7 @@ async function sendOTP(){
   if(!ALLOWED_EMAILS.includes(email)){ showAuthMsg('authMsg1','error','This email is not authorized. Contact your administrator.'); return; }
   const btn = document.getElementById('authSendBtn');
   btn.disabled = true; btn.textContent = 'Sending…';
-  const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+  const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: 'https://fullstackflow11.github.io/apb-ops/index.html' } });
   btn.disabled = false; btn.textContent = 'Send Code';
   if(error){ showAuthMsg('authMsg1','error','Could not send code: '+error.message); return; }
   authEmail = email;
