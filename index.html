@@ -306,12 +306,15 @@ body {
 .auth-logo-text{font-size:15px;font-weight:700;color:var(--ink)}
 .auth-logo-sub{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3)}
 .auth-heading{font-size:22px;font-weight:700;color:var(--ink);margin-bottom:6px}
-.auth-sub{font-size:14px;color:var(--ink-3);margin-bottom:28px}
+.auth-sub{font-size:14px;color:var(--ink-3);margin-bottom:24px}
+.auth-field{margin-bottom:14px}
 .auth-label{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px;display:block}
-.auth-input{width:100%;background:var(--panel-2);border:1.5px solid var(--line);border-radius:10px;color:var(--ink);padding:13px 16px;font:inherit;font-size:15px;letter-spacing:.1em;margin-bottom:16px}
+.auth-input{width:100%;background:var(--panel-2);border:1.5px solid var(--line);border-radius:10px;color:var(--ink);padding:12px 16px;font:inherit;font-size:15px;transition:.15s}
 .auth-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-.auth-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:14px;font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+.auth-pin{letter-spacing:.3em;font-family:var(--mono);font-size:18px}
+.auth-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:14px;font:inherit;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px}
 .auth-btn:hover{background:var(--accent-2)}
+.auth-btn:disabled{opacity:.5;cursor:not-allowed}
 .auth-error{font-size:13px;color:var(--red);margin-top:12px;text-align:center;display:none}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -325,12 +328,18 @@ body {
       <div class="auth-logo-mark">APB</div>
       <div><div class="auth-logo-text">All Points Boats</div><div class="auth-logo-sub">Operations Hub</div></div>
     </div>
-    <div class="auth-heading">Enter access code</div>
-    <div class="auth-sub">Enter the APB team passcode to continue.</div>
-    <label class="auth-label">Passcode</label>
-    <input class="auth-input" id="authPasscode" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkPasscode()">
-    <button class="auth-btn" onclick="checkPasscode()">Access Hub →</button>
-    <div class="auth-error" id="authError">Incorrect passcode. Try again.</div>
+    <div class="auth-heading">Sign in</div>
+    <div class="auth-sub">Enter your APB email and PIN.</div>
+    <div class="auth-field">
+      <label class="auth-label">Email</label>
+      <input class="auth-input" id="authEmail" type="email" placeholder="you@apb1.com" autocomplete="email" onkeydown="if(event.key==='Enter')document.getElementById('authPin').focus()">
+    </div>
+    <div class="auth-field">
+      <label class="auth-label">PIN</label>
+      <input class="auth-input auth-pin" id="authPin" type="password" maxlength="4" placeholder="••••" inputmode="numeric" onkeydown="if(event.key==='Enter')checkLogin()">
+    </div>
+    <button class="auth-btn" id="authBtn" onclick="checkLogin()">Sign In →</button>
+    <div class="auth-error" id="authError">Incorrect email or PIN.</div>
   </div>
 </div>
 
@@ -1042,28 +1051,43 @@ setInterval(loadAll, 5*60*1000);
 
 
 // ── Auth ──
-const APB_CODE = 'APB2026ops';
-const AUTH_KEY = 'apb_hub_auth_v1';
+const ADMINS = {
+  'christina@apb1.com':  '1234',
+  'jerry@apb1.com':      '0123',
+  'nate@apb1.com':       '1122',
+  'christopher@apb1.com':'2233',
+  'chelsea@apb1.com':    '3344',
+  'brandon@apb1.com':    '2211',
+};
+const AUTH_KEY = 'apb_hub_auth_v2';
 
-function checkPasscode(){
-  const val = document.getElementById('authPasscode').value;
-  if(val === APB_CODE){
-    localStorage.setItem(AUTH_KEY, '1');
-    hideGate();
+function checkLogin(){
+  const email = (document.getElementById('authEmail').value||'').trim().toLowerCase();
+  const pin   = (document.getElementById('authPin').value||'').trim();
+  const errEl = document.getElementById('authError');
+  const btn   = document.getElementById('authBtn');
+  if(!email||!pin){errEl.textContent='Enter your email and PIN.';errEl.style.display='block';return;}
+  if(ADMINS[email] && ADMINS[email] === pin){
+    localStorage.setItem(AUTH_KEY, email);
+    errEl.style.display='none';
+    hideGate(email);
   } else {
-    document.getElementById('authError').style.display = 'block';
-    document.getElementById('authPasscode').value = '';
-    document.getElementById('authPasscode').focus();
+    errEl.textContent='Incorrect email or PIN.';
+    errEl.style.display='block';
+    document.getElementById('authPin').value='';
+    document.getElementById('authPin').focus();
   }
 }
 
-function hideGate(){
-  document.getElementById('authGate').style.display = 'none';
-  document.body.style.overflow = '';
-  if(typeof loadAll === 'function') loadAll();
-  if(typeof loadTodos === 'function') loadTodos();
-  if(typeof loadMarineForecast === 'function') loadMarineForecast();
-  if(typeof loadTides === 'function') loadTides();
+function hideGate(email){
+  document.getElementById('authGate').style.display='none';
+  document.body.style.overflow='';
+  const so=document.querySelector('[onclick="signOut()"]');
+  if(so&&email){so.insertAdjacentHTML('beforebegin','<span style="font-size:12px;color:var(--ink-3);font-weight:500;padding:0 4px">'+email.split('@')[0]+'</span>');}
+  if(typeof loadAll==='function') loadAll();
+  if(typeof loadTodos==='function') loadTodos();
+  if(typeof loadMarineForecast==='function') loadMarineForecast();
+  if(typeof loadTides==='function') loadTides();
 }
 
 function signOut(){
@@ -1072,17 +1096,16 @@ function signOut(){
 }
 
 // Check on load
-document.body.style.overflow = 'hidden';
-if(localStorage.getItem(AUTH_KEY) === '1'){
-  hideGate();
+document.body.style.overflow='hidden';
+const _savedEmail = localStorage.getItem(AUTH_KEY);
+if(_savedEmail && ADMINS[_savedEmail]){
+  hideGate(_savedEmail);
 } else {
-  setTimeout(()=>document.getElementById('authPasscode')?.focus(), 100);
+  localStorage.removeItem(AUTH_KEY);
+  setTimeout(()=>document.getElementById('authEmail')?.focus(),100);
 }
 
-
-
-// ── Quick Add Job ──
-async function openQAJ(){
+){
   // Load engagements into dropdown
   const sel = document.getElementById('qajVessel');
   if(sel.options.length <= 1){
