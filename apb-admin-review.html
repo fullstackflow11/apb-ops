@@ -359,29 +359,25 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const ALLOWED_MANAGERS = ['christinaayala0430@gmail.com','christinadarocco@gmail.com','jerry@apb1.com','nate@apb1.com','christopher@apb1.com','chelsea@apb1.com'];
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+(async()=>{
+  await new Promise(r=>setTimeout(r,500));
+  const AL=['christina@apb1.com','jerry@apb1.com','nate@apb1.com','christopher@apb1.com','chelsea@apb1.com','brandon@apb1.com'];
+  try{
+    const{data:{session}}=await sb.auth.getSession();
+    if(!session||!AL.includes(session.user?.email)){window.location.replace('index.html');return;}
+    const hdr=document.querySelector('header,.topbar');
+    if(hdr){
+      const sp=document.createElement('span');sp.style.cssText='font-size:12px;color:#6B7A92;font-weight:500;padding:0 4px;margin-left:auto';sp.textContent=session.user.email.split('@')[0];hdr.appendChild(sp);
+      const btn=document.createElement('button');btn.textContent='Sign Out';btn.style.cssText='margin-left:8px;background:none;border:1px solid rgba(196,48,48,.3);color:#C43030;border-radius:7px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit';btn.onclick=async()=>{await sb.auth.signOut();location.replace('index.html');};hdr.appendChild(btn);
+    }
+  }catch(e){window.location.replace('index.html');}
+})();
+
 // ── Auth Gate ──
 // ── Auth Gate ──
 (async()=>{
   await new Promise(r=>setTimeout(r,400));
-  const ALLOWED=['christina@apb1.com','jerry@apb1.com','nate@apb1.com','christopher@apb1.com','chelsea@apb1.com','brandon@apb1.com'];
-  const{data:{session}}=await sb.auth.getSession();
-  if(!session||!ALLOWED.includes(session.user?.email)){
-    window.location.href='index.html';
-    return;
-  }
-  const hdr=document.querySelector('header,.topbar');
-  if(hdr){
-    const s=document.createElement('span');
-    s.style.cssText='margin-left:auto;font-size:12px;color:#6B7A92;font-weight:500;padding:0 4px';
-    s.textContent=session.user.email.split('@')[0];
-    hdr.appendChild(s);
-    const btn=document.createElement('button');
-    btn.textContent='Sign Out';
-    btn.style.cssText='margin-left:8px;background:none;border:1px solid rgba(196,48,48,.3);color:#C43030;border-radius:7px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit';
-    btn.onclick=async()=>{await sb.auth.signOut();location.href='index.html';};
-    hdr.appendChild(btn);
-  }
-})();
+  
 
 let visits = [], lines = [], currentFilter = 'all', currentUser = null, selectedVisits = new Set();
 
