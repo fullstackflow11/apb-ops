@@ -1157,9 +1157,13 @@ async function verifyOTP(){
 function hideGate(email){
   document.getElementById('authGate').style.display = 'none';
   document.body.style.overflow = '';
-  // Show user in header
   const userChip = document.getElementById('headerUser');
   if(userChip){ userChip.textContent = email.split('@')[0]; userChip.style.display = 'flex'; }
+  // Ensure data loads after auth gate clears
+  if(typeof loadAll === 'function') loadAll();
+  if(typeof loadTodos === 'function') loadTodos();
+  if(typeof loadMarineForecast === 'function') loadMarineForecast();
+  if(typeof loadTides === 'function') loadTides();
 }
 
 function backToEmail(){
@@ -1247,9 +1251,6 @@ document.getElementById('qajScrim').addEventListener('click',e=>{if(e.target===e
 
 
 loadAll(); loadTodos(); loadMarineForecast(); loadTides();
-loadStats().catch(e => {
-  document.getElementById('tsBody').innerHTML = '<tr><td colspan="4" class="empty">Could not load live data.</td></tr>';
-});
 </script>
 
 <!-- ── Quick Add Job Modal ── -->
