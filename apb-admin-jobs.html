@@ -294,17 +294,21 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
   await new Promise(r=>setTimeout(r,500));
   const AL=['christina@apb1.com','jerry@apb1.com','nate@apb1.com','christopher@apb1.com','chelsea@apb1.com','brandon@apb1.com'];
   try{
-    const{data:{session}}=await sb.auth.getSession();
-    if(!session||!AL.includes(session.user?.email)){window.location.replace('index.html');return;}
+    const email=(localStorage.getItem('apb_hub_auth_v2')||'').toLowerCase();
+    if(!AL.includes(email)){window.location.replace('index.html');return;}
     const hdr=document.querySelector('header,.topbar');
     if(hdr){
-      const sp=document.createElement('span');sp.style.cssText='font-size:12px;color:#6B7A92;font-weight:500;padding:0 4px;margin-left:auto';sp.textContent=session.user.email.split('@')[0];hdr.appendChild(sp);
-      const btn=document.createElement('button');btn.textContent='Sign Out';btn.style.cssText='margin-left:8px;background:none;border:1px solid rgba(196,48,48,.3);color:#C43030;border-radius:7px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit';btn.onclick=async()=>{await sb.auth.signOut();location.replace('index.html');};hdr.appendChild(btn);
+      const sp=document.createElement('span');sp.style.cssText='font-size:12px;color:#6B7A92;font-weight:500;padding:0 4px;margin-left:auto';sp.textContent=email.split('@')[0];hdr.appendChild(sp);
+      const btn=document.createElement('button');btn.textContent='Sign Out';btn.style.cssText='margin-left:8px;background:none;border:1px solid rgba(196,48,48,.3);color:#C43030;border-radius:7px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit';btn.onclick=()=>{localStorage.removeItem('apb_hub_auth_v2');location.replace('index.html');};hdr.appendChild(btn);
     }
   }catch(e){window.location.replace('index.html');}
 })();
 
-
+// ── State ──
+let currentTab='jobs';
+let allLeads=[],allJobs=[];
+let editingLeadId=null,editingJobId=null;
+let pendingFile=null,pendingFileUrl=null,pendingFileName=null;
 
 async function loadLeads(){
   const{data,error}=await sb.from('apb_leads').select('*').order('created_at',{ascending:false});
@@ -601,6 +605,10 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 document.querySelectorAll('.modal-scrim').forEach(s=>s.addEventListener('click',e=>{if(e.target===s){if(s.id==='leadModal')closeLeadModal();else if(s.id==='jobModal')closeJobModal();else closeDetail();}}));
 // Escape key
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeLeadModal();closeJobModal();closeDetail();}});
+
+// ── Initial load ──
+loadLeads();
+loadJobs();
 </script>
 </body>
 </html>
