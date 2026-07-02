@@ -318,7 +318,7 @@ async function loadLeads(){
   if(currentTab==='leads') renderBoard();
 }
 async function loadJobs(){
-  const{data,error}=await sb.from('apb_jobs').select('id,job_name,job_number,job_type,status,ms_list_item_id,pm_notes,admin_notes,rd_flag,created_at,apb_engagements(name,location,rep,status)').order('created_at',{ascending:false});
+  const{data,error}=await sb.from('apb_jobs').select('id,job_name,job_number,job_type,status,ms_list_item_id,pm_notes,admin_notes,rd_flag,created_at,proposal_url,proposal_filename,apb_engagements(name,location,rep,status)').order('created_at',{ascending:false});
   if(error){console.error(error);return;}
   allJobs=data||[];
   document.getElementById('jobTabCount').textContent=allJobs.length;
@@ -556,6 +556,7 @@ async function saveJob(){
     job_name:name,job_number:v('jf_job_number'),
     status:v('jf_status')||'Approved',
     pm_notes:v('jf_scope_of_work'),admin_notes:v('jf_notes'),
+    proposal_url:upload.url||null,proposal_filename:upload.filename||null,
   };
   const{error}=editingJobId?await sb.from('apb_jobs').update(payload).eq('id',editingJobId):await sb.from('apb_jobs').insert(payload);
   btn.disabled=false;btn.textContent='Save Job';
