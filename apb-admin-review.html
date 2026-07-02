@@ -517,7 +517,7 @@ function renderVisits(){
     const vLines=lines.filter(l=>l.timesheet_id===v.id);
     if(currentFilter==='pending')return vLines.some(l=>!l.reviewed);
     if(currentFilter==='reviewed')return vLines.length&&vLines.every(l=>l.reviewed);
-    if(currentFilter==='nonbillable')return vLines.some(l=>l.billable===false);
+    if(currentFilter==='nonbillable')return vLines.some(l=>!isBillable(l));
     return true;
   });
 
@@ -583,8 +583,8 @@ function renderCard(v){
           </td>
           <td>
             <div class="billable-toggle">
-              <label class="toggle"><input type="checkbox" ${l.billable!==false?'checked':''} onchange="toggleBillable('${l.id}',this.checked)"><span class="toggle-slider"></span></label>
-              <span class="billable-label ${l.billable!==false?'yes':'no'}">${l.billable!==false?'Bill':'Non'}</span>
+              <label class="toggle"><input type="checkbox" ${isBillable(l)?'checked':''} onchange="toggleBillable('${l.id}',this.checked)"><span class="toggle-slider"></span></label>
+              <span class="billable-label ${isBillable(l)?'yes':'no'}">${isBillable(l)?'Bill':'Non'}</span>
             </div>
           </td>
           <td><button class="review-btn ${l.reviewed?'done':'pending'}" onclick="${l.reviewed?`toggleReviewed('${l.id}',false,this)`:`openReviewModal('${l.id}')`}">${l.reviewed?'✓ Done':'Review'}</button></td>
@@ -806,6 +806,9 @@ async function saveHours(lineId){
   cancelEdit('hrs',lineId);updateSummary();renderTechTable();showToast('Hours updated to '+val.toFixed(1)+'h ✓');
 }
 
+// ── Billable helper: explicit true/false wins; NULL defaults to non-billable for Shop/Admin lines ──
+function isBillable(l){if(l.billable===true)return true;if(l.billable===false)return false;return !l.shop_category;}
+
 // ── Export CSV ──
 function exportCSV(){
   const rows=[['Date','Tech','Vessel/Project','Job','Description','Hours','OT','Billable','Reviewed']];
@@ -814,7 +817,7 @@ function exportCSV(){
     const vessel=v.apb_engagements?.name||v.vessel_name||'—';
     vLines.forEach(l=>{
       const h=parseFloat(l.hours||0);
-      rows.push([v.visit_date||'',v.tech_name||'',vessel,l.job_number||l.job_no||'',l.work_description||l.description||'',h.toFixed(2),Math.max(0,h-8).toFixed(2),l.billable!==false?'Y':'N',l.reviewed?'Y':'N']);
+      rows.push([v.visit_date||'',v.tech_name||'',vessel,l.job_number||l.job_no||'',l.work_description||l.description||'',h.toFixed(2),Math.max(0,h-8).toFixed(2),isBillable(l)?'Y':'N',l.reviewed?'Y':'N']);
     });
   });
   const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
