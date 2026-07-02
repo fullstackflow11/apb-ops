@@ -1105,7 +1105,7 @@ if(_savedEmail && ADMINS[_savedEmail]){
   setTimeout(()=>document.getElementById('authEmail')?.focus(),100);
 }
 
-){
+async function openQAJ(){
   // Load engagements into dropdown
   const sel = document.getElementById('qajVessel');
   if(sel.options.length <= 1){
