@@ -521,7 +521,7 @@ async function submitTimesheet(){
   }).select().single();
   if(vErr){btn.disabled=false;btn.textContent='Submit Timesheet';showMsg('error','Error: '+vErr.message);return;}
 
-  const lineRows=lines.map(l=>({timesheet_id:visit.id,engagement_id:l.vessel_id||null,vessel_name:l.vessel_name,job_id:l.job_id||null,job_number:l.job_number||null,job_name:l.job_name||null,shop_category:l.shop_category||null,work_description:l.work_description,hours:l.hours}));
+  const lineRows=lines.map(l=>({timesheet_id:visit.id,engagement_id:l.vessel_id||null,vessel_name:l.vessel_name,job_id:l.job_id||null,job_number:l.job_number||null,job_name:l.job_name||null,shop_category:l.shop_category||null,work_description:l.work_description,hours:l.hours,billable:l.shop_category?false:true}));
   const{error:lErr}=await sb.from('apb_timesheet_lines').insert(lineRows);
   if(lErr){btn.disabled=false;btn.textContent='Submit Timesheet';showMsg('error','Visit saved but lines failed: '+lErr.message);return;}
 
