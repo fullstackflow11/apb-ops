@@ -360,23 +360,27 @@ const ALLOWED_MANAGERS = ['christinaayala0430@gmail.com','christinadarocco@gmail
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ── Auth Gate ──
-const ALLOWED_EMAILS=['christina@apb1.com','jerry@apb1.com','nate@apb1.com','christopher@apb1.com','chelsea@apb1.com','brandon@apb1.com'];
+// ── Auth Gate ──
 (async()=>{
-  await new Promise(r=>setTimeout(r,300)); // let sb init
+  await new Promise(r=>setTimeout(r,400));
+  const ALLOWED=['christina@apb1.com','jerry@apb1.com','nate@apb1.com','christopher@apb1.com','chelsea@apb1.com','brandon@apb1.com'];
   const{data:{session}}=await sb.auth.getSession();
-  if(!session||!ALLOWED_EMAILS.includes(session.user?.email)){
-    document.body.innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#EDEEF2;font-family:Inter,sans-serif">
-      <div style="background:#fff;border:1px solid #DDE1E8;border-radius:16px;padding:36px;max-width:380px;width:100%;text-align:center;box-shadow:0 8px 28px -12px rgba(13,22,38,.12)">
-        <div style="font-size:28px;margin-bottom:12px">🔒</div>
-        <div style="font-size:18px;font-weight:700;color:#0D1626;margin-bottom:8px">Access Required</div>
-        <div style="font-size:14px;color:#6B7A92;margin-bottom:24px;line-height:1.5">You need to sign in to the APB Operations Hub first.</div>
-        <a href="index.html" style="display:inline-block;background:#2457E6;color:#fff;padding:12px 28px;border-radius:9px;text-decoration:none;font-weight:700;font-size:14px">Go to Sign In →</a>
-      </div></div>`;
+  if(!session||!ALLOWED.includes(session.user?.email)){
+    window.location.href='index.html';
     return;
   }
-  // Add sign out to header
   const hdr=document.querySelector('header,.topbar');
-  if(hdr){const s=document.createElement('span');s.style.cssText='margin-left:8px;font-size:12px;color:#6B7A92;font-weight:500';s.textContent=session.user.email.split('@')[0];hdr.appendChild(s);const btn=document.createElement('button');btn.textContent='Sign Out';btn.style.cssText='margin-left:8px;background:none;border:1px solid rgba(196,48,48,.3);color:#C43030;border-radius:7px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit';btn.onclick=async()=>{await sb.auth.signOut();location.href='index.html';};hdr.appendChild(btn);}
+  if(hdr){
+    const s=document.createElement('span');
+    s.style.cssText='margin-left:auto;font-size:12px;color:#6B7A92;font-weight:500;padding:0 4px';
+    s.textContent=session.user.email.split('@')[0];
+    hdr.appendChild(s);
+    const btn=document.createElement('button');
+    btn.textContent='Sign Out';
+    btn.style.cssText='margin-left:8px;background:none;border:1px solid rgba(196,48,48,.3);color:#C43030;border-radius:7px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit';
+    btn.onclick=async()=>{await sb.auth.signOut();location.href='index.html';};
+    hdr.appendChild(btn);
+  }
 })();
 
 let visits = [], lines = [], currentFilter = 'all', currentUser = null, selectedVisits = new Set();
