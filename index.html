@@ -2,326 +2,570 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<script src="apb-demo.js"></script>
+<script src="apb-jobs.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>APB · Operations Hub</title>
+<title>APB Operations Hub</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: #EDEEF2;
-  --panel: #FFFFFF;
-  --panel-2: #F5F6FA;
-  --ink: #0D1626;
-  --ink-2: #3A4559;
-  --ink-3: #6B7A92;
-  --ink-4: #9BA9BE;
-  --line: #DDE1E8;
-  --line-2: #E8EBF0;
-  --accent: #2457E6;
-  --accent-2: #1B45B8;
-  --accent-soft: #EAF0FE;
-  --green: #0B9E6A;
-  --green-soft: #E4F5EE;
-  --amber: #B86A00;
-  --amber-soft: #FBF0E2;
-  --red: #C43030;
-  --red-soft: #FBEAEA;
-  --violet: #6B3FD4;
-  --violet-soft: #EEE9FC;
-  --cyan: #0A6E99;
-  --cyan-soft: #E3F2F8;
-  --slate: #50616F;
-  --slate-soft: #ECF0F3;
-  --shadow-sm: 0 1px 3px rgba(13,22,38,.07);
-  --shadow: 0 8px 28px -12px rgba(13,22,38,.14);
-  --mono: "DM Mono", ui-monospace, monospace;
+:root{
+  --bg:#EDEEF2;--panel:#fff;--panel-2:#F5F6FA;
+  --ink:#0D1626;--ink-2:#3A4559;--ink-3:#6B7A92;
+  --line:#DDE1E8;--line-2:#E8EBF0;
+  --accent:#2457E6;--accent-2:#1B45B8;--accent-soft:#EAF0FE;
+  --green:#0B9E6A;--green-soft:#E4F5EE;
+  --amber:#B86A00;--amber-soft:#FBF0E2;
+  --red:#C43030;
+  --purple:#6B3DBB;--purple-soft:#F0EBFF;
+  --teal:#0A7E8C;--teal-soft:#E2F5F7;
+  --shadow-sm:0 1px 3px rgba(13,22,38,.07);
+  --shadow:0 8px 28px -12px rgba(13,22,38,.14);
+  --shadow-lg:0 20px 56px -12px rgba(13,22,38,.22);
+  --mono:"DM Mono",ui-monospace,monospace;
 }
-*, *::before, *::after { box-sizing: border-box; margin: 0; }
-html, body { height: 100%; }
-body {
-  font-family: "Inter", -apple-system, "Segoe UI", sans-serif;
-  background: radial-gradient(1200px 600px at 80% -10%, rgba(36,87,230,.05) 0%, transparent 60%), var(--bg);
-  color: var(--ink);
-  -webkit-font-smoothing: antialiased;
-  letter-spacing: -.01em;
-  min-height: 100vh;
-}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:Inter,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;letter-spacing:-.01em;min-height:100vh}
 
 /* ── Topbar ── */
-.topbar {
-  position: sticky; top: 0; z-index: 30;
-  background: rgba(255,255,255,.9);
-  backdrop-filter: saturate(180%) blur(12px);
-  border-bottom: 1px solid var(--line);
-  display: flex; align-items: center; gap: 16px;
-  padding: 0 28px; height: 62px;
-}
-.brand { display: flex; align-items: center; gap: 12px; }
-.monogram {
-  width: 34px; height: 34px; border-radius: 9px;
-  display: grid; place-items: center;
-  background: linear-gradient(145deg, #11151C, #2A3340);
-  color: #fff; font-weight: 800; font-size: 13px;
-  letter-spacing: .02em; box-shadow: var(--shadow-sm);
-  overflow: hidden; position: relative;
-}
-.monogram::after {
-  content: ""; position: absolute; left: -40%; top: 0;
-  width: 40%; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.3), transparent);
-  transform: skewX(-20deg);
-  animation: sheen 6s ease-in-out infinite;
-}
-@keyframes sheen { 0%,75%{left:-40%} 90%,100%{left:140%} }
-.brand-text { border-left: 1px solid var(--line); padding-left: 12px; }
-.brand-text b { font-size: 15px; font-weight: 700; letter-spacing: -.02em; }
-.brand-text span { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .14em; color: var(--ink-3); margin-top: 1px; }
-.topbar-spacer { flex: 1; }
-.live-badge {
-  display: flex; align-items: center; gap: 7px;
-  font-size: 11.5px; color: var(--ink-2);
-  border: 1px solid var(--line); background: var(--panel);
-  padding: 6px 12px; border-radius: 99px;
-}
-.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px var(--green-soft); }
-.clock { font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); }
+.topbar{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.90);backdrop-filter:saturate(180%) blur(14px);display:flex;align-items:center;gap:14px;padding:0 28px;height:62px;border-bottom:1px solid var(--line)}
+.topbar img{height:38px;width:auto;display:block}
+.topbar .t{border-left:1px solid var(--line);padding-left:14px}
+.topbar .t b{font-size:15px;color:var(--ink)}
+.topbar .t span{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.topbar .sp{flex:1}
+.topbar .now{font-family:var(--mono);font-size:12px;color:var(--ink-3);min-width:160px;text-align:right}
+.topbar .navbtn{font-size:12.5px;font-weight:600;color:var(--accent);padding:7px 13px;border:1px solid var(--line);border-radius:8px;background:var(--panel);cursor:pointer;text-decoration:none;transition:.12s}
+.topbar .navbtn:hover{border-color:var(--accent);background:var(--accent-soft)}
+.srv-badge{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--ink-3);padding:5px 11px;border:1px solid var(--line);border-radius:20px;background:var(--panel);transition:.2s}
+.srv-badge.online{color:var(--green);border-color:#c5ead8;background:#f5fef9}
+.srv-badge.qb{color:var(--accent);border-color:#c7d7f8;background:#f0f5fe}
+.srv-dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0}
 
 /* ── Layout ── */
-.wrap { max-width: 1140px; margin: 0 auto; padding: 28px 24px 80px; }
+.wrap{max-width:1080px;margin:0 auto;padding:28px 24px 52px}
 
-/* ── Section header ── */
-.section-head { display: flex; align-items: baseline; gap: 10px; margin: 32px 0 14px; }
-.section-head h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--ink-3); font-weight: 700; }
-.section-head .rule { flex: 1; height: 1px; background: var(--line); }
+/* ── Hero ── */
+.hero{position:relative;overflow:hidden;border-radius:22px;color:#fff;padding:42px 42px 0;margin-bottom:22px;
+  background:radial-gradient(750px 600px at 90% 120%,rgba(36,87,230,.50) 0%,transparent 55%),
+    radial-gradient(350px 280px at -5% -10%,rgba(100,140,255,.22) 0%,transparent 55%),
+    linear-gradient(160deg,#131a24,#0b0f17,#121820);
+  box-shadow:var(--shadow-lg);display:flex;flex-direction:column}
+.hero::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:radial-gradient(circle at 1px 1px,rgba(255,255,255,.06) 1px,transparent 0);
+  background-size:30px 30px}
+.hero::after{content:"";position:absolute;right:-80px;top:-100px;width:380px;height:380px;border-radius:50%;
+  background:radial-gradient(circle,rgba(36,87,230,.40),rgba(36,87,230,0) 68%);pointer-events:none}
+.hero-body{position:relative;z-index:1}
+.hero .eyebrow{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:#6a90d0;font-weight:700;margin-bottom:11px}
+.hero h1{font-size:40px;font-weight:800;letter-spacing:-.04em;margin:0 0 11px;line-height:1.05}
+.hero .tagline{color:#adbbd4;font-size:15px;line-height:1.58;max-width:520px;margin:0}
 
-/* ── Grid ── */
-.grid { display: grid; gap: 12px; }
-.g2 { grid-template-columns: repeat(2, 1fr); }
-.g3 { grid-template-columns: repeat(3, 1fr); }
-.g4 { grid-template-columns: repeat(4, 1fr); }
+/* quick actions */
+.hero-actions{display:flex;gap:10px;margin-top:28px;flex-wrap:wrap;position:relative;z-index:1}
+.ha{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:10px;font-size:13.5px;font-weight:600;text-decoration:none;cursor:pointer;border:none;white-space:nowrap;transition:all .13s;line-height:1}
+.ha svg{width:15px;height:15px;stroke-width:2.2;flex-shrink:0}
+.ha.prim{background:var(--accent);color:#fff;box-shadow:0 4px 16px rgba(36,87,230,.55)}
+.ha.prim:hover{background:#1d46c8;transform:translateY(-1px);box-shadow:0 7px 22px rgba(36,87,230,.6)}
+.ha.ghost{background:rgba(255,255,255,.08);color:#d4dfef;border:1px solid rgba(255,255,255,.13)}
+.ha.ghost:hover{background:rgba(255,255,255,.15);color:#fff}
+.ha.ghost::after{content:" ↗";font-size:11px;opacity:.6}
 
-/* ── Stat cards (top row) ── */
-.stat-card {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 18px 20px;
-  box-shadow: var(--shadow-sm);
-  display: flex; flex-direction: column; gap: 6px;
-}
-.stat-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-3); font-weight: 600; }
-.stat-value { font-family: var(--mono); font-size: 26px; font-weight: 500; color: var(--ink); letter-spacing: -.02em; }
-.stat-sub { font-size: 12px; color: var(--ink-3); }
-.stat-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; margin-top: 2px; }
-.badge-green { background: var(--green-soft); color: var(--green); }
-.badge-amber { background: var(--amber-soft); color: var(--amber); }
-.badge-blue { background: var(--accent-soft); color: var(--accent-2); }
-.badge-red { background: var(--red-soft); color: var(--red); }
+/* KPI glass cards */
+.hero-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:0;position:relative;z-index:1;margin-top:30px;border-top:1px solid rgba(255,255,255,.08)}
+.hk{padding:18px 22px;border-right:1px solid rgba(255,255,255,.08)}
+.hk:last-child{border-right:none}
+.hk b{display:block;font-family:var(--mono);font-size:24px;font-weight:500;color:#fff;margin-bottom:4px;letter-spacing:-.02em}
+.hk span{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#5e7fb8;font-weight:700}
 
-/* ── Nav cards ── */
-.nav-card {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 18px 20px;
-  box-shadow: var(--shadow-sm);
-  cursor: pointer;
-  text-decoration: none;
-  display: flex; flex-direction: column; gap: 8px;
-  transition: border-color .12s, box-shadow .12s, transform .12s;
-  position: relative; overflow: hidden;
-}
-.nav-card:hover { border-color: var(--accent); box-shadow: var(--shadow); transform: translateY(-1px); }
-.nav-card::before {
-  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-  background: var(--card-accent, transparent);
-  border-radius: 14px 14px 0 0;
-}
-.nav-card.blue { --card-accent: var(--accent); }
-.nav-card.green { --card-accent: var(--green); }
-.nav-card.violet { --card-accent: var(--violet); }
-.nav-card.amber { --card-accent: var(--amber); }
-.nav-card.cyan { --card-accent: var(--cyan); }
-.nav-card.slate { --card-accent: var(--slate); }
+/* ── Section labels ── */
+.sec{display:flex;align-items:center;gap:10px;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin:32px 2px 14px}
+.sec .ln{flex:1;height:1px;background:var(--line)}
 
-.card-icon {
-  width: 36px; height: 36px; border-radius: 9px;
-  display: grid; place-items: center;
-  font-size: 17px; flex-shrink: 0;
-}
-.icon-blue { background: var(--accent-soft); }
-.icon-green { background: var(--green-soft); }
-.icon-violet { background: var(--violet-soft); }
-.icon-amber { background: var(--amber-soft); }
-.icon-cyan { background: var(--cyan-soft); }
-.icon-slate { background: var(--slate-soft); }
+/* ── Tiles ── */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid-feat{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.tile.featured{min-height:152px}
+.tile.compact{min-height:0;padding:18px 18px 15px;gap:5px}
+.tile.compact .ic{width:38px;height:38px;border-radius:10px;margin-bottom:2px}
+.tile.compact h3{font-size:15px}
+.tile.compact p{font-size:12px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm);padding:20px 20px 18px;text-decoration:none;color:var(--ink);transition:transform .13s,border-color .13s,box-shadow .13s;display:flex;flex-direction:column;gap:6px;min-height:136px;position:relative;overflow:hidden}
+.tile:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:0 10px 32px -10px rgba(13,22,38,.18)}
+.tile .ic{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;margin-bottom:4px;flex-shrink:0}
+.tile h3{margin:0;font-size:16.5px;letter-spacing:-.025em;font-weight:700}
+.tile p{margin:0;font-size:12.5px;color:var(--ink-3);line-height:1.4}
+.tile .sp{flex:1}
+.tile .go{font-size:13px;font-weight:600;color:var(--accent)}
+.tile.ext .go::after{content:" ↗"}
 
-.card-title { font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -.01em; }
-.card-desc { font-size: 12px; color: var(--ink-3); line-height: 1.45; }
-.card-arrow {
-  position: absolute; top: 16px; right: 18px;
-  font-size: 14px; color: var(--ink-4);
-  transition: color .12s, transform .12s;
-}
-.nav-card:hover .card-arrow { color: var(--accent); transform: translate(2px,-2px); }
+/* color families */
+.tile.blue{border-top:3px solid var(--accent)}
+.tile.blue .ic{background:var(--accent-soft);color:var(--accent-2)}
+.tile.purple{border-top:3px solid var(--purple)}
+.tile.purple .ic{background:var(--purple-soft);color:var(--purple)}
+.tile.teal{border-top:3px solid var(--teal)}
+.tile.teal .ic{background:var(--teal-soft);color:var(--teal)}
+.tile.amber{border-top:3px solid var(--amber)}
+.tile.amber .ic{background:var(--amber-soft);color:var(--amber)}
+.tile.green{border-top:3px solid var(--green)}
+.tile.green .ic{background:var(--green-soft);color:var(--green)}
 
-/* ── Wide card (timesheet status) ── */
-.wide-card {
-  background: var(--panel); border: 1px solid var(--line);
-  border-radius: 14px; padding: 20px 24px;
-  box-shadow: var(--shadow-sm);
-  grid-column: 1 / -1;
-}
-.wide-card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-.wide-card-head h3 { font-size: 14px; font-weight: 700; color: var(--ink); }
-.wide-card-head .spacer { flex: 1; }
-.wide-card-head a { font-size: 12.5px; color: var(--accent); font-weight: 600; text-decoration: none; }
-.wide-card-head a:hover { color: var(--accent-2); }
+/* tile live badge */
+.tbadge{position:absolute;top:16px;right:16px;background:var(--accent);color:#fff;font-family:var(--mono);font-size:10.5px;font-weight:500;padding:3px 9px;border-radius:20px;opacity:0;transition:opacity .2s;pointer-events:none}
+.tbadge.vis{opacity:1}
 
-/* ── Timesheet table ── */
-.ts-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-.ts-table th { font-size: 10.5px; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-3); font-weight: 600; padding: 0 10px 8px; text-align: left; border-bottom: 1px solid var(--line); }
-.ts-table td { padding: 10px 10px; border-bottom: 1px solid var(--line-2); color: var(--ink-2); }
-.ts-table tr:last-child td { border-bottom: none; }
-.ts-table .tech-name { font-weight: 600; color: var(--ink); }
-.ts-table .hours { font-family: var(--mono); font-weight: 500; }
-.ts-loading { text-align: center; padding: 24px; color: var(--ink-3); font-size: 13px; }
+/* live-site + admin-tool overrides */
+.tile.soft .ic{background:#F0F4F8;color:var(--ink-3)}
+.tile.soft{border-color:var(--line-2)}
+.tile.soft:hover{border-color:var(--ink-3)}
+.tile.soft .go{color:var(--ink-2)}
 
-/* ── Empty state ── */
-.empty { text-align: center; padding: 28px; color: var(--ink-3); font-size: 13px; }
+/* admin info bar */
+.admin-bar{display:flex;align-items:flex-start;gap:11px;background:linear-gradient(90deg,var(--amber-soft),#fffef8);border:1px solid #fde9c8;border-radius:12px;padding:12px 16px;margin-bottom:14px;font-size:12.5px;color:var(--ink-2);line-height:1.55}
+.admin-bar svg{flex-shrink:0;margin-top:1px;color:var(--amber)}
+
+/* ── Partner cards ── */
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px}
+.pcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm);padding:16px 16px 14px;text-decoration:none;color:var(--ink);display:flex;align-items:flex-start;gap:13px;transition:transform .13s,border-color .13s}
+.pcard:hover{transform:translateY(-2px);border-color:var(--accent)}
+.pcard .pa{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;flex-shrink:0;font-size:13px;font-weight:800;letter-spacing:-.02em}
+.pcard .pi{flex:1;min-width:0}
+.pcard .pn{font-size:13.5px;font-weight:700;margin:0 0 3px;color:var(--ink)}
+.pcard .pd{font-size:12px;color:var(--ink-3);line-height:1.4}
+.pcard .ptag{display:inline-block;margin-top:6px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:4px}
+.pcard .ptag.active{color:var(--green);background:var(--green-soft)}
+.pmore{background:var(--panel-2);border:1px dashed var(--line);border-radius:12px;padding:13px 17px;font-size:13px;color:var(--ink-3);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pmore b{color:var(--ink-2);font-weight:600}
+.pmore a{color:var(--accent);font-weight:600;text-decoration:none;font-size:12.5px;margin-left:auto}
 
 /* ── Footer ── */
-.footer { text-align: center; font-size: 11.5px; color: var(--ink-4); padding: 32px 0 16px; }
+.foot{max-width:1080px;margin:0 auto;padding:20px 24px;color:var(--ink-3);font-size:12px;border-top:1px solid var(--line);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.foot b{color:var(--ink-2);font-weight:600}
 
-@media (max-width: 900px) { .g4 { grid-template-columns: repeat(2,1fr); } .g3 { grid-template-columns: repeat(2,1fr); } }
-@media (max-width: 600px) { .g4,.g3,.g2 { grid-template-columns: 1fr; } .wrap { padding: 16px 14px 60px; } }
+/* ── View toggle pills ── */
+.view-toggle{display:flex;gap:4px;background:var(--panel-2);border:1px solid var(--line);border-radius:24px;padding:3px}
+.view-btn{font-size:12px;font-weight:700;letter-spacing:.03em;padding:5px 14px;border-radius:20px;border:1px solid transparent;background:transparent;color:var(--ink-3);cursor:pointer;transition:all .13s;line-height:1}
+.view-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.view-btn:not(.active):hover{background:var(--accent-soft);color:var(--accent)}
 
-/* ── Dashboard widgets ── */
-.kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px}
-.kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;position:relative;overflow:hidden;box-shadow:var(--shadow-sm)}
-.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--line);border-radius:14px 14px 0 0}
-.kpi.blue::before{background:var(--accent)}
-.kpi.green::before{background:var(--green)}
-.kpi.red::before{background:var(--red)}
-.kpi.amber::before{background:var(--amber)}
-.kpi.violet::before{background:var(--violet)}
-.kpi-label{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--ink-3);text-transform:uppercase;margin-bottom:7px}
-.kpi-value{font-family:var(--mono);font-size:34px;font-weight:500;color:var(--ink)}
-.kpi-sub{font-size:11px;color:var(--ink-4);margin-top:5px}
-.loading-pulse{animation:pulse 1.4s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.alert-banner{border-radius:10px;padding:12px 16px;display:none;align-items:center;gap:12px;margin-bottom:14px;font-size:13px}
-.alert-banner.amber{background:var(--amber-soft);border:1px solid rgba(184,106,0,.25);color:var(--amber);display:flex}
-.alert-link{font-size:11px;font-weight:700;color:var(--amber);border:1px solid rgba(184,106,0,.3);padding:4px 10px;border-radius:6px;cursor:pointer;margin-left:auto;white-space:nowrap}
-.launch-tabs{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:14px}
-.launch-tab{padding:9px 18px;font-size:13px;font-weight:600;color:var(--ink-3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
-.launch-tab:hover{color:var(--ink-2)}
-.launch-tab.active{color:var(--ink);border-bottom-color:var(--accent)}
-.launch-panel{display:none}.launch-panel.active{display:block}
-.tile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
-.tile{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 14px;display:flex;flex-direction:column;gap:7px;cursor:pointer;transition:all .15s;text-decoration:none;box-shadow:var(--shadow-sm)}
-.tile:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:var(--shadow)}
-.tile .ico{font-size:24px}.tile .name{font-size:13px;font-weight:600;color:var(--ink)}.tile .sub{font-size:11px;color:var(--ink-3)}
-.widget-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.dash-panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow-sm)}
-.dash-panel-header{padding:13px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}
-.dash-panel-title{font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--ink-3);text-transform:uppercase}
-.dash-panel-count{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);background:var(--panel-2);padding:2px 8px;border-radius:6px}
-.dash-panel-count.amber{color:var(--amber);background:var(--amber-soft)}
-.dash-panel-count a{color:var(--accent);text-decoration:none;font-size:11.5px;font-weight:600}
-.dash-panel-body{max-height:320px;overflow-y:auto}
-.dash-panel-body.pad{padding:14px 18px}
-.embed{width:100%;display:block;border:none}
-.pipeline-chart{padding:16px 18px}
-.pipeline-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.pipeline-label{font-size:11px;color:var(--ink-3);width:140px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pipeline-bar-wrap{flex:1;height:7px;background:var(--line-2);border-radius:4px;overflow:hidden}
-.pipeline-bar{height:100%;border-radius:4px;transition:width .8s cubic-bezier(.16,1,.3,1)}
-.pipeline-count{font-family:var(--mono);font-size:11px;color:var(--ink);width:22px;text-align:right}
-.job-item{display:flex;align-items:center;gap:9px;padding:10px 16px;border-bottom:1px solid var(--line-2);font-size:12.5px}
-.job-item:last-child{border-bottom:none}
-.job-item:hover{background:var(--panel-2)}
-.status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.job-engagement{font-weight:600;color:var(--ink);min-width:90px;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
-.job-name{font-size:12px;color:var(--ink-3);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.job-num{font-family:var(--mono);font-size:10px;color:var(--ink-4);flex-shrink:0}
-.job-rep{font-size:11px;color:var(--ink-4);flex-shrink:0}
-.ts-row{display:flex;align-items:center;gap:9px;padding:10px 16px;border-bottom:1px solid var(--line-2);font-size:12.5px}
-.ts-row:last-child{border-bottom:none}
-.ts-tech{font-weight:600;color:var(--ink);min-width:80px;flex-shrink:0}
-.ts-job{flex:1;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}
-.ts-hours{font-family:var(--mono);font-size:12px;color:var(--ink);flex-shrink:0}
-.ts-date{font-size:11px;color:var(--ink-4);flex-shrink:0}
-.todo-input-row{display:flex;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line)}
-.todo-input{flex:1;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:9px 12px;font-size:13.5px;font-family:inherit}
-.todo-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-.todo-add{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:0 16px;font-weight:700;cursor:pointer;font-size:18px}
-.todo-item{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--line-2)}
-.todo-item:last-child{border-bottom:none}
-.todo-item input{width:17px;height:17px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
-.todo-item .txt{flex:1;font-size:13.5px;color:var(--ink)}
-.todo-item.done .txt{color:var(--ink-4);text-decoration:line-through}
-.todo-item .del{color:var(--ink-4);cursor:pointer;font-size:15px;padding:0 4px}
-.badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;flex-shrink:0}
-.badge-rtbb{background:var(--amber-soft);color:var(--amber)}
-.badge-ip{background:var(--accent-soft);color:var(--accent-2)}
-.badge-nir{background:var(--red-soft);color:var(--red)}
-.badge-is{background:var(--green-soft);color:var(--green)}
-.badge-app{background:var(--violet-soft);color:var(--violet)}
-.badge-lead{background:var(--slate-soft);color:var(--slate)}
-.empty-state{padding:24px;text-align:center;color:var(--ink-3);font-size:13px}
-.spinner-sm{width:20px;height:20px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:28px auto}
-@keyframes spin{to{transform:rotate(360deg)}}
-.weather-chip{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:7px 13px;background:var(--panel)}
-.weather-chip .temp{font-family:var(--mono);font-size:17px;color:var(--ink);font-weight:500}
-.weather-chip .meta{font-size:10px;color:var(--ink-3)}
-.weather-chip .desc{font-size:12px;color:var(--ink-2)}
-.btn-refresh{background:var(--panel);border:1px solid var(--line);color:var(--ink-3);padding:6px 12px;border-radius:8px;cursor:pointer;font-size:11px;font-weight:600}
-.btn-refresh:hover{border-color:var(--accent);color:var(--accent)}
-.rd-item{padding:13px 18px;border-bottom:1px solid var(--line-2)}
-.rd-item-header{display:flex;align-items:center;gap:8px;margin-bottom:5px}
-.rd-entity{font-weight:600;font-size:13px;color:var(--ink);flex:1}
-.rd-type{font-size:10px;font-weight:700;letter-spacing:.08em;background:var(--panel-2);padding:2px 7px;border-radius:5px;color:var(--ink-3)}
-.rd-conf-high{font-size:10px;font-weight:700;color:var(--green);background:var(--green-soft);padding:2px 7px;border-radius:5px}
-.rd-conf-medium{font-size:10px;font-weight:700;color:var(--amber);background:var(--amber-soft);padding:2px 7px;border-radius:5px}
-.rd-reason{font-size:12px;color:var(--ink-3);line-height:1.5;margin-bottom:8px}
-.rd-actions{display:flex;gap:8px;align-items:center}
-.rd-btn{font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:7px;cursor:pointer;border:1px solid}
-.rd-btn-approve{background:var(--green-soft);color:var(--green);border-color:rgba(11,158,106,.3)}
-.rd-btn-reject{background:var(--red-soft);color:var(--red);border-color:rgba(196,48,48,.3)}
-.rd-decided{font-size:12px;font-weight:700}
-.rd-decided.approved{color:var(--green)}.rd-decided.rejected{color:var(--red)}
-.calendar-placeholder{padding:28px;text-align:center;color:var(--ink-3);font-size:13px;line-height:1.6}
-.calendar-placeholder .big{font-size:32px;margin-bottom:10px}
-@media(max-width:900px){.kpi-row{grid-template-columns:repeat(3,1fr)}.widget-grid{grid-template-columns:1fr}}
-@media(max-width:600px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+/* ── Field hero overrides ── */
+.field-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:0;position:relative;z-index:1;margin-top:30px;border-top:1px solid rgba(255,255,255,.08)}
+.fk{padding:18px 22px;border-right:1px solid rgba(255,255,255,.08)}
+.fk:last-child{border-right:none}
+.fk b{display:block;font-size:14px;font-weight:700;color:#fff;margin-bottom:4px}
+.fk span{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#5e7fb8;font-weight:700}
 
+/* field-specific grid */
+.grid-field{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 
-/* ── Auth Gate ── */
-#authGate{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}
-.auth-card{background:var(--panel);border:1px solid var(--line);border-radius:20px;box-shadow:0 24px 60px -16px rgba(13,22,38,.18);width:100%;max-width:400px;padding:40px 36px}
-.auth-logo{display:flex;align-items:center;gap:12px;margin-bottom:32px}
-.auth-logo-mark{width:40px;height:40px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff}
-.auth-logo-text{font-size:15px;font-weight:700;color:var(--ink)}
-.auth-logo-sub{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3)}
-.auth-heading{font-size:22px;font-weight:700;color:var(--ink);margin-bottom:6px}
-.auth-sub{font-size:14px;color:var(--ink-3);margin-bottom:24px}
-.auth-field{margin-bottom:14px}
-.auth-label{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px;display:block}
-.auth-input{width:100%;background:var(--panel-2);border:1.5px solid var(--line);border-radius:10px;color:var(--ink);padding:12px 16px;font:inherit;font-size:15px;transition:.15s}
-.auth-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-.auth-pin{letter-spacing:.3em;font-family:var(--mono);font-size:18px}
-.auth-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:14px;font:inherit;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px}
-.auth-btn:hover{background:var(--accent-2)}
-.auth-btn:disabled{opacity:.5;cursor:not-allowed}
-.auth-error{font-size:13px;color:var(--red);margin-top:12px;text-align:center;display:none}
+/* admin-switch link at bottom */
+.admin-switch{font-size:12px;color:var(--ink-3);text-align:center;display:block;padding:16px;cursor:pointer;text-decoration:none}
+.admin-switch:hover{color:var(--accent)}
+
+/* ══════════════════════════════════════════
+   ANIMATION & POLISH ADDITIONS
+   (all wrapped in prefers-reduced-motion)
+══════════════════════════════════════════ */
+@media (prefers-reduced-motion: no-preference) {
+
+/* ── 1. Hero background pulse / anchor ── */
+@keyframes gradPulse {
+  0%,100%{opacity:1} 50%{opacity:.7}
+}
+@keyframes gradShift {
+  0%{transform:scale(1) translate(0,0)}
+  50%{transform:scale(1.08) translate(20px,-15px)}
+  100%{transform:scale(1) translate(0,0)}
+}
+@keyframes slowSpin {
+  to{transform:rotate(360deg)}
+}
+.hero::after{
+  animation: gradPulse 8s ease-in-out infinite;
+}
+.hero-anchor {
+  position:absolute;right:40px;top:40px;
+  width:200px;height:200px;
+  opacity:.06;pointer-events:none;z-index:0;
+  animation: slowSpin 60s linear infinite;
+}
+
+/* ── 2. Topbar scroll shrink ── */
+.topbar{transition:height .2s ease,background .2s ease}
+.topbar.scrolled{height:52px;background:rgba(255,255,255,.97)}
+
+/* ── 3. Section line reveal ── */
+.sec .ln{transform:scaleX(0);transform-origin:left;transition:transform .6s cubic-bezier(.4,0,.2,1) .1s}
+.sec.visible .ln{transform:scaleX(1)}
+
+/* ── 4. Scroll reveal for tiles & pcards ── */
+.tile,.pcard{opacity:0;transform:translateY(18px);transition:opacity .42s cubic-bezier(.4,0,.2,1),transform .42s cubic-bezier(.4,0,.2,1)}
+.tile.visible,.pcard.visible{opacity:1;transform:none}
+
+/* ── 5. Tile hover upgrades ── */
+.tile{transition: transform .18s cubic-bezier(.34,1.56,.64,1), border-color .15s, box-shadow .18s, opacity .42s cubic-bezier(.4,0,.2,1)}
+.tile:hover{transform:translateY(-5px) scale(1.012);border-color:var(--accent);box-shadow:0 12px 36px -10px rgba(13,22,38,.22)}
+.tile.soft:hover{border-color:var(--ink-3);box-shadow:0 10px 32px -10px rgba(13,22,38,.16)}
+.tile .ic{transition:transform .22s cubic-bezier(.34,1.56,.64,1),box-shadow .2s}
+.tile:hover .ic{transform:scale(1.1) rotate(-3deg);box-shadow:0 6px 20px rgba(36,87,230,.2)}
+
+/* colored tile hover sweep */
+.tile.blue::before,.tile.purple::before,.tile.teal::before,.tile.amber::before{
+  content:'';position:absolute;inset:0;border-radius:inherit;
+  background:radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.06) 0%,transparent 70%);
+  opacity:0;transition:opacity .22s;pointer-events:none;z-index:0
+}
+.tile.blue:hover::before,.tile.purple:hover::before,.tile.teal:hover::before,.tile.amber:hover::before{opacity:1}
+
+/* ── 6. Primary button glow pulse ── */
+@keyframes btnPulse {
+  0%,100%{box-shadow:0 4px 16px rgba(36,87,230,.55)}
+  50%{box-shadow:0 6px 28px rgba(36,87,230,.8)}
+}
+.ha.prim{animation:btnPulse 3s ease-in-out infinite}
+.ha.prim:hover{animation:none;background:#1d46c8;transform:translateY(-1px);box-shadow:0 7px 22px rgba(36,87,230,.7)}
+
+/* ── 7. Live badge pulsing dot ── */
+@keyframes pulse {
+  0%,100%{opacity:1;transform:scale(1)}
+  50%{opacity:.5;transform:scale(.6)}
+}
+.tbadge.vis::before{
+  content:'';display:inline-block;width:5px;height:5px;border-radius:50%;
+  background:#fff;margin-right:5px;vertical-align:middle;
+  animation:pulse 1.5s ease-in-out infinite
+}
+
+} /* end prefers-reduced-motion */
+
+/* ── Responsive ── */
+@media(max-width:840px){
+  .hero-kpis,.field-kpis{grid-template-columns:repeat(2,1fr)}
+  .hk:nth-child(2),.fk:nth-child(2){border-right:none}
+  .hk:nth-child(3),.fk:nth-child(3){border-top:1px solid rgba(255,255,255,.08)}
+  .hk:nth-child(4),.fk:nth-child(4){border-top:1px solid rgba(255,255,255,.08);border-right:none}
+  .grid-2,.grid-3,.grid-field,.pgrid,.grid-feat{grid-template-columns:1fr 1fr}
+  .grid-4{grid-template-columns:1fr 1fr}
+  .hero h1{font-size:32px}
+  .hero{padding:34px 30px 0}
+}
+@media(max-width:540px){
+  .grid-2,.grid,.grid-3,.grid-field,.pgrid,.grid-feat,.grid-4{grid-template-columns:1fr}
+  .hero-kpis,.field-kpis{grid-template-columns:1fr 1fr}
+  .hero-actions{flex-wrap:wrap}
+  .ha.ghost{flex:1;justify-content:center}
+  .topbar{padding:0 16px;gap:10px}
+  .wrap{padding:18px 14px 40px}
+  .view-toggle{display:none}
+}
+
+/* ════════════════════════════════════════════
+   LAUNCHER DECLUTTER — command bar + uniform dense tiles (staff view)
+═══════════════════════════════════════════════ */
+.cmd{display:flex;align-items:center;gap:11px;background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow-sm);padding:0 15px;height:50px;margin:24px 0 4px}
+.cmd:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(36,87,230,.10)}
+.cmd>svg{width:18px;height:18px;stroke:var(--ink-3);stroke-width:2;fill:none;flex-shrink:0}
+.cmd input{flex:1;border:none;outline:none;background:transparent;font:inherit;font-size:14.5px;color:var(--ink);letter-spacing:-.01em}
+.cmd input::placeholder{color:var(--ink-3)}
+.cmd .cmd-count{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.cmd .cmd-kbd{font-family:var(--mono);font-size:11px;color:var(--ink-3);border:1px solid var(--line);border-radius:6px;padding:2px 8px;background:var(--panel-2)}
+.cmd .cmd-clear{display:none;border:none;background:var(--panel-2);color:var(--ink-3);width:24px;height:24px;border-radius:7px;cursor:pointer;font-size:13px;line-height:1}
+.cmd .cmd-clear:hover{background:var(--accent-soft);color:var(--accent)}
+.cmd.has-q .cmd-clear{display:grid;place-items:center}
+.cmd.has-q .cmd-kbd{display:none}
+.no-results{display:none;text-align:center;padding:46px 20px;color:var(--ink-3);font-size:14px}
+.no-results b{color:var(--ink-2)}
+
+/* uniform dense tile grid for the launcher */
+[data-view="staff"] .grid,[data-view="staff"] .grid-3,[data-view="staff"] .grid-4,[data-view="staff"] .grid-feat{
+  grid-template-columns:repeat(auto-fill,minmax(224px,1fr));gap:12px}
+[data-view="staff"] .tile,[data-view="staff"] .tile.featured,[data-view="staff"] .tile.compact{min-height:0;padding:15px 16px 14px;gap:3px;border-radius:13px}
+[data-view="staff"] .tile .ic,[data-view="staff"] .tile.compact .ic{width:38px;height:38px;border-radius:10px;margin-bottom:3px}
+[data-view="staff"] .tile .ic svg{width:19px;height:19px}
+[data-view="staff"] .tile h3,[data-view="staff"] .tile.compact h3{font-size:14.5px}
+[data-view="staff"] .tile p,[data-view="staff"] .tile.compact p{font-size:11.5px;line-height:1.34}
+[data-view="staff"] .tile .go{font-size:12px;margin-top:2px}
+[data-view="staff"] .tile .tbadge{top:11px;right:12px;font-size:9.5px;padding:2px 7px}
+[data-view="staff"] .sec{margin:26px 2px 12px}
+
+/* ════════════════════════════════════════════
+   COMMAND CENTER APP SHELL
+═══════════════════════════════════════════════ */
+.topbar{background:#0E1726;border-bottom:1px solid #1c2940}
+.topbar.scrolled{background:#0b1320}
+.topbar .t{border-left-color:#26334a}
+.topbar .t b{color:#fff}
+.topbar .t span{color:#7f93b5}
+.topbar .navbtn{color:#9fb4d6;background:#16223a;border-color:#26334a}
+.topbar .navbtn:hover{color:#fff;background:#1d2c49;border-color:#3a4d70}
+.topbar .now{color:#6f83a6}
+.srv-badge{background:#16223a;border-color:#26334a;color:#9fb4d6}
+.srv-badge.online{color:#9fe1cb;border-color:#1f6b53;background:#10261f}
+.srv-badge.qb{color:#9cc1f5;border-color:#234a82;background:#0f1f3a}
+.view-toggle{background:#16223a;border-color:#26334a}
+.view-btn{color:#9fb4d6}
+.view-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.view-btn:not(.active):hover{background:#1d2c49;color:#fff}
+.hamb{display:none;background:#16223a;border:1px solid #26334a;color:#cfe0f5;border-radius:9px;width:36px;height:34px;cursor:pointer;align-items:center;justify-content:center}
+.hamb svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2}
+
+.kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);background:#12203a;border-radius:14px;margin:0 0 18px;overflow:hidden}
+.kpi-strip .hk{padding:13px 22px;border-right:1px solid #233350}
+.kpi-strip .hk:last-child{border-right:none}
+.kpi-strip .hk b{display:block;font-family:var(--mono);font-size:22px;font-weight:500;color:#fff;letter-spacing:-.02em;line-height:1.1}
+.kpi-strip .hk span{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:#7f93b5;font-weight:700}
+
+.shell{display:grid;grid-template-columns:214px 1fr;gap:20px;align-items:start}
+.sidebar{position:sticky;top:74px;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm);padding:10px 9px 14px}
+.sb-search{display:flex;align-items:center;gap:8px;background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:7px 10px;margin-bottom:6px}
+.sb-search:focus-within{border-color:var(--accent)}
+.sb-search svg{width:15px;height:15px;stroke:var(--ink-3);fill:none;stroke-width:2;flex-shrink:0}
+.sb-search input{flex:1;border:none;outline:none;background:transparent;font:inherit;font-size:12.5px;color:var(--ink);min-width:0}
+.nav-g{font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin:13px 9px 4px;opacity:.85}
+.nav-i{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:8px;font-size:12.7px;font-weight:500;color:var(--ink-2);text-decoration:none;border-left:2px solid transparent;transition:background .12s,color .12s}
+.nav-i:hover{background:var(--panel-2);color:var(--ink)}
+.nav-i.on{background:var(--accent-soft);color:var(--accent-2);border-left-color:var(--accent)}
+.nav-i svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
+.nav-i .nb{margin-left:auto;font-family:var(--mono);font-size:9px;font-weight:500;padding:1px 6px;border-radius:10px;background:var(--amber-soft);color:var(--amber)}
+.nav-i .nb.red{background:#fdeaea;color:var(--red)}
+.sb-empty{display:none;text-align:center;color:var(--ink-3);font-size:12.5px;padding:18px 6px}
+
+.overview{min-width:0}
+.ov-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+.ov-head h1{font-size:23px;font-weight:800;letter-spacing:-.03em;margin:0 0 3px;color:var(--ink)}
+.ov-head p{font-size:13px;color:var(--ink-3);margin:0}
+.ov-actions{display:flex;gap:8px;flex-wrap:wrap}
+.qa{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border:1px solid var(--line);border-radius:9px;background:var(--panel);font-size:12.5px;font-weight:600;color:var(--ink-2);text-decoration:none;transition:.12s}
+.qa svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
+.qa:hover{border-color:var(--accent);color:var(--accent)}
+.qa.prim{background:var(--accent);border-color:var(--accent);color:#fff}
+.qa.prim:hover{background:var(--accent-2);color:#fff}
+
+.attn{display:grid;gap:9px;margin-bottom:22px}
+.attn-i{display:flex;align-items:center;gap:11px;padding:12px 15px;border-radius:11px;font-size:13px;font-weight:600;text-decoration:none;border:1px solid transparent;transition:.12s}
+.attn-i svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
+.attn-i span:first-of-type{flex:1}
+.attn-i .ar{margin-left:auto;opacity:.55;font-size:16px;font-weight:700}
+.attn-i:hover{filter:brightness(.98)}
+.attn-i.amber{background:var(--amber-soft);color:var(--amber);border-color:#f0ddbb}
+.attn-i.red{background:#fdeaea;color:var(--red);border-color:#f3cfcf}
+.attn-i.blue{background:var(--accent-soft);color:var(--accent-2);border-color:#cdd9f7}
+.attn-clear{display:flex;align-items:center;gap:11px;padding:14px 16px;border-radius:12px;background:var(--green-soft);color:#0a7a52;font-size:13.5px;font-weight:600;border:1px solid #bfe6d4}
+.attn-clear svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2}
+
+.ov-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ov-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm);padding:16px 17px}
+.ov-card h4{margin:0 0 13px;font-size:13px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:7px;color:var(--ink)}
+.ov-card h4 svg{width:16px;height:16px;stroke:var(--ink-3);fill:none;stroke-width:2}
+.ov-card h4 a{margin-left:auto;font-size:11.5px;font-weight:600;color:var(--accent);text-decoration:none}
+.pl-row{margin-bottom:11px}
+.pl-row:last-child{margin-bottom:0}
+.pl-top{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-3);margin-bottom:4px}
+.pl-bar{height:7px;border-radius:4px;background:var(--panel-2);overflow:hidden}
+.pl-bar i{display:block;height:7px;border-radius:4px}
+.job-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line-2)}
+.job-row:first-child{border-top:none}
+.job-row .jn{font-size:12.5px;font-weight:500;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.job-pill{font-size:10px;font-weight:600;padding:2px 9px;border-radius:20px;background:var(--panel-2);color:var(--ink-2);white-space:nowrap;flex-shrink:0}
+.job-pill.mono{font-family:var(--mono);font-size:11px;background:var(--accent-soft);color:var(--accent-2)}
+.mini-stats{display:flex;gap:16px}
+.mini-stats>div{flex:1;min-width:0}
+.mini-stats b{display:block;font-family:var(--mono);font-size:21px;font-weight:500;color:var(--ink);line-height:1.15;letter-spacing:-.02em}
+.mini-stats span{font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.mini-stats .bad b{color:var(--red)} .mini-stats .warn b{color:var(--amber)}
+.ov-empty{font-size:12px;color:var(--ink-3);margin:0;line-height:1.5}
+.ov-empty a{color:var(--accent);font-weight:600;text-decoration:none}
+.ov-more{font-size:11px;color:var(--ink-3);margin-top:8px}
+.ov-note{font-size:11px;color:var(--ink-3);margin-top:11px;padding-top:9px;border-top:1px solid var(--line-2)}
+
+.sb-backdrop{display:none}
+@media(max-width:860px){
+  .hamb{display:flex}
+  .shell{grid-template-columns:1fr}
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:256px;border-radius:0;z-index:50;transform:translateX(-100%);transition:transform .2s;overflow:auto}
+  body.nav-open .sidebar{transform:none}
+  .sb-backdrop{position:fixed;inset:0;background:rgba(13,22,38,.45);z-index:45}
+  body.nav-open .sb-backdrop{display:block}
+  .kpi-strip{grid-template-columns:repeat(2,1fr)}
+  .kpi-strip .hk:nth-child(2){border-right:none}
+  .ov-grid{grid-template-columns:1fr}
+}
+
+/* ════════════════════════════════════════════
+   PREMIUM DARK-GLASS COMMAND CENTER
+═══════════════════════════════════════════════ */
+:root{
+  --glass:rgba(30,44,76,.46);       /* translucent — lets the aurora bleed through (glassy) */
+  --glass-2:rgba(24,37,65,.42);
+  --glass-line:rgba(255,255,255,.13);
+  --glass-hi:inset 0 1px 0 rgba(255,255,255,.10);
+  --glass-shadow:0 16px 44px -20px rgba(6,14,32,.5);
+  --gt:#f0f5ff;      /* glass text */
+  --gt-2:#c9d6ee;    /* muted */
+  --gt-3:#a6b8d4;    /* faint */
+}
+body{
+  color:var(--gt);
+  background:
+    radial-gradient(1000px 680px at 8% -10%, rgba(36,87,230,.20), transparent 58%),
+    radial-gradient(900px 640px at 102% -4%, rgba(14,140,140,.16), transparent 54%),
+    radial-gradient(820px 760px at 50% 122%, rgba(36,87,230,.12), transparent 60%),
+    linear-gradient(180deg,#0b1322 0%,#0c1526 48%,#0a0f1b 100%);
+  background-attachment:fixed;
+}
+.topbar{background:rgba(9,15,27,.72);backdrop-filter:saturate(160%) blur(18px);border-bottom:1px solid rgba(255,255,255,.06)}
+.topbar.scrolled{background:rgba(8,13,24,.82)}
+
+/* KPI ribbon — glass with glowing numbers */
+.kpi-strip{background:var(--glass);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);border:1px solid var(--glass-line);box-shadow:var(--glass-shadow),var(--glass-hi)}
+.kpi-strip .hk{border-right:1px solid rgba(255,255,255,.06);padding:16px 24px}
+.kpi-strip .hk b{font-size:27px;color:#fff;text-shadow:0 0 22px rgba(70,120,255,.45)}
+html body .kpi-strip .hk span{color:var(--gt-3) !important;letter-spacing:.12em !important}
+
+/* Sidebar — frosted glass rail */
+.sidebar{background:var(--glass-2);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);border:1px solid var(--glass-line);box-shadow:var(--glass-shadow),var(--glass-hi)}
+.sb-search{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09)}
+.sb-search svg{stroke:var(--gt-3)} .sb-search input{color:var(--gt)} .sb-search input::placeholder{color:var(--gt-3)}
+.nav-g{color:var(--gt-3)}
+.nav-i{color:var(--gt-2)}
+.nav-i:hover{background:rgba(255,255,255,.05);color:#fff}
+.nav-i.on{background:rgba(46,99,240,.20);color:#d4e2ff;border-left-color:#5b8bff;box-shadow:inset 0 0 22px rgba(46,99,240,.12)}
+.nav-i .nb{background:rgba(184,106,0,.25);color:#ffd49a}
+.nav-i .nb.red{background:rgba(196,48,48,.25);color:#ff9b9b}
+.sb-empty{color:var(--gt-3)}
+
+/* Headings + actions */
+.ov-head h1{color:#fff;letter-spacing:-.03em} .ov-head p{color:var(--gt-2)}
+.qa{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);color:var(--gt);backdrop-filter:blur(10px)}
+.qa svg{stroke:currentColor}
+.qa:hover{border-color:rgba(91,139,255,.55);color:#fff;background:rgba(46,99,240,.14)}
+.qa.prim{background:linear-gradient(135deg,#3568f2,#1e46c8);border-color:rgba(255,255,255,.16);color:#fff;box-shadow:0 8px 24px -8px rgba(46,99,240,.7)}
+.qa.prim:hover{background:linear-gradient(135deg,#3f73ff,#244fd6);color:#fff}
+
+/* Attention chips — tinted glass with glow */
+.attn-i{backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);border:1px solid;font-weight:600}
+.attn-i .ar{opacity:.6}
+.attn-i.red{background:rgba(196,48,48,.16);color:#ffa3a3;border-color:rgba(196,48,48,.32)}
+.attn-i.amber{background:rgba(184,106,0,.18);color:#ffce8a;border-color:rgba(184,106,0,.34)}
+.attn-i.blue{background:rgba(46,99,240,.16);color:#aec7ff;border-color:rgba(46,99,240,.34)}
+.attn-i:hover{filter:brightness(1.12)}
+.attn-clear{background:rgba(11,158,106,.15);color:#86e6bd;border:1px solid rgba(11,158,106,.32)}
+
+/* Dashboard cards — frosted glass with top sheen + glow hover */
+.ov-card{position:relative;overflow:hidden;background:var(--glass);backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);border:1px solid var(--glass-line);border-radius:16px;box-shadow:var(--glass-shadow),var(--glass-hi);padding:17px 18px;transition:transform .16s,border-color .16s,box-shadow .16s}
+.ov-card::before{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(130% 80% at 50% -25%,rgba(255,255,255,.07),transparent 58%);pointer-events:none}
+.ov-card:hover{transform:translateY(-3px);border-color:rgba(91,139,255,.42);box-shadow:0 20px 56px -18px rgba(0,0,0,.75),0 0 0 1px rgba(46,99,240,.18),var(--glass-hi)}
+.ov-card>*{position:relative}
+.ov-card h4{color:#dde7f8} .ov-card h4 svg{stroke:var(--gt-2)} .ov-card h4 a{color:#7ea6ff}
+.mini-stats b{color:#fff} .mini-stats span{color:var(--gt-3)}
+.mini-stats .bad b{color:#ff8f8f} .mini-stats .warn b{color:#ffc97e}
+.job-row{border-top-color:rgba(255,255,255,.07)} .job-row .jn{color:var(--gt)}
+.job-pill{background:rgba(255,255,255,.07);color:var(--gt-2)} .job-pill.mono{background:rgba(46,99,240,.2);color:#bcd0ff}
+.pl-top{color:var(--gt-3)} .pl-bar{background:rgba(255,255,255,.08)}
+.ov-empty,.ov-more,.ov-note{color:var(--gt-3)} .ov-empty a{color:#7ea6ff} .ov-note{border-top-color:rgba(255,255,255,.08)}
+
+/* footer + offline bar on dark */
+.foot{border-top-color:rgba(255,255,255,.08);color:var(--gt-3)} .foot b{color:var(--gt-2)}
+
+/* ── more luxe: aurora + faint blueprint grid (overrides apb-theme.css body !important) ── */
+html body{
+  background:
+    linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px),
+    radial-gradient(1100px 760px at 4% -12%, rgba(74,134,255,.42), transparent 56%),
+    radial-gradient(1000px 720px at 106% -6%, rgba(28,196,184,.34), transparent 52%),
+    radial-gradient(980px 880px at 52% 124%, rgba(124,104,255,.30), transparent 60%),
+    linear-gradient(180deg,#1b2c4d 0%,#1f3258 46%,#172645 100%) !important;
+  background-size:38px 38px,38px 38px,auto,auto,auto,auto !important;
+  background-attachment:fixed !important;
+}
+.ov-card::after{content:"";position:absolute;left:0;right:0;top:0;height:1px;border-radius:inherit;background:linear-gradient(90deg,transparent,rgba(120,160,255,.35),transparent);opacity:.5;pointer-events:none}
+
+/* ── motion polish ── */
+@media (prefers-reduced-motion: no-preference){
+  @keyframes ovIn{from{opacity:0;transform:translateY(15px) scale(.985)}to{opacity:1;transform:none}}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  #ovGrid .ov-card{animation:ovIn .55s cubic-bezier(.2,.7,.3,1) both}
+  #ovGrid .ov-card:nth-child(2){animation-delay:.07s}
+  #ovGrid .ov-card:nth-child(3){animation-delay:.14s}
+  #ovGrid .ov-card:nth-child(4){animation-delay:.21s}
+  #attnStrip>*{animation:ovIn .5s cubic-bezier(.2,.7,.3,1) both}
+  #attnStrip>*:nth-child(2){animation-delay:.05s} #attnStrip>*:nth-child(3){animation-delay:.1s}
+  #attnStrip>*:nth-child(4){animation-delay:.15s} #attnStrip>*:nth-child(5){animation-delay:.2s}
+  .kpi-strip{animation:fadeIn .8s ease both}
+}
+
+/* ── theme toggle button ── */
+.theme-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#cdd9ee;width:36px;height:34px;border-radius:9px;cursor:pointer;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;transition:.12s}
+.theme-btn:hover{background:rgba(46,99,240,.16);border-color:rgba(91,139,255,.5)}
+
+/* ════════════════════════════════════════════
+   LIGHT-GLASS THEME (toggle)
+═══════════════════════════════════════════════ */
+body.theme-light{
+  --glass:rgba(255,255,255,.78);
+  --glass-2:rgba(255,255,255,.7);
+  --glass-line:rgba(20,35,60,.1);
+  --glass-hi:inset 0 1px 0 rgba(255,255,255,.9);
+  --glass-shadow:0 16px 42px -22px rgba(20,45,95,.30);
+  --gt:#14233e; --gt-2:#3f5071; --gt-3:#5f6f8c;
+  color:var(--gt);
+}
+html body.theme-light{
+  background:
+    linear-gradient(rgba(20,40,55,.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(20,40,55,.03) 1px,transparent 1px),
+    radial-gradient(1000px 700px at 6% -12%, rgba(46,108,255,.13), transparent 56%),
+    radial-gradient(940px 680px at 104% -6%, rgba(16,170,160,.10), transparent 52%),
+    radial-gradient(900px 820px at 52% 124%, rgba(120,90,230,.09), transparent 60%),
+    linear-gradient(180deg,#eef3fc 0%,#e7eef8 50%,#eef2fa 100%) !important;
+  background-size:36px 36px,36px 36px,auto,auto,auto,auto !important;
+  background-attachment:fixed !important;
+}
+body.theme-light .kpi-strip{background:rgba(255,255,255,.62)}
+body.theme-light .kpi-strip .hk{border-right-color:rgba(20,35,60,.08)}
+html body.theme-light .kpi-strip .hk b{color:#10213c !important;text-shadow:0 0 20px rgba(46,99,240,.16)}
+body.theme-light .ov-card::after{background:linear-gradient(90deg,transparent,rgba(46,99,240,.3),transparent)}
+body.theme-light .nav-i.on{background:rgba(46,99,240,.12);color:#1c46c8;box-shadow:inset 0 0 18px rgba(46,99,240,.07)}
+body.theme-light .nav-i .nb{background:rgba(184,106,0,.18);color:#8a5a12}
+body.theme-light .nav-i .nb.red{background:rgba(196,48,48,.16);color:#a32d2d}
+body.theme-light .qa{background:rgba(255,255,255,.62);border-color:rgba(20,35,60,.1);color:var(--gt)}
+body.theme-light .qa:hover{background:rgba(46,99,240,.09);color:#1c46c8;border-color:rgba(46,99,240,.4)}
+body.theme-light .attn-i.red{color:#a32d2d} body.theme-light .attn-i.amber{color:#8a5a12}
+body.theme-light .attn-i.blue{color:#1c46c8} body.theme-light .attn-clear{color:#0a7a52}
+body.theme-light .ov-head h1{color:#14233e}
+body.theme-light .ov-card h4{color:#16243d} body.theme-light .ov-card h4 a{color:#2457E6}
+body.theme-light .job-pill.mono{background:rgba(46,99,240,.13);color:#1c46c8}
+body.theme-light .mini-stats .bad b{color:#c43030} body.theme-light .mini-stats .warn b{color:#b86a00}
+body.theme-light .foot b{color:#48597a}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="apb-theme.css">
 </head>
 <body>
 
-
+<style>
+#authGate{position:fixed;inset:0;z-index:99999;background:#EDEEF2;display:flex;align-items:center;justify-content:center;padding:20px}
+.auth-card{background:#fff;border:1px solid #DDE1E8;border-radius:20px;box-shadow:0 24px 60px -16px rgba(13,22,38,.18);width:100%;max-width:400px;padding:40px 36px;font-family:"Inter",-apple-system,"Segoe UI",sans-serif}
+.auth-logo{display:flex;align-items:center;gap:12px;margin-bottom:32px}
+.auth-logo-mark{width:40px;height:40px;background:#2457E6;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff}
+.auth-logo-text{font-size:15px;font-weight:700;color:#0D1626}
+.auth-logo-sub{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#6B7A92}
+.auth-heading{font-size:22px;font-weight:700;color:#0D1626;margin-bottom:6px}
+.auth-sub{font-size:14px;color:#6B7A92;margin-bottom:24px}
+.auth-field{margin-bottom:14px}
+.auth-label{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6B7A92;margin-bottom:6px;display:block}
+.auth-input{width:100%;background:#F5F6FA;border:1.5px solid #DDE1E8;border-radius:10px;color:#0D1626;padding:12px 16px;font-family:inherit;font-size:15px}
+.auth-input:focus{outline:none;border-color:#2457E6;box-shadow:0 0 0 3px #EAF0FE}
+.auth-pin{letter-spacing:.3em;font-family:"DM Mono",monospace;font-size:18px}
+.auth-btn{width:100%;background:#2457E6;color:#fff;border:none;border-radius:10px;padding:14px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px}
+.auth-btn:hover{background:#1B45B8}
+.auth-error{font-size:13px;color:#C43030;margin-top:12px;text-align:center;display:none}
+</style>
 <div id="authGate">
   <div class="auth-card">
     <div class="auth-logo">
@@ -336,915 +580,890 @@ body {
     </div>
     <div class="auth-field">
       <label class="auth-label">PIN</label>
-      <input class="auth-input auth-pin" id="authPin" type="password" maxlength="4" placeholder="••••" inputmode="numeric" onkeydown="if(event.key==='Enter')checkLogin()">
+      <input class="auth-input auth-pin" id="authPin" type="password" maxlength="4" placeholder="&bull;&bull;&bull;&bull;" inputmode="numeric" onkeydown="if(event.key==='Enter')apbCheckLogin()">
     </div>
-    <button class="auth-btn" id="authBtn" onclick="checkLogin()">Sign In →</button>
+    <button class="auth-btn" id="authBtn" onclick="apbCheckLogin()">Sign In &rarr;</button>
     <div class="auth-error" id="authError">Incorrect email or PIN.</div>
   </div>
 </div>
+<script>
+(function(){
+  var ADMINS = {
+    'christina@apb1.com':'1234','jerry@apb1.com':'0123','nate@apb1.com':'1122',
+    'christopher@apb1.com':'2233','chelsea@apb1.com':'3344','brandonw@apb1.com':'2211','bryce@apb1.com':'1100'
+  };
+  var AUTH_KEY = 'apb_hub_auth_v2';
+  window.apbCheckLogin = function(){
+    var email=(document.getElementById('authEmail').value||'').trim().toLowerCase();
+    var pin=(document.getElementById('authPin').value||'').trim();
+    var errEl=document.getElementById('authError');
+    if(!email||!pin){errEl.textContent='Enter your email and PIN.';errEl.style.display='block';return;}
+    if(ADMINS[email] && ADMINS[email]===pin){
+      localStorage.setItem(AUTH_KEY,email);
+      errEl.style.display='none';
+      apbHideGate();
+    } else {
+      errEl.textContent='Incorrect email or PIN.';errEl.style.display='block';
+      document.getElementById('authPin').value='';document.getElementById('authPin').focus();
+    }
+  };
+  window.apbSignOut = function(){ localStorage.removeItem(AUTH_KEY); location.reload(); };
+  function apbHideGate(){
+    var g=document.getElementById('authGate');
+    if(g) g.style.display='none';
+    document.body.style.overflow='';
+  }
+  var saved = localStorage.getItem(AUTH_KEY);
+  if(saved && ADMINS[saved]){
+    apbHideGate();
+  } else {
+    document.body.style.overflow='hidden';
+    localStorage.removeItem(AUTH_KEY);
+    setTimeout(function(){var e=document.getElementById('authEmail'); if(e)e.focus();},100);
+  }
+})();
+</script>
 
 <header class="topbar">
-  <div class="brand">
-    <div class="monogram">APB</div>
-    <div class="brand-text">
-      <b>All Points Boats</b>
-      <span>Operations Hub</span>
-    </div>
+  <button class="hamb" id="hambBtn" onclick="toggleSidebar()" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+  <img src="apb-logo.png" alt="APB">
+  <div class="t"><b>APB Operations</b><span>Command Center</span></div>
+  <div class="sp"></div>
+  <div class="view-toggle" id="viewToggle">
+    <button class="view-btn" data-for="admin" onclick="pickRole('admin')">Admin</button>
+    <button class="view-btn" data-for="pm" onclick="pickRole('pm')">PM</button>
+    <button class="view-btn" data-for="purchasing" onclick="pickRole('purchasing')">Purchasing</button>
+    <button class="view-btn" data-for="accounting" onclick="pickRole('accounting')">Accounting</button>
+    <button class="view-btn" data-for="fleet" onclick="pickRole('fleet')">Fleet</button>
+    <button class="view-btn" data-for="tech" onclick="pickRole('tech')">Tech</button>
   </div>
-  <div class="topbar-spacer"></div>
-  <div class="live-badge"><div class="dot"></div> Live</div>
-  <div class="clock" id="clock"></div>
-  <div class="weather-chip" style="margin-left:4px">
-    <div><div class="temp" id="wtemp">--°</div><div class="meta">FT LAUDERDALE</div></div>
-    <div><div class="desc" id="wdesc" style="font-size:12px;color:var(--ink-2)">…</div><div class="meta" id="wwind"></div></div>
+  <div class="srv-badge" id="srvBadge">
+    <div class="srv-dot"></div>
+    <span id="srvLabel">Checking…</span>
   </div>
-  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
-    <div style="font-family:var(--mono);font-size:10px;color:var(--ink-4)" id="lastUpdated">…</div>
-    <button class="btn-refresh" onclick="loadAll()">↻ Refresh</button>
-  <button class="btn-refresh" onclick="signOut()" style="color:var(--red);border-color:var(--red-soft)" title="Sign Out">Sign Out</button>
-  </div>
+  <button class="theme-btn" id="themeToggle" onclick="toggleTheme()" title="Toggle light / dark" aria-label="Toggle theme">🌙</button>
+  <button class="navbtn" onclick="history.back()">← Back</button>
+  <div class="now" id="now"></div>
 </header>
 
 <main class="wrap">
-  <!-- ── Business KPIs ── -->
-  <div class="section-head" style="display:flex;align-items:center;gap:12px"><h2>Business Overview</h2><div class="rule"></div><button onclick="openQAJ()" style="flex-shrink:0;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:7px 14px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px">＋ Add Job</button></div>
-  <div class="kpi-row">
-    <div class="kpi"><div class="kpi-label">Active Engagements</div><div class="kpi-value loading-pulse" id="kpiActive">—</div><div class="kpi-sub">Vessels & projects open</div></div>
-    <div class="kpi blue"><div class="kpi-label">Jobs In Progress</div><div class="kpi-value loading-pulse" id="kpiOpen">—</div><div class="kpi-sub">Active work underway</div></div>
-    <div class="kpi amber"><div class="kpi-label">Ready To Bill</div><div class="kpi-value loading-pulse" id="kpiBill">—</div><div class="kpi-sub">Awaiting invoice</div></div>
-    <div class="kpi red"><div class="kpi-label">Invoice In Review</div><div class="kpi-value loading-pulse" id="kpiNir">—</div><div class="kpi-sub">Needs attention</div></div>
-    <div class="kpi green"><div class="kpi-label">Open Leads</div><div class="kpi-value loading-pulse" id="kpiLeads">—</div><div class="kpi-sub">Pipeline leads</div></div>
-    <div class="kpi violet"><div class="kpi-label">R&D Pending</div><div class="kpi-value loading-pulse" id="kpiRd">—</div><div class="kpi-sub">Flagged for approval</div></div>
-  </div>
-  <div class="alert-banner amber" id="rdAlert">
-    <span>🔬</span>
-    <div><strong id="rdAlertCount">0</strong> jobs flagged as potential R&D — review below before tax filing.</div>
-    <span class="alert-link" onclick="document.getElementById('rdSection').scrollIntoView({behavior:'smooth'})">Review ↓</span>
-  </div>
 
-  <!-- ── Quick Launch ── -->
-  <div class="section-head"><h2>Quick Launch</h2><div class="rule"></div></div>
+  <!-- ══════════════════════════════════════════════
+       STAFF VIEW  (Admin + PM)  ·  admin-only tiles tagged .admin-only
+  ══════════════════════════════════════════════ -->
+  <div data-view="staff">
 
-  <div class="section-head" style="margin-top:14px;margin-bottom:10px"><h2>Communication</h2><div class="rule"></div></div>
-  <div class="grid g3">
-    <a class="nav-card blue" href="https://outlook.office.com/mail/" target="_blank">
-      <div class="card-icon icon-blue">📧</div>
-      <div class="card-title">Outlook</div>
-      <div class="card-desc">Email, calendar, and contacts for the APB team.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card slate" href="https://mail.google.com" target="_blank">
-      <div class="card-icon icon-slate">✉️</div>
-      <div class="card-title">Gmail</div>
-      <div class="card-desc">Google email and workspace communications.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card cyan" href="https://teams.microsoft.com" target="_blank">
-      <div class="card-icon icon-cyan">💬</div>
-      <div class="card-title">Teams</div>
-      <div class="card-desc">Chat, calls, and file sharing across the team.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-  </div>
-
-  <div class="section-head" style="margin-top:20px;margin-bottom:10px"><h2>Tools & Files</h2><div class="rule"></div></div>
-  <div class="grid g4">
-    <a class="nav-card green" href="https://quickbooks.intuit.com" target="_blank">
-      <div class="card-icon icon-green">💰</div>
-      <div class="card-title">QuickBooks</div>
-      <div class="card-desc">Invoices, payments, and A/R tracking.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card blue" href="https://www.office.com/launch/sharepoint" target="_blank">
-      <div class="card-icon icon-blue">📁</div>
-      <div class="card-title">SharePoint</div>
-      <div class="card-desc">Docs, job files, and team document library.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card slate" href="https://onedrive.live.com" target="_blank">
-      <div class="card-icon icon-slate">☁️</div>
-      <div class="card-title">OneDrive</div>
-      <div class="card-desc">Cloud file storage and sharing.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card violet" href="https://claude.ai" target="_blank">
-      <div class="card-icon icon-violet">✦</div>
-      <div class="card-title">Claude</div>
-      <div class="card-desc">AI assistant for writing, research, and analysis.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card amber" href="https://supabase.com/dashboard/project/aanrxyiocxxndkvkeocv/editor" target="_blank">
-      <div class="card-icon icon-amber">🗄️</div>
-      <div class="card-title">Database</div>
-      <div class="card-desc">Supabase backend — tables, data, and settings.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-  </div>
-
-<div class="section-head"><h2>Operations</h2><div class="rule"></div></div>
-  <div class="grid g3">
-    <a class="nav-card blue" href="apb-tech-portal.html">
-      <div class="card-icon icon-blue">🔧</div>
-      <div class="card-title">Tech Portal</div>
-      <div class="card-desc">Clock in, log daily work, submit timesheets. Edit before manager review.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card green" href="apb-admin-review.html">
-      <div class="card-icon icon-green">✅</div>
-      <div class="card-title">Timesheet Review</div>
-      <div class="card-desc">Manager approval screen. Review, flag, and approve submitted hours.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card slate" href="apb-admin-jobs.html">
-      <div class="card-icon icon-slate">📋</div>
-      <div class="card-title">Jobs & Leads CRM</div>
-      <div class="card-desc">Track active jobs, leads, and vessel engagements across the yard.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card amber" href="apb-frankcrum-export.html">
-      <div class="card-icon icon-amber">💼</div>
-      <div class="card-title">FrankCrum Payroll</div>
-      <div class="card-desc">Generate weekly payroll worksheet with daily OT split. Ready to upload.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card cyan" href="apb-pto.html">
-      <div class="card-icon icon-cyan">🗓</div>
-      <div class="card-title">PTO Tracker</div>
-      <div class="card-desc">Manage time-off requests, balances, and team availability.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card violet" href="apb-status.html">
-      <div class="card-icon icon-violet">📡</div>
-      <div class="card-title">Project Status</div>
-      <div class="card-desc">Real-time project and vessel status board across all active work.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-  </div>
-
-  <!-- ── Business Development ── -->
-  <div class="section-head"><h2>Business Development</h2><div class="rule"></div></div>
-  <div class="grid g3">
-    <a class="nav-card blue" href="apb-pm.html">
-      <div class="card-icon icon-blue">🎯</div>
-      <div class="card-title">PM Console</div>
-      <div class="card-desc">Pipeline, leads, and project tracking. Command center for active work.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card green" href="apb-estimate.html">
-      <div class="card-icon icon-green">🧮</div>
-      <div class="card-title">Estimating</div>
-      <div class="card-desc">Build and price job estimates. Labor, materials, and markup.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card violet" href="apb-proposal.html">
-      <div class="card-icon icon-violet">📄</div>
-      <div class="card-title">Proposal Builder</div>
-      <div class="card-desc">Generate client-ready proposals with APB legal terms built in.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card slate" href="apb-contacts.html">
-      <div class="card-icon icon-slate">👥</div>
-      <div class="card-title">Contacts</div>
-      <div class="card-desc">Clients, vendors, brokers, and yard contacts in one place.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card amber" href="apb-fleet.html">
-      <div class="card-icon icon-amber">⚓</div>
-      <div class="card-title">Fleet Registry</div>
-      <div class="card-desc">All vessels, specs, and service history across APB engagements.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card cyan" href="apb-dealer.html">
-      <div class="card-icon icon-cyan">🤝</div>
-      <div class="card-title">Dealer Portal</div>
-      <div class="card-desc">Dealer relationships, terms, and commercial partner management.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-  </div>
-
-  <!-- ── Finance & Procurement ── -->
-  <div class="section-head"><h2>Finance & Procurement</h2><div class="rule"></div></div>
-  <div class="grid g4">
-    <a class="nav-card blue" href="apb-accounting.html">
-      <div class="card-icon icon-blue">💰</div>
-      <div class="card-title">Accounting</div>
-      <div class="card-desc">Invoices, payments, and financial tracking.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card green" href="apb-purchasing.html">
-      <div class="card-icon icon-green">🛒</div>
-      <div class="card-title">Purchasing</div>
-      <div class="card-desc">Purchase orders and approved vendor spend.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card amber" href="apb-procurement.html">
-      <div class="card-icon icon-amber">📦</div>
-      <div class="card-title">Procurement</div>
-      <div class="card-desc">Materials sourcing, McMaster-Carr, and parts requests.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card slate" href="apb-products.html">
-      <div class="card-icon icon-slate">🔩</div>
-      <div class="card-title">Products & Parts</div>
-      <div class="card-desc">APB product catalog, pricing, and inventory reference.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-  </div>
-
-  <!-- ── Compliance & Standards ── -->
-  <div class="section-head"><h2>Compliance & Standards</h2><div class="rule"></div></div>
-  <div class="grid g4">
-    <a class="nav-card violet" href="apb-compliance.html">
-      <div class="card-icon icon-violet">🛡</div>
-      <div class="card-title">Compliance</div>
-      <div class="card-desc">COIs, regulatory filings, and compliance documents.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card cyan" href="apb-certs.html">
-      <div class="card-icon icon-cyan">🏆</div>
-      <div class="card-title">Certifications</div>
-      <div class="card-desc">ABS, Lloyd's, RINA, AWS, and tech certifications.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card blue" href="apb-iso.html">
-      <div class="card-icon icon-blue">📐</div>
-      <div class="card-title">ISO & Quality</div>
-      <div class="card-desc">ISO standards, audits, and quality management records.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card green" href="apb-sop.html">
-      <div class="card-icon icon-green">📖</div>
-      <div class="card-title">SOPs</div>
-      <div class="card-desc">Standard operating procedures for yard and shop operations.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-  </div>
-
-  <!-- ── Reference ── -->
-  <div class="section-head"><h2>Reference</h2><div class="rule"></div></div>
-  <div class="grid g4">
-    <a class="nav-card slate" href="apb-mtr.html">
-      <div class="card-icon icon-slate">🗂</div>
-      <div class="card-title">MTR Library</div>
-      <div class="card-desc">Material test reports and mill certs by project.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card amber" href="apb-portals.html">
-      <div class="card-icon icon-amber">🔗</div>
-      <div class="card-title">Vendor Portals</div>
-      <div class="card-desc">Quick links to SAM.gov, shipyard, and partner portals.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card cyan" href="apb-dashboard.html">
-      <div class="card-icon icon-cyan">📊</div>
-      <div class="card-title">Command Dashboard</div>
-      <div class="card-desc">Live weather, tides, and yard overview for leadership.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card violet" href="_admin-gate.html">
-      <div class="card-icon icon-violet">🔐</div>
-      <div class="card-title">Admin Gate</div>
-      <div class="card-desc">Role management and system access controls.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-  </div>
-
-
-  <!-- ── Jobs ── -->
-  <div class="section-head" style="margin-top:28px"><h2>Jobs</h2><div class="rule"></div></div>
-  <div class="widget-grid">
-    <div class="dash-panel">
-      <div class="dash-panel-header"><span class="dash-panel-title">Pipeline</span><span class="dash-panel-count" id="pipelineTotal">—</span></div>
-      <div class="pipeline-chart" id="pipelineChart"></div>
+    <!-- ── KPI ribbon ────────────────────────────── -->
+    <div class="kpi-strip" id="kpiStrip">
+      <div class="hk"><b id="kpi1v">—</b><span id="kpi1l">—</span></div>
+      <div class="hk"><b id="kpi2v">—</b><span id="kpi2l">—</span></div>
+      <div class="hk"><b id="kpi3v">—</b><span id="kpi3l">—</span></div>
+      <div class="hk"><b id="kpi4v">—</b><span id="kpi4l">—</span></div>
     </div>
-    <div class="dash-panel">
-      <div class="dash-panel-header"><span class="dash-panel-title">Ready To Bill</span><span class="dash-panel-count amber" id="billCount">—</span></div>
-      <div class="dash-panel-body" id="billList"><div class="spinner-sm"></div></div>
-    </div>
-  </div>
-  <div class="widget-grid" style="margin-top:12px">
-    <div class="dash-panel">
-      <div class="dash-panel-header"><span class="dash-panel-title">In Progress</span><span class="dash-panel-count" id="ipCount">—</span></div>
-      <div class="dash-panel-body" id="ipList"><div class="spinner-sm"></div></div>
-    </div>
-    <div class="dash-panel">
-      <div class="dash-panel-header"><span class="dash-panel-title">Recent Timesheets</span><span class="dash-panel-count" id="tsCount">—</span></div>
-      <div class="dash-panel-body" id="tsList"><div class="spinner-sm"></div></div>
-    </div>
-  </div>
 
-  <!-- ── My Day ── -->
-  <div class="section-head" style="margin-top:28px"><h2>My Day</h2><div class="rule"></div></div>
-  <div class="widget-grid">
-    <div class="dash-panel">
-      <div class="dash-panel-header"><span class="dash-panel-title">To-Do</span><span class="dash-panel-count" id="todoCount">0</span></div>
-      <div class="todo-input-row">
-        <input class="todo-input" id="todoInput" placeholder="Add a task..." onkeydown="if(event.key==='Enter')addTodo()">
-        <button class="todo-add" onclick="addTodo()">+</button>
+    <!-- ── Server offline bar ───────────────────── -->
+    <div class="admin-bar" id="adminOfflineBar" style="display:none;margin-bottom:16px">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg>
+      Hub server isn't running — double-click <b style="margin:0 4px">Start Hub Server.bat</b> in the Claude Hub folder, then refresh.
+    </div>
+
+    <div class="sb-backdrop" id="sbBackdrop" onclick="closeSidebar()"></div>
+
+    <div class="shell">
+
+      <!-- ── Sidebar ───────────────────────────────── -->
+      <aside class="sidebar" id="sidebar">
+        <div class="sb-search">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input id="toolSearch" type="text" placeholder="Search tools… (press /)" autocomplete="off" spellcheck="false">
+        </div>
+        <nav id="navList">
+          <a class="nav-i on" data-key="overview" href="index.html?hub=1"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Overview</a>
+
+          <div class="nav-group">
+            <div class="nav-g">Operations</div>
+            <a class="nav-i" href="apb-pm.html"><svg viewBox="0 0 24 24"><path d="M3 3h18v4H3zM3 10h18v11H3z"/><path d="M7 14h6"/></svg>Project console</a>
+            <a class="nav-i" href="apb-fleet.html"><svg viewBox="0 0 24 24"><path d="M3 18l9-15 9 15"/><path d="M3 18a9 4 0 0 0 18 0"/></svg>Fleet command</a>
+            <a class="nav-i" href="apb-tasks.html"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 7h6M9 12h6M9 16h3"/></svg>Task board</a>
+            <a class="nav-i" href="apb-pto.html"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Time off</a>
+            <a class="nav-i" href="apb-status.html"><svg viewBox="0 0 24 24"><path d="M3 9a2 2 0 0 1 2-2h2l1-2h8l1 2h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3"/></svg>Field updates</a>
+          </div>
+
+          <div class="nav-group">
+            <div class="nav-g">Build</div>
+            <a class="nav-i" href="apb-proposal.html"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg>Proposal builder</a>
+            <a class="nav-i" href="apb-estimate.html"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 12h4M8 16h2M14 16l1.5 2 2.5-3"/></svg>Quick estimate</a>
+            <a class="nav-i" href="apb-sop.html"><svg viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>SOP library</a>
+            <a class="nav-i" href="apb-mtr.html"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>MTR hub</a>
+            <a class="nav-i" href="apb-procurement.html"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h3M9 17h5"/></svg>Material procurement</a>
+          </div>
+
+          <div class="nav-group">
+            <div class="nav-g">Money</div>
+            <a class="nav-i" href="apb-accounting.html"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l3-3 3 2 4-5"/><path d="M12 1v2M12 21v2"/></svg>Accounting</a>
+            <a class="nav-i" href="apb-purchasing.html"><svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>Purchasing</a>
+            <a class="nav-i" href="apb-contacts.html"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Client contacts</a>
+          </div>
+
+          <div class="nav-group">
+            <div class="nav-g">Quality &amp; compliance</div>
+            <a class="nav-i" href="apb-certs.html"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M9 12l-4 9 7-3 7 3-4-9"/></svg>Cert hub</a>
+            <a class="nav-i" href="apb-iso.html"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>ISO 9001</a>
+            <a class="nav-i" href="apb-compliance.html"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Compliance hub</a>
+            <a class="nav-i" href="../APB Lead Opportunities/index.html" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M8 11h6M11 8v6"/></svg>GovCon bids</a>
+          </div>
+
+          <div class="nav-group">
+            <div class="nav-g">More</div>
+            <a class="nav-i" href="apb-products.html"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>Product studio</a>
+            <a class="nav-i" href="apb-used-parts.html"><svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>Used parts</a>
+            <a class="nav-i" href="apb-portals.html"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>Partner portals</a>
+            <a class="nav-i" href="apb-dealer.html" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18M3 12h18"/></svg>Dealer portal</a>
+            <a class="nav-i" href="https://fullstackflow11.github.io/apb-ops/apb-dashboard.html" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l3-4 3 3 4-6"/></svg>Ops dashboard</a>
+            <a class="nav-i" href="https://fullstackflow11.github.io/apb-ops/apb-tech-portal.html" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Tech timesheet</a>
+            <a class="nav-i" href="https://www.apb1.com" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>apb1.com</a>
+          </div>
+        </nav>
+        <div class="sb-empty" id="sbEmpty">No tools match.</div>
+      </aside>
+
+      <!-- ── Overview ──────────────────────────────── -->
+      <section class="overview">
+        <div class="ov-head">
+          <div>
+            <h1 id="ovGreeting">Here's the yard today</h1>
+            <p id="ovSub">Loading…</p>
+          </div>
+          <div class="ov-actions" id="ovActions"></div>
+        </div>
+
+        <div class="attn" id="attnStrip"></div>
+
+        <div class="ov-grid" id="ovGrid"></div>
+      </section>
+
+    </div>
+
+  </div><!-- /data-view="staff" -->
+
+
+  <!-- ══════════════════════════════════════════════
+       TECH VIEW
+  ══════════════════════════════════════════════ -->
+  <div data-view="tech">
+
+    <!-- ── Field Hero ────────────────────────────── -->
+    <section class="hero">
+      <svg class="hero-anchor" viewBox="0 0 100 100" fill="white" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="50" cy="22" r="8" fill="none" stroke="white" stroke-width="5"/>
+        <line x1="50" y1="30" x2="50" y2="80" stroke="white" stroke-width="5" stroke-linecap="round"/>
+        <line x1="25" y1="45" x2="75" y2="45" stroke="white" stroke-width="5" stroke-linecap="round"/>
+        <path d="M25,45 Q18,70 30,80" fill="none" stroke="white" stroke-width="5" stroke-linecap="round"/>
+        <path d="M75,45 Q82,70 70,80" fill="none" stroke="white" stroke-width="5" stroke-linecap="round"/>
+        <line x1="30" y1="80" x2="50" y2="80" stroke="white" stroke-width="5" stroke-linecap="round"/>
+        <line x1="50" y1="80" x2="70" y2="80" stroke="white" stroke-width="5" stroke-linecap="round"/>
+      </svg>
+      <div class="hero-body">
+        <div class="eyebrow">All Points Boats · Fort Lauderdale, FL</div>
+        <h1>Built Different.</h1>
+        <p class="tagline">Quality marine and industrial craftsmanship. Every job, every time.</p>
+
+        <div class="hero-actions">
+          <a class="ha prim" href="https://fullstackflow11.github.io/apb-ops/apb-tech-portal.html" target="_blank" rel="noopener">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+            Clock In →
+          </a>
+          <a class="ha ghost" href="https://fullstackflow11.github.io/apb-ops/apb-dashboard.html" target="_blank" rel="noopener">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l3-4 3 3 4-6"/></svg>
+            Active Projects
+          </a>
+          <a class="ha ghost" href="https://www.apb1.com" target="_blank" rel="noopener">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>
+            apb1.com
+          </a>
+        </div>
       </div>
-      <div class="dash-panel-body" id="todoList"></div>
-    </div>
-    <div class="dash-panel">
-      <div class="dash-panel-header"><span class="dash-panel-title">Calendar</span></div>
-      <div class="dash-panel-body">
-        <div class="calendar-placeholder"><div class="big">📅</div>Outlook calendar not connected yet.<br><a href="https://outlook.office.com/calendar/" target="_blank" style="color:var(--accent);font-size:12px;font-weight:600">Open Outlook Calendar →</a></div>
+
+      <div class="field-kpis">
+        <div class="fk"><b id="fieldDate">—</b><span>Today</span></div>
+        <div class="fk"><b>Fort Lauderdale, FL</b><span>Location</span></div>
+        <div class="fk"><b>28 Years Strong</b><span>In Business</span></div>
+        <div class="fk"><b>Marine · Industrial</b><span>Specialty</span></div>
       </div>
+    </section>
+
+    <!-- ── Field Tiles ───────────────────────────── -->
+    <div class="sec">What We Need You To Do <span class="ln"></span></div>
+    <div class="grid-field">
+
+      <a class="tile blue" href="apb-tasks.html">
+        <span class="tbadge" id="badgeMyTasks"></span>
+        <div class="ic"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <h3>My Tasks</h3>
+        <p>Your assigned work.</p>
+        <div class="sp"></div><div class="go">Open</div>
+      </a>
+
+      <a class="tile green" href="apb-status.html">
+        <div class="ic"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9a2 2 0 0 1 2-2h2l1-2h8l1 2h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3"/></svg></div>
+        <h3>Field Updates</h3>
+        <p>Post a project status + photos.</p>
+        <div class="sp"></div><div class="go">Open</div>
+      </a>
+
+      <a class="tile ext soft" href="https://fullstackflow11.github.io/apb-ops/apb-tech-portal.html" target="_blank" rel="noopener">
+        <div class="ic"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></div>
+        <h3>Tech Timesheet Portal</h3>
+        <p>Clock in and log hours.</p>
+        <div class="sp"></div><div class="go">Open</div>
+      </a>
+
+      <a class="tile blue" href="apb-pto.html">
+        <div class="ic"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
+        <h3>Time Off</h3>
+        <p>Request PTO and view the calendar.</p>
+        <div class="sp"></div><div class="go">Open</div>
+      </a>
+
+      <a class="tile ext soft" href="https://fullstackflow11.github.io/apb-ops/apb-dashboard.html" target="_blank" rel="noopener">
+        <div class="ic"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l3-4 3 3 4-6"/></svg></div>
+        <h3>Ops Dashboard</h3>
+        <p>Live operations dashboard.</p>
+        <div class="sp"></div><div class="go">Open</div>
+      </a>
+
+      <a class="tile ext soft" href="https://www.apb1.com" target="_blank" rel="noopener">
+        <div class="ic"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg></div>
+        <h3>apb1.com</h3>
+        <p>The public All Points Boats website.</p>
+        <div class="sp"></div><div class="go">Open</div>
+      </a>
+
     </div>
-  </div>
 
-  <!-- ── R&D ── -->
-  <div class="section-head" id="rdSection" style="margin-top:28px"><h2>R&D Review</h2><div class="rule"></div></div>
-  <div class="dash-panel">
-    <div class="dash-panel-header"><span class="dash-panel-title">Flagged Items</span><span class="dash-panel-count amber" id="rdPendingCount">—</span></div>
-    <div class="dash-panel-body" id="rdList"><div class="spinner-sm"></div></div>
-  </div>
-
-
-
-
-  <div class="section-head" style="margin-top:20px;margin-bottom:10px"><h2>Social Media</h2><div class="rule"></div></div>
-  <div class="grid g4">
-    <a class="nav-card blue" href="https://www.facebook.com/allpointsboats/" target="_blank">
-      <div class="card-icon icon-blue">📘</div>
-      <div class="card-title">Facebook</div>
-      <div class="card-desc">@allpointsboats — posts, messages, and reviews.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card violet" href="https://www.instagram.com/allpointsboats/" target="_blank">
-      <div class="card-icon icon-violet">📸</div>
-      <div class="card-title">Instagram</div>
-      <div class="card-desc">@allpointsboats — photos and stories.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card cyan" href="https://www.linkedin.com/company/all-points-boats" target="_blank">
-      <div class="card-icon icon-cyan">💼</div>
-      <div class="card-title">LinkedIn</div>
-      <div class="card-desc">Company page and professional network.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card red" href="https://www.youtube.com/results?search_query=all+points+boats+fort+lauderdale" target="_blank">
-      <div class="card-icon icon-red">▶️</div>
-      <div class="card-title">YouTube</div>
-      <div class="card-desc">Video content and channel presence.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-  </div>
-
-  <div class="section-head" style="margin-top:20px;margin-bottom:10px"><h2>Marine & Weather</h2><div class="rule"></div></div>
-  <div class="grid g4">
-    <a class="nav-card blue" href="https://www.marinetraffic.com/en/ais/home/centerx:-80.14/centery:26.12/zoom:11" target="_blank">
-      <div class="card-icon icon-blue">🚢</div>
-      <div class="card-title">MarineTraffic</div>
-      <div class="card-desc">Live AIS vessel tracking — Ft Lauderdale area.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card cyan" href="https://forecast.weather.gov/MapClick.php?lat=26.12&lon=-80.14" target="_blank">
-      <div class="card-icon icon-cyan">🌊</div>
-      <div class="card-title">Marine Forecast</div>
-      <div class="card-desc">NWS Miami — offshore and coastal conditions.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card green" href="https://www.windy.com/?26.122,-80.137,11" target="_blank">
-      <div class="card-icon icon-green">💨</div>
-      <div class="card-title">Windy</div>
-      <div class="card-desc">Wind, waves, and weather map overlay.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-    <a class="nav-card slate" href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722956" target="_blank">
-      <div class="card-icon icon-slate">🌙</div>
-      <div class="card-title">Tides</div>
-      <div class="card-desc">NOAA tide predictions — Port Everglades.</div>
-      <div class="card-arrow">↗</div>
-    </a>
-  </div>
-
-  <!-- ── Live Maps ── -->
-  <div class="section-head" style="margin-top:28px"><h2>Live</h2><div class="rule"></div></div>
-  <div class="widget-grid">
-    <div class="dash-panel">
-      <div class="dash-panel-header"><span class="dash-panel-title">Marine Traffic — Ft Lauderdale</span></div>
-      <div><iframe class="embed" height="340" src="https://www.marinetraffic.com/en/ais/embed/zoom:11/centery:26.12/centerx:-80.14/maptype:4/shownames:true/mmsi:0/shipid:0/fleet:/fleet_id:/vtypes:/showmenu:false/remember:false" allowfullscreen></iframe></div>
-    </div>
-    <div class="dash-panel">
-      <div class="dash-panel-header"><span class="dash-panel-title">Wind & Sea — Windy</span></div>
-      <div><iframe class="embed" height="340" src="https://embed.windy.com/embed2.html?lat=26.122&lon=-80.137&detailLat=26.122&detailLon=-80.137&width=650&height=360&zoom=10&level=surface&overlay=wind&menu=&message=&marker=&calendar=12&pressure=&type=map&location=coordinates&detail=&metricWind=mph&metricTemp=%C2%B0F&radarRange=-1"></iframe></div>
-    </div>
-  </div>
-  <div class="widget-grid" style="margin-top:12px">
-    <div class="dash-panel">
-      <div class="dash-panel-header"><span class="dash-panel-title">Marine Forecast</span><a class="dash-panel-count" href="https://forecast.weather.gov/MapClick.php?lat=26.12&lon=-80.14" target="_blank">NWS ↗</a></div>
-      <div class="dash-panel-body pad" id="marineForecast"><div class="spinner-sm"></div></div>
-    </div>
-    <div class="dash-panel">
-      <div class="dash-panel-header"><span class="dash-panel-title">Tides — Port Everglades</span><a class="dash-panel-count" href="https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=8722956" target="_blank">NOAA ↗</a></div>
-      <div style="padding:0"><iframe src="https://tidesandcurrents.noaa.gov/meteogram.html?id=8722956" width="100%" height="300" frameborder="0" scrolling="no" style="display:block;border:none;background:#fff"></iframe></div>
-    </div>
-  </div>
-
+  </div><!-- /data-view="tech" -->
 
 </main>
 
-<footer class="footer">All Points Boats, Inc. · 900 SW 21st Terrace, Fort Lauderdale, FL 33312 · Internal use only</footer>
+<footer class="foot">
+  <span><b>All Points Boats, Inc.</b> · 900 SW 21st Terrace, Fort Lauderdale, FL 33312</span>
+  <span>(954) 767-8255 · info@apb1.com · apb1.com</span>
+</footer>
 
 <script>
-const SUPABASE_URL = 'https://aanrxyiocxxndkvkeocv.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-async function sbGet(path) {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
-  });
-  return r.json();
-}
-
-// Clock
-function tick() {
-  document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-US', {hour:'numeric',minute:'2-digit',hour12:true});
-}
-tick(); setInterval(tick, 1000);
-
-// Load live stats
-async function loadStats() {
-  const today = new Date().toISOString().split('T')[0];
-
-  // Today's timesheets
-  const ts = await sbGet(`apb_timesheets?select=id,tech_name,total_hours,visit_date&visit_date=eq.${today}`);
-  const lines = await sbGet(`apb_timesheet_lines?select=id,timesheet_id,vessel_name,job_name,hours,reviewed&timesheet_id=in.(${(ts||[]).map(t=>`"${t.id}"`).join(',')||'"00000000-0000-0000-0000-000000000000"'})`);
-
-  // Stats
-  const techCount = (ts||[]).length;
-  const totalHours = (ts||[]).reduce((s,t) => s + parseFloat(t.total_hours||0), 0);
-  const pending = (lines||[]).filter(l => !l.reviewed).length;
-
-  document.getElementById('techsActive').textContent = techCount;
-  document.getElementById('hoursToday').textContent = totalHours.toFixed(1) + 'h';
-  document.getElementById('pendingReview').textContent = pending;
-  document.getElementById('techsDate').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
-
-  // Active jobs count
-  const jobs = await sbGet('apb_jobs?select=id&limit=1&offset=0');
-  const jobCount = await sbGet('apb_jobs?select=count');
-  document.getElementById('activeJobs').textContent = Array.isArray(jobCount) ? jobCount[0]?.count || '—' : '—';
-
-  // Timesheet table
-  const tbody = document.getElementById('tsBody');
-  if (!ts || ts.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" class="ts-loading">No timesheets logged today yet.</td></tr>';
-    return;
-  }
-
-  // Group lines by timesheet
-  const lineMap = {};
-  (lines||[]).forEach(l => { lineMap[l.timesheet_id] = lineMap[l.timesheet_id] || []; lineMap[l.timesheet_id].push(l); });
-
-  tbody.innerHTML = ts.map(t => {
-    const myLines = lineMap[t.id] || [];
-    const reviewed = myLines.length > 0 && myLines.every(l => l.reviewed);
-    const partial = myLines.some(l => l.reviewed) && !reviewed;
-    const badge = reviewed
-      ? `<span class="stat-badge badge-green">Reviewed</span>`
-      : partial
-        ? `<span class="stat-badge badge-amber">Partial</span>`
-        : `<span class="stat-badge badge-blue">Pending</span>`;
-    const vessels = [...new Set(myLines.map(l => l.vessel_name || l.job_name).filter(Boolean))].slice(0,2).join(', ') || '—';
-    return `<tr>
-      <td class="tech-name">${t.tech_name}</td>
-      <td style="color:var(--ink-2)">${vessels}</td>
-      <td class="hours">${parseFloat(t.total_hours||0).toFixed(1)}h</td>
-      <td>${badge}</td>
-    </tr>`;
-  }).join('');
-}
-
-// ── LAUNCHER TABS ──
-function switchLaunch(key,el){ document.querySelectorAll('.launch-tab').forEach(t=>t.classList.remove('active')); document.querySelectorAll('.launch-panel').forEach(p=>p.classList.remove('active')); el.classList.add('active'); document.getElementById('lp-'+key).classList.add('active'); }
-
-// ── TODO ──
-let todos=[];
-function loadTodos(){ try{ todos=JSON.parse(localStorage.getItem('apb_todos')||'[]'); }catch(e){todos=[];} renderTodos(); }
-function saveTodos(){ try{ localStorage.setItem('apb_todos',JSON.stringify(todos)); }catch(e){} }
-function addTodo(){ const inp=document.getElementById('todoInput'); const v=inp.value.trim(); if(!v)return; todos.unshift({id:Date.now(),text:v,done:false}); inp.value=''; saveTodos(); renderTodos(); }
-function toggleTodo(id){ const t=todos.find(x=>x.id===id); if(t)t.done=!t.done; saveTodos(); renderTodos(); }
-function delTodo(id){ todos=todos.filter(x=>x.id!==id); saveTodos(); renderTodos(); }
-function renderTodos(){ const el=document.getElementById('todoList'); const open=todos.filter(t=>!t.done).length; document.getElementById('todoCount').textContent=open;
-if(!todos.length){el.innerHTML='<div class="empty-state">No tasks yet. Add one above.</div>';return;}
-el.innerHTML=todos.map(t=>`<div class="todo-item ${t.done?'done':''}"><input type="checkbox" ${t.done?'checked':''} onchange="toggleTodo(${t.id})"><span class="txt">${t.text.replace(/</g,'&lt;')}</span><span class="del" onclick="delTodo(${t.id})">×</span></div>`).join(''); }
-
-// ── WEATHER ──
-async function loadWeather(){ try{
-const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude=26.1224&longitude=-80.1373&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=mph');
-const d=await r.json(); const w=d.current_weather;
-const map={0:'Clear',1:'Mostly Clear',2:'Partly Cloudy',3:'Overcast',45:'Foggy',51:'Light Drizzle',61:'Light Rain',63:'Rain',65:'Heavy Rain',80:'Showers',95:'T-Storm'};
-document.getElementById('wtemp').textContent=Math.round(w.temperature)+'°F';
-document.getElementById('wdesc').textContent=map[w.weathercode]||'Fair';
-document.getElementById('wwind').textContent='Wind '+Math.round(w.windspeed)+' mph';
-}catch(e){document.getElementById('wdesc').textContent='—';} }
-
-// ── STATUS CONFIG ──
-const STATUS_COLORS={'Ready To Be Billed':'#d8a048','In Progress':'#2a9fd8','Approved':'#9a7ae0','Invoice Sent':'#4ac078','Invoice In Review':'#d84848','Lead':'#555','Estimating':'#c0c020','Proposal Sent':'#d87a35','Proposal Created':'#d87a35','Paid':'#4ac078','Canceled':'#555','Active':'#4ac078','On Hold':'#a06020'};
-const STATUS_BADGE={'Ready To Be Billed':'badge-rtbb','In Progress':'badge-ip','Invoice In Review':'badge-nir','Invoice Sent':'badge-is','Approved':'badge-app','Lead':'badge-lead','Estimating':'badge-lead'};
-function statusBadge(s){ return `<span class="badge ${STATUS_BADGE[s]||'badge-lead'}">${s}</span>`; }
-
-// ── MAIN LOAD ──
-async function loadAll(){
-  document.getElementById('lastUpdated').textContent='Updating...';
-  await Promise.all([loadJobs(), loadTimesheets(), loadWeather(), loadRdReviews()]);
-  document.getElementById('lastUpdated').textContent='Updated '+new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-}
-
-// ── JOBS — reads from apb_engagements + apb_jobs ──
-async function loadJobs(){
-  // Load engagements
-  const {data:engs, error:e1} = await sb.from('apb_engagements').select('*');
-  if(e1){console.error('engagements:', e1); return;}
-
-  // Load jobs with engagement name joined
-  const {data:jobs, error:e2} = await sb.from('apb_jobs').select('id, job_name, job_number, job_type, status, job_status_pct, start_date, completion_date, ms_list_item_id, apb_engagements(name, rep, engagement_type)');
-  if(e2){console.error('jobs:', e2); return;}
-
-  // Load leads for pipeline
-  const {data:leads, error:e3} = await sb.from('apb_leads').select('*');
-
-  // KPIs
-  const activeEngs = engs.filter(e=>e.status==='Active');
-  const inProgressJobs = jobs.filter(j=>j.status==='In Progress');
-  const billJobs = jobs.filter(j=>j.status==='Ready To Be Billed');
-  const nirJobs = jobs.filter(j=>j.status==='Invoice In Review');
-  const openLeads = leads ? leads.filter(l=>!l.converted).length : 0;
-
-  document.getElementById('kpiActive').textContent = activeEngs.length;
-  document.getElementById('kpiOpen').textContent = inProgressJobs.length;
-  document.getElementById('kpiBill').textContent = billJobs.length;
-  document.getElementById('kpiNir').textContent = nirJobs.length;
-  document.getElementById('kpiLeads').textContent = openLeads;
-  ['kpiActive','kpiOpen','kpiBill','kpiNir','kpiLeads'].forEach(id=>document.getElementById(id).classList.remove('loading-pulse'));
-
-  // Pipeline chart — group jobs by status (exclude paid/canceled)
-  const activeJobs = jobs.filter(j=>!['Paid','Canceled'].includes(j.status));
-  const sc={};
-  activeJobs.forEach(j=>{sc[j.status]=(sc[j.status]||0)+1;});
-  const sorted = Object.entries(sc).sort((a,b)=>b[1]-a[1]);
-  const max = sorted[0]?.[1]||1;
-  document.getElementById('pipelineTotal').textContent = activeJobs.length+' jobs';
-  document.getElementById('pipelineChart').innerHTML = sorted.map(([s,n])=>`
-    <div class="pipeline-row">
-      <div class="pipeline-label">${s}</div>
-      <div class="pipeline-bar-wrap"><div class="pipeline-bar" style="width:${(n/max*100).toFixed(0)}%;background:${STATUS_COLORS[s]||'#666'}"></div></div>
-      <div class="pipeline-count">${n}</div>
-    </div>`).join('');
-
-  // Ready to bill list
-  document.getElementById('billCount').textContent = billJobs.length;
-  document.getElementById('billList').innerHTML = billJobs.length
-    ? billJobs.map(j=>`
-      <div class="job-item">
-        <div class="status-dot" style="background:${STATUS_COLORS[j.status]||'#666'}"></div>
-        <div class="job-engagement"><a href="${j.apb_engagements?.name ? 'https://allpointsboats1.sharepoint.com/sites/operations/Lists/Jobs/Grouped%20by%20Project.aspx?FilterField1=Parent%5Fx0020%5FProject&FilterValue1='+encodeURIComponent(j.apb_engagements.name)+'&FilterType1=Text&FilterDisplay1='+encodeURIComponent(j.apb_engagements.name)+'&viewid=3af2d7b3%2D0ba9%2D4ab5%2Dbed7%2Dbc4bdf461cb9' : '#'}" target="_blank" onclick="event.stopPropagation()" title="Open in SharePoint" style="color:inherit;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${j.apb_engagements?.name||'—'}</a></div>
-        <div class="job-num">${j.job_number||''}</div>
-        <div class="job-name">${j.job_name}${j.ms_list_item_id ? '<a href="https://allpointsboats1.sharepoint.com/sites/operations/Lists/Jobs/DispForm.aspx?ID='+j.ms_list_item_id+'" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:var(--ink-3);margin-left:5px;text-decoration:none;" title="Open in SharePoint">↗</a>' : ''}</div>
-        ${statusBadge(j.status)}
-        <div class="job-rep">${j.apb_engagements?.rep||''}</div>
-      </div>`).join('')
-    : '<div class="empty-state">No jobs ready to bill</div>';
-
-  // In progress list
-  document.getElementById('ipCount').textContent = inProgressJobs.length;
-  document.getElementById('ipList').innerHTML = inProgressJobs.length
-    ? inProgressJobs.map(j=>`
-      <div class="job-item">
-        <div class="status-dot" style="background:${STATUS_COLORS[j.status]||'#666'}"></div>
-        <div class="job-engagement"><a href="${j.apb_engagements?.name ? 'https://allpointsboats1.sharepoint.com/sites/operations/Lists/Jobs/Grouped%20by%20Project.aspx?FilterField1=Parent%5Fx0020%5FProject&FilterValue1='+encodeURIComponent(j.apb_engagements.name)+'&FilterType1=Text&FilterDisplay1='+encodeURIComponent(j.apb_engagements.name)+'&viewid=3af2d7b3%2D0ba9%2D4ab5%2Dbed7%2Dbc4bdf461cb9' : '#'}" target="_blank" onclick="event.stopPropagation()" title="Open in SharePoint" style="color:inherit;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${j.apb_engagements?.name||'—'}</a></div>
-        <div class="job-num">${j.job_number||''}</div>
-        <div class="job-name">${j.job_name}${j.ms_list_item_id ? '<a href="https://allpointsboats1.sharepoint.com/sites/operations/Lists/Jobs/DispForm.aspx?ID='+j.ms_list_item_id+'" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:var(--ink-3);margin-left:5px;text-decoration:none;" title="Open in SharePoint">↗</a>' : ''}</div>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--ink-3);flex-shrink:0;">${j.job_status_pct!=null?j.job_status_pct+'%':''}</div>
-        <div class="job-rep">${j.apb_engagements?.rep||''}</div>
-      </div>`).join('')
-    : '<div class="empty-state">No jobs in progress</div>';
-}
-
-// ── TIMESHEETS ──
-async function loadTimesheets(){
-  const {data,error} = await sb.from('apb_timesheets').select('*, apb_jobs(job_name), apb_engagements(name)').order('created_at',{ascending:false}).limit(20);
-  if(error||!data){ document.getElementById('tsList').innerHTML='<div class="empty-state">No timesheets yet</div>'; return; }
-  document.getElementById('tsCount').textContent = data.length+' recent';
-  document.getElementById('tsList').innerHTML = data.length
-    ? data.map(t=>`
-      <div class="ts-row">
-        <div class="ts-tech">${t.tech_name||'—'}</div>
-        <div class="ts-job">${t.apb_engagements?.name||t.vessel_name||'—'}${t.apb_jobs?.job_name?' — '+t.apb_jobs.job_name:''}</div>
-        <div class="ts-hours">${t.total_hours||0}h</div>
-        <div class="ts-date">${t.visit_date ? new Date(t.visit_date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—'}</div>
-      </div>`).join('')
-    : '<div class="empty-state">No timesheets logged yet</div>';
-}
-
-// ── R&D REVIEWS ──
-async function loadRdReviews(){
-  const {data,error} = await sb.from('apb_rd_reviews').select('*').order('created_at',{ascending:false});
-  if(error||!data){ document.getElementById('rdList').innerHTML='<div class="empty-state">No R&D flags found</div>'; return; }
-
-  const pending = data.filter(r=>r.decision==='pending');
-  const count = pending.length;
-
-  document.getElementById('kpiRd').textContent = count;
-  document.getElementById('kpiRd').classList.remove('loading-pulse');
-  document.getElementById('rdPendingCount').textContent = count+' pending';
-
-  if(count > 0){
-    document.getElementById('rdAlert').style.display = 'flex';
-    document.getElementById('rdAlertCount').textContent = count;
-  }
-
-  if(!data.length){
-    document.getElementById('rdList').innerHTML='<div class="empty-state">No R&D items flagged yet. Items will appear here when AI flags potential R&D activity.</div>';
-    return;
-  }
-
-  document.getElementById('rdList').innerHTML = data.map(r=>`
-    <div class="rd-item" id="rd-${r.id}">
-      <div class="rd-item-header">
-        <div class="rd-entity">${r.entity_name||'—'}</div>
-        <span class="rd-type">${r.entity_type?.toUpperCase()||'—'}</span>
-        <span class="${r.ai_confidence==='high'?'rd-conf-high':'rd-conf-medium'}">${(r.ai_confidence||'').toUpperCase()} CONFIDENCE</span>
-      </div>
-      <div class="rd-reason">${r.ai_flag_reason||'—'}</div>
-      <div class="rd-actions">
-        ${r.decision==='pending'
-          ? `<button class="rd-btn rd-btn-approve" onclick="decideRd('${r.id}','approved')">✓ Approve R&D</button>
-             <button class="rd-btn rd-btn-reject" onclick="decideRd('${r.id}','rejected')">✕ Not R&D</button>`
-          : `<span class="rd-decided ${r.decision}">${r.decision==='approved'?'✓ Approved':'✕ Rejected'}</span>
-             <span style="font-size:11px;color:var(--ink-3);margin-left:8px;">by ${r.reviewed_by||'unknown'}</span>`
-        }
-      </div>
-    </div>`).join('');
-}
-
-async function decideRd(id, decision){
-  const reviewer = _currentUser || 'admin';
-  const {error} = await sb.from('apb_rd_reviews').update({
-    decision, reviewed_by: reviewer, reviewed_at: new Date().toISOString()
-  }).eq('id', id);
-  if(error){ alert('Error saving decision: '+error.message); return; }
-  // Update source entity flag too
-  const {data:review} = await sb.from('apb_rd_reviews').select('entity_type,entity_id').eq('id',id).single();
-  if(review){
-    const table = review.entity_type==='engagement' ? 'apb_engagements' : review.entity_type==='job' ? 'apb_jobs' : 'apb_leads';
-    await sb.from(table).update({rd_flag:decision, rd_reviewed_by:reviewer, rd_reviewed_at:new Date().toISOString()}).eq('id',review.entity_id);
-  }
-  loadRdReviews();
-}
-
-// ── MARINE FORECAST ──
-async function loadMarineForecast(){
-  try{
-    const r = await fetch('https://api.weather.gov/zones/forecast/FLZ168/forecast');
-    const d = await r.json();
-    const periods = (d.properties&&d.properties.periods)?d.properties.periods.slice(0,4):[];
-    if(!periods.length) throw new Error('no periods');
-    document.getElementById('marineForecast').innerHTML = periods.map(p=>`
-      <div style="padding:9px 0;border-bottom:1px solid var(--line);">
-        <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:1px;margin-bottom:3px;">${p.name}${p.temperature&&p.temperatureUnit?' · '+p.temperature+'°'+p.temperatureUnit:''}</div>
-        <div style="font-size:13px;color:var(--text);line-height:1.5;">${p.detailedForecast}</div>
-      </div>`).join('');
-  }catch(e){
-    try{
-      const r2 = await fetch('https://api.weather.gov/gridpoints/MFL/110,61/forecast');
-      const d2 = await r2.json();
-      const periods = (d2.properties&&d2.properties.periods)?d2.properties.periods.slice(0,4):[];
-      document.getElementById('marineForecast').innerHTML = periods.map(p=>`
-        <div style="padding:9px 0;border-bottom:1px solid var(--line);">
-          <div style="font-family:var(--mono);font-size:11px;color:var(--accent);margin-bottom:3px;">${p.name}${p.temperature&&p.temperatureUnit?' · '+p.temperature+'°'+p.temperatureUnit:''}</div>
-          <div style="font-size:13px;color:var(--text);line-height:1.5;">${p.detailedForecast}</div>
-        </div>`).join('');
-    }catch(e2){
-      document.getElementById('marineForecast').innerHTML='<div class="empty-state">Forecast unavailable<br><a href="https://forecast.weather.gov/MapClick.php?lat=26.12&lon=-80.14" target="_blank" style="color:var(--accent);font-size:12px;">Open NWS ↗</a></div>';
-    }
-  }
-}
-
-// ── TIDES ──
-async function loadTides(){
-  try{
-    const today = new Date().toISOString().split('T')[0].replace(/-/g,'');
-    const noaaUrl = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&application=apb&begin_date=${today}&end_date=${today}&datum=MLLW&station=8722956&time_zone=lst_ldt&units=english&interval=hilo&format=json`;
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(noaaUrl)}`;
-    const r = await fetch(proxyUrl);
-    const wrapper = await r.json();
-    const d = JSON.parse(wrapper.contents);
-    const preds = d.predictions||[];
-    if(!preds.length){document.getElementById('tideInfo').innerHTML='<div class="empty-state">Tide data unavailable</div>';return;}
-    document.getElementById('tideInfo').innerHTML = preds.map(p=>{
-      const t=new Date(p.t.replace(' ','T')); const time=t.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-      const hi=p.type==='H';
-      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);">
-        <span style="font-family:var(--mono);font-size:13px;color:${hi?'var(--accent)':'var(--silver-dim)'};">${hi?'▲ HIGH':'▼ LOW'}</span>
-        <span style="font-size:13px;color:var(--text);">${time}</span>
-        <span style="font-family:var(--mono);font-size:13px;color:var(--ink);">${parseFloat(p.v).toFixed(1)} ft</span>
-      </div>`;
-    }).join('');
-  }catch(e){document.getElementById('tideInfo').innerHTML='<div class="empty-state">Tide data unavailable</div>';}
-}
-
-setInterval(loadAll, 5*60*1000);
-
-
-
-// ── Auth ──
-const ADMINS = {
-  'christina@apb1.com':  '1234',
-  'jerry@apb1.com':      '0123',
-  'nate@apb1.com':       '1122',
-  'christopher@apb1.com':'2233',
-  'chelsea@apb1.com':    '3344',
-  'brandonw@apb1.com':   '2211',
-  'bryce@apb1.com':      '1100',
+// ── Role mode (admin / pm / tech) ──────────────────
+// Which roles see which page on the home grid (admin always sees all). Keyed by href substring.
+var WORLD = {
+  "apb-pm.html":["pm","purchasing"], "apb-fleet.html":["pm","fleet"], "apb-tasks.html":["pm","purchasing"],
+  "apb-proposal.html":["pm"], "apb-estimate.html":["pm"], "apb-sop.html":["pm"],
+  "apb-mtr.html":["pm","purchasing"], "apb-purchasing.html":["pm","purchasing"], "apb-procurement.html":["pm","purchasing"],
+  "apb-accounting.html":["accounting"], "apb-contacts.html":["accounting"],
+  "apb-compliance.html":[], "Lead Opportunities":[], "apb-iso.html":[], "apb-dealer.html":[],
+  "apb-certs.html":["pm"], "apb-products.html":["pm"],
+  "apb-used-parts.html":["pm","purchasing"], "apb-portals.html":["pm","purchasing"],
+  "apb-pto.html":["pm","tech","accounting","purchasing"],
+  "apb-status.html":["pm","tech","purchasing"],
+  "apb-dashboard.html":["pm","purchasing","accounting"], "apb-tech-portal.html":["pm","purchasing"], "apb1.com":["pm","purchasing","accounting"]
 };
-const AUTH_KEY = 'apb_hub_auth_v2';
+var SEARCH = "", ROLE = "admin";
+var NAV_KW = {
+  "apb-pto.html":"pto vacation sick leave holiday time off",
+  "apb-status.html":"field updates status report photos crew log progress jobsite",
+  "apb-mtr.html":"material test report traceability heat mill",
+  "apb-certs.html":"certification welder wpq osha twic calibration",
+  "apb-accounting.html":"money financial pipeline receivables revenue ar invoices heartbeat",
+  "apb-purchasing.html":"buy orders vendors consumables requests",
+  "apb-procurement.html":"materials drawing takeoff mcmaster pricing",
+  "apb-pm.html":"jobs projects vessels active console",
+  "apb-fleet.html":"fleet vessels boats chelsea rae wywy redundansea refit maintenance company boats apb1 apb2 apb3",
+  "apb-tasks.html":"dispatch assignments crew kanban",
+  "apb-proposal.html":"quote bid client send",
+  "apb-estimate.html":"budget ballpark quick",
+  "apb-sop.html":"procedures training videos standard operating",
+  "apb-contacts.html":"clients customers directory",
+  "apb-compliance.html":"insurance coi certificates facility",
+  "Lead Opportunities":"govcon government sam bids federal",
+  "apb-iso.html":"9001 quality readiness audit",
+  "apb-dealer.html":"partner brand marketing assets",
+  "apb-products.html":"store retail ideas product studio",
+  "apb-used-parts.html":"surplus resale salvage parts",
+  "apb-portals.html":"suppliers vendors links portals",
+  "apb-dashboard.html":"ops live operations",
+  "apb-tech-portal.html":"timesheet clock hours field tech",
+  "apb1.com":"website public"
+};
+function navItems(){ return document.querySelectorAll('[data-view="staff"] .nav-i'); }
+// Role-world gating for the sidebar nav.
+function applyWorld(role){
+  ROLE = role;
+  navItems().forEach(function(t){
+    var vis;
+    if(t.dataset.key === "overview"){ vis = true; }
+    else {
+      var href = t.getAttribute("href") || "";
+      vis = (role === "admin");
+      if(!vis){ for(var key in WORLD){ if(href.indexOf(key) >= 0){ vis = WORLD[key].indexOf(role) >= 0; break; } } }
+    }
+    t.dataset.role = vis ? "1" : "0";
+    if(!t.dataset.search){
+      var base = (t.textContent||"").trim().toLowerCase();
+      var href = t.getAttribute("href") || "";
+      for(var kk in NAV_KW){ if(href.indexOf(kk) >= 0){ base += " " + NAV_KW[kk]; break; } }
+      t.dataset.search = base;
+    }
+  });
+  applyFilters();
+}
+// Combined role-world + search visibility for nav items; hides empty groups.
+function applyFilters(){
+  var q = (SEARCH||"").trim().toLowerCase();
+  var any = false;
+  navItems().forEach(function(t){
+    var roleVis = t.dataset.role !== "0";
+    var match = !q || (t.dataset.search||"").indexOf(q) >= 0;
+    var show = roleVis && match;
+    t.style.display = show ? "" : "none";
+    if(show) any = true;
+  });
+  document.querySelectorAll('[data-view="staff"] .nav-group').forEach(function(g){
+    var vis = Array.prototype.some.call(g.querySelectorAll(".nav-i"), function(t){ return t.style.display !== "none"; });
+    g.style.display = vis ? "" : "none";
+  });
+  var e = document.getElementById("sbEmpty");
+  if(e) e.style.display = (q && !any) ? "" : "none";
+}
+function onSearch(v){ SEARCH = v; applyFilters(); }
+function clearSearch(){ var i=document.getElementById("toolSearch"); if(i) i.value=""; onSearch(""); if(i) i.focus(); }
+function toggleSidebar(){ document.body.classList.toggle("nav-open"); }
+function closeSidebar(){ document.body.classList.remove("nav-open"); }
+function adaptHero(){ /* overview heading is set by renderOverview */ }
 
-function checkLogin(){
-  const email = (document.getElementById('authEmail').value||'').trim().toLowerCase();
-  const pin   = (document.getElementById('authPin').value||'').trim();
-  const errEl = document.getElementById('authError');
-  const btn   = document.getElementById('authBtn');
-  if(!email||!pin){errEl.textContent='Enter your email and PIN.';errEl.style.display='block';return;}
-  if(ADMINS[email] && ADMINS[email] === pin){
-    localStorage.setItem(AUTH_KEY, email);
-    errEl.style.display='none';
-    hideGate(email);
-  } else {
-    errEl.textContent='Incorrect email or PIN.';
-    errEl.style.display='block';
-    document.getElementById('authPin').value='';
-    document.getElementById('authPin').focus();
+// ── Overview dashboard (attention + widgets, from live localStorage) ──
+var ICON = {
+  cal:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+  cert:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M9 12l-4 9 7-3 7 3-4-9"/></svg>',
+  file:'<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>',
+  cash:'<svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg>',
+  check:'<svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
+  chart:'<svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l3-3 3 2 4-5"/></svg>',
+  anchor:'<svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.5"/><line x1="12" y1="22" x2="12" y2="8"/><path d="M5 12a7 7 0 0 0 14 0M3 12h4M17 12h4"/></svg>',
+  fileplus:'<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 18v-6M9 15h6"/></svg>',
+  calc:'<svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h2M14 10h2M8 14h2M14 14h2M8 18h2M14 18h2"/></svg>',
+  plus:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+  cart:'<svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>',
+  search:'<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>'
+};
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function money(n){ return "$"+Math.round(+n||0).toLocaleString(); }
+function moneyShort(n){ n=+n||0; if(n>=1e6) return "$"+(n/1e6).toFixed(n>=1e7?0:1)+"M"; if(n>=1e3) return "$"+Math.round(n/1e3)+"k"; return "$"+Math.round(n); }
+function ls(k,f){ try{ return JSON.parse(localStorage.getItem(k)||f); }catch(e){ return JSON.parse(f); } }
+function setNavBadge(hrefPart, text, red){
+  var n = document.querySelector('[data-view="staff"] .nav-i[href*="'+hrefPart+'"]');
+  if(!n) return;
+  var b = n.querySelector(".nb");
+  if(!text){ if(b) b.remove(); return; }
+  if(!b){ b=document.createElement("span"); b.className="nb"; n.appendChild(b); }
+  b.textContent = text; b.classList.toggle("red", !!red);
+}
+function setKpis(arr){
+  for(var i=0;i<4;i++){
+    var v=document.getElementById("kpi"+(i+1)+"v"), l=document.getElementById("kpi"+(i+1)+"l");
+    if(l) l.textContent = arr[i]?arr[i][1]:"";
+    if(v){ var val=arr[i]?String(arr[i][0]):"—"; if(typeof animateCount==="function" && /^\d+$/.test(val)) animateCount(v,val,900); else v.textContent=val; }
   }
 }
-
-function hideGate(email){
-  document.getElementById('authGate').style.display='none';
-  document.body.style.overflow='';
-  const so=document.querySelector('[onclick="signOut()"]');
-  if(so&&email){so.insertAdjacentHTML('beforebegin','<span style="font-size:12px;color:var(--ink-3);font-weight:500;padding:0 4px">'+email.split('@')[0]+'</span>');}
-  if(typeof loadAll==='function') loadAll();
-  if(typeof loadTodos==='function') loadTodos();
-  if(typeof loadMarineForecast==='function') loadMarineForecast();
-  if(typeof loadTides==='function') loadTides();
+function applyTheme(t){ document.body.classList.toggle("theme-light", t==="light"); var b=document.getElementById("themeToggle"); if(b) b.textContent = (t==="light") ? "☀️" : "🌙"; try{ localStorage.setItem("apb_theme", t); }catch(e){} }
+function toggleTheme(){ applyTheme(document.body.classList.contains("theme-light") ? "dark" : "light"); }
+(function(){ var t="dark"; try{ t=localStorage.getItem("apb_theme")||"dark"; }catch(e){} applyTheme(t); })();
+// ── dashboard cards (return HTML strings) ──
+function jobsCard(list){  // list = active PROJECTS [{name, pct, jobs}]
+  var head='<h4>'+ICON.anchor+'Active projects <a href="apb-pm.html">Open</a></h4>';
+  if(!list.length) return '<div class="ov-card">'+head+'<p class="ov-empty">No projects cached yet — <a href="apb-pm.html">open the Project Console</a> once to load them here.</p></div>';
+  return '<div class="ov-card">'+head+list.slice(0,5).map(function(p){
+    var c = p.pct>=75?"var(--green)":"var(--accent)";
+    return '<div class="pl-row"><div class="pl-top"><span>'+esc(p.name)+(p.jobs>1?' &middot; '+p.jobs+' jobs':"")+'</span><span>'+p.pct+'%</span></div><div class="pl-bar"><i style="width:'+Math.max(3,Math.min(100,p.pct))+'%;background:'+c+'"></i></div></div>';
+  }).join("")+(list.length>5?'<div class="ov-more">+'+(list.length-5)+' more</div>':"")+'</div>';
+}
+function fieldAgo(ts){ var s=(Date.now()-ts)/1000; if(s<3600)return Math.max(1,Math.floor(s/60))+'m'; if(s<86400)return Math.floor(s/3600)+'h'; return Math.floor(s/86400)+'d'; }
+function fieldCard(reps){
+  var head='<h4>'+ICON.file+'Field updates <a href="apb-status.html">Open</a></h4>';
+  if(!reps.length) return '<div class="ov-card">'+head+'<p class="ov-empty">No field updates yet — the crew posts project status + photos in <a href="apb-status.html">Field Updates</a>.</p></div>';
+  return '<div class="ov-card">'+head+reps.slice(0,4).map(function(r){
+    return '<div class="job-row"><span class="jn">'+esc((r.author||'?').split(' ')[0])+' &middot; '+esc(r.project||'')+'</span><span class="job-pill">'+fieldAgo(r.at)+'</span></div>';
+  }).join("")+(reps.length>4?'<div class="ov-more">+'+(reps.length-4)+' more</div>':"")+'</div>';
+}
+function proposalsCard(pipe){
+  var head='<h4>'+ICON.file+'Proposals &amp; quotes <a href="apb-proposal.html">Open</a></h4>';
+  var props=pipe.filter(function(r){return /proposal|quote|negoti/i.test(r.stage||"");}).slice(0,5);
+  if(!props.length) return '<div class="ov-card">'+head+'<p class="ov-empty">No open proposals. <a href="apb-proposal.html">Build one &rsaquo;</a></p></div>';
+  return '<div class="ov-card">'+head+props.map(function(r){return '<div class="job-row"><span class="jn">'+esc(r.project||r.client||"Proposal")+'</span><span class="job-pill mono">'+money(+r.value||0)+'</span></div>';}).join("")+'</div>';
+}
+function taskCard(tasks){
+  var head='<h4>'+ICON.check+'Task board <a href="apb-tasks.html">Open</a></h4>';
+  if(!Array.isArray(tasks)||!tasks.length) return '<div class="ov-card">'+head+'<p class="ov-empty">No tasks yet. <a href="apb-tasks.html">Open the board &rsaquo;</a></p></div>';
+  var todo=tasks.filter(function(t){return t.status==="todo"||!t.status;}).length, doing=tasks.filter(function(t){return t.status==="doing";}).length, done=tasks.filter(function(t){return t.status==="done";}).length;
+  return '<div class="ov-card">'+head+'<div class="mini-stats"><div><b>'+todo+'</b><span>To do</span></div><div class="'+(doing?'warn':'')+'"><b>'+doing+'</b><span>In progress</span></div><div><b>'+done+'</b><span>Done</span></div></div></div>';
+}
+function mtrCard(mNc,mPend){
+  var head='<h4>'+ICON.file+'Material traceability <a href="apb-mtr.html">Open</a></h4>';
+  return '<div class="ov-card">'+head+'<div class="mini-stats"><div class="'+(mNc?'bad':'')+'"><b>'+mNc+'</b><span>Non-conf.</span></div><div class="'+(mPend?'warn':'')+'"><b>'+mPend+'</b><span>To review</span></div></div></div>';
+}
+function purchasingCard(preq,open,order){
+  var head='<h4>'+ICON.cart+'Purchasing <a href="apb-purchasing.html">Open</a></h4>';
+  var recv=Array.isArray(preq)?preq.filter(function(r){return /receiv/i.test(r.status||"");}).length:0;
+  return '<div class="ov-card">'+head+'<div class="mini-stats"><div class="'+(open?'warn':'')+'"><b>'+open+'</b><span>To place</span></div><div><b>'+order+'</b><span>On order</span></div><div><b>'+recv+'</b><span>Received</span></div></div></div>';
+}
+function complianceCard(cExp,cSoon){
+  var head='<h4>'+ICON.cert+'Compliance &amp; certs <a href="apb-certs.html">Open</a></h4>';
+  return '<div class="ov-card">'+head+'<div class="mini-stats"><div class="'+(cExp?'bad':'')+'"><b>'+cExp+'</b><span>Expired</span></div><div class="'+(cSoon?'warn':'')+'"><b>'+cSoon+'</b><span>Expiring 30d</span></div></div></div>';
+}
+function moneyGlanceCard(pipeOpen,bill){  // admin only — secondary glance, NOT the headline
+  var head='<h4>'+ICON.chart+'Money at a glance <a href="apb-accounting.html">Accounting &rsaquo;</a></h4>';
+  return '<div class="ov-card">'+head+'<div class="mini-stats"><div><b class="mono">'+moneyShort(pipeOpen)+'</b><span>Open pipeline</span></div><div class="'+(bill?'warn':'')+'"><b class="mono">'+moneyShort(bill)+'</b><span>Ready to bill</span></div></div><div class="ov-note">Full financials live in Accounting.</div></div>';
 }
 
-function signOut(){
-  localStorage.removeItem(AUTH_KEY);
-  location.reload();
+function renderOverview(){
+  var now = new Date(), hr = now.getHours();
+  var greet = hr<12 ? "Good morning" : hr<17 ? "Good afternoon" : "Good evening";
+
+  // ── load data once ──
+  var pipe = ls("apb_pipeline","[]"); if(!Array.isArray(pipe)) pipe=[];
+  // Active jobs come from the Project Console's shared cache; roll them up into PROJECTS (parent engagement) with an averaged %.
+  var jobsCache = ls("apb_jobs_cache","[]"); if(!Array.isArray(jobsCache)) jobsCache=[];
+  // Self-heal: if the Console hasn't written a cache yet, or it's in the OLD
+  // shape (no `project` key — would render as individual JOBS), fall back to the
+  // shared demo source so the home always shows PROJECTS, not jobs.
+  if(window.APBJobs && APBJobs.stale(jobsCache)){
+    jobsCache = APBJobs.demoCache();
+    try{ localStorage.setItem("apb_jobs_cache", JSON.stringify(jobsCache)); }catch(e){}
+  }
+  var activeProjects = (window.APBJobs)
+    ? APBJobs.rollUp(jobsCache)
+    : (function(){
+        var _pm={};
+        jobsCache.filter(function(j){return j && !j.lead;}).forEach(function(j){ var p=j.project||j.name||"(no project)"; if(!_pm[p]) _pm[p]={name:p,sum:0,n:0}; _pm[p].sum+=(+j.pct||0); _pm[p].n++; });
+        return Object.keys(_pm).map(function(k){ var o=_pm[k]; return {name:o.name, pct:o.n?Math.round(o.sum/o.n):0, jobs:o.n}; }).sort(function(a,b){ return a.pct-b.pct; });
+      })();
+  var pto = ls("apb_pto","[]"); var ptoPend=Array.isArray(pto)?pto.filter(function(r){return r.status==="pending";}).length:0;
+  var t0 = new Date(); t0.setHours(0,0,0,0);
+  var certs = ls("apb_certs","[]"); var cExp=0,cSoon=0;
+  if(Array.isArray(certs)) certs.forEach(function(c){ if(!c.expiryDate) return; var d=Math.floor((new Date(c.expiryDate+"T00:00:00")-t0)/86400000); if(d<0)cExp++; else if(d<=30)cSoon++; });
+  var mtrs = ls("apb_mtrs","[]");
+  var mNc = Array.isArray(mtrs)?mtrs.filter(function(m){return m.status==="nc";}).length:0;
+  var mPend = Array.isArray(mtrs)?mtrs.filter(function(m){return m.status==="pending";}).length:0;
+  var tasks = ls("apb_tasks","[]"); if(!Array.isArray(tasks)) tasks=[];
+  var tOpen = tasks.filter(function(t){return t.status!=="done";}).length;
+  var tOver = tasks.filter(function(t){return t.status!=="done"&&t.due&&new Date(t.due)<t0;}).length;
+  var preq = ls("apb_purchase_requests","[]"); if(!Array.isArray(preq)) preq=[];
+  var prOpen = preq.filter(function(r){return /open|new|requested|pending/i.test(r.status||"");}).length;
+  var prOrder = preq.filter(function(r){return /order/i.test(r.status||"");}).length;
+  var props = ls("apb_proposal_drafts","[]"); var propN=Array.isArray(props)?props.length:0;
+  var fieldReps = ls("apb_field_reports","[]"); if(!Array.isArray(fieldReps)) fieldReps=[];
+  if(!propN) propN = pipe.filter(function(r){return /proposal|quote/i.test(r.stage||"");}).length;
+  var bill = pipe.filter(function(r){ return /ready\s*to\s*be\s*billed|invoice\s*in\s*review/i.test(r.stage||""); }).reduce(function(a,r){return a+(+r.value||0);},0);
+  var pipeOpen = pipe.filter(function(r){ return !/won|lost/i.test(r.stage||""); }).reduce(function(a,r){return a+(+r.value||0);},0);
+
+  // nav badges (shared)
+  setNavBadge("apb-pto.html", ptoPend||"", false);
+  setNavBadge("apb-certs.html", (cExp||cSoon)||"", !!cExp);
+  setNavBadge("apb-mtr.html", (mNc||mPend)||"", !!mNc);
+
+  var roleWord = {admin:"here's the whole yard today", pm:"here's your projects today", purchasing:"here's the buy list today", fleet:"here's the company fleet today"}[ROLE] || "here's the yard today";
+  var kpis, actions, attn=[], cards=[];
+
+  if(ROLE==="pm"){
+    // PM — operations only. Per-proposal/per-project amounts OK; NO company totals, NO money alerts.
+    kpis=[[activeProjects.length,"Active projects"],[tOpen,"Open tasks"],[propN,"Proposals out"],[(mNc+mPend),"MTRs to review"]];
+    actions=[["apb-proposal.html","New proposal",ICON.fileplus,1],["apb-estimate.html","Quick estimate",ICON.calc],["apb-tasks.html","New task",ICON.plus],["apb-pto.html","Request PTO",ICON.cal]];
+    if(mNc) attn.push({cls:"red",icon:ICON.file,txt:mNc+" MTR"+(mNc>1?"s":"")+" flagged non-conforming",href:"apb-mtr.html"});
+    else if(mPend) attn.push({cls:"amber",icon:ICON.file,txt:mPend+" MTR"+(mPend>1?"s":"")+" to review",href:"apb-mtr.html"});
+    if(tOver) attn.push({cls:"red",icon:ICON.check,txt:tOver+" task"+(tOver>1?"s":"")+" overdue",href:"apb-tasks.html"});
+    if(cExp) attn.push({cls:"red",icon:ICON.cert,txt:cExp+" certification"+(cExp>1?"s":"")+" expired",href:"apb-certs.html"});
+    else if(cSoon) attn.push({cls:"amber",icon:ICON.cert,txt:cSoon+" cert"+(cSoon>1?"s":"")+" expiring soon",href:"apb-certs.html"});
+    if(ptoPend) attn.push({cls:"blue",icon:ICON.cal,txt:ptoPend+" time-off request"+(ptoPend>1?"s":"")+" to approve",href:"apb-pto.html"});
+    cards=[ jobsCard(activeProjects), fieldCard(fieldReps), proposalsCard(pipe), taskCard(tasks), mtrCard(mNc,mPend) ];
+  } else if(ROLE==="purchasing"){
+    // Purchasing — buying focus. NO financial totals.
+    kpis=[[prOpen,"To place"],[prOrder,"On order"],[activeProjects.length,"Active projects"],[(mNc+mPend),"MTRs"]];
+    actions=[["apb-purchasing.html","New request",ICON.cart,1],["apb-procurement.html","Procurement",ICON.fileplus],["apb-tasks.html","New task",ICON.plus],["apb-pto.html","Request PTO",ICON.cal]];
+    if(prOpen) attn.push({cls:"amber",icon:ICON.cart,txt:prOpen+" purchase request"+(prOpen>1?"s":"")+" to place",href:"apb-purchasing.html"});
+    if(mNc) attn.push({cls:"red",icon:ICON.file,txt:mNc+" MTR"+(mNc>1?"s":"")+" flagged non-conforming",href:"apb-mtr.html"});
+    else if(mPend) attn.push({cls:"amber",icon:ICON.file,txt:mPend+" MTR"+(mPend>1?"s":"")+" to log",href:"apb-mtr.html"});
+    if(ptoPend) attn.push({cls:"blue",icon:ICON.cal,txt:ptoPend+" time-off request"+(ptoPend>1?"s":"")+" pending",href:"apb-pto.html"});
+    cards=[ purchasingCard(preq,prOpen,prOrder), jobsCard(activeProjects), mtrCard(mNc,mPend) ];
+  } else if(ROLE==="fleet"){
+    // Fleet — APB's own three company vessels. Maintenance, refits & vessel records only.
+    kpis=[[3,"Vessels"],[1,"Active refits"],[ptoPend,"PTO pending"],["9","Record sections"]];
+    actions=[["apb-fleet.html","Open Fleet Command",ICON.file,1],["apb-status.html","Log an update",ICON.plus],["apb-pto.html","Request PTO",ICON.cal]];
+    if(ptoPend) attn.push({cls:"blue",icon:ICON.cal,txt:ptoPend+" time-off request"+(ptoPend>1?"s":"")+" pending",href:"apb-pto.html"});
+    cards=[ '<div class="ov-card"><h4>'+ICON.anchor+'Company vessels <a href="apb-fleet.html">Open</a></h4><div class="pl-row"><div class="pl-top"><span>APB 1 — Chelsea Rae</span><span>In service</span></div><div class="pl-bar"><i style="width:100%;background:var(--green)"></i></div></div><div class="pl-row"><div class="pl-top"><span>APB 2 — WYWY</span><span>Refit</span></div><div class="pl-bar"><i style="width:4%;background:var(--accent)"></i></div></div><div class="pl-row"><div class="pl-top"><span>APB 3 — RedundanSea</span><span>62%</span></div><div class="pl-bar"><i style="width:62%;background:var(--accent)"></i></div></div><div class="ov-note">Maintenance, refits and the full record set for each boat.</div></div>', fieldCard(fieldReps) ];
+  } else {
+    // ADMIN — operational command center. Financials are a SECONDARY glance only.
+    kpis=[[activeProjects.length,"Active projects"],[tOpen,"Open tasks"],[propN,"Proposals out"],[(mNc+mPend),"MTRs open"]];
+    actions=[["apb-proposal.html","New proposal",ICON.fileplus,1],["../APB Lead Opportunities/index.html","Track a bid",ICON.search],["apb-tasks.html","New task",ICON.plus],["apb-pto.html","Request PTO",ICON.cal]];
+    if(tOver) attn.push({cls:"red",icon:ICON.check,txt:tOver+" task"+(tOver>1?"s":"")+" overdue",href:"apb-tasks.html"});
+    if(mNc) attn.push({cls:"red",icon:ICON.file,txt:mNc+" MTR"+(mNc>1?"s":"")+" flagged non-conforming",href:"apb-mtr.html"});
+    if(cExp) attn.push({cls:"red",icon:ICON.cert,txt:cExp+" certification"+(cExp>1?"s":"")+" expired",href:"apb-certs.html"});
+    else if(cSoon) attn.push({cls:"amber",icon:ICON.cert,txt:cSoon+" cert"+(cSoon>1?"s":"")+" expiring soon",href:"apb-certs.html"});
+    if(ptoPend) attn.push({cls:"blue",icon:ICON.cal,txt:ptoPend+" time-off request"+(ptoPend>1?"s":"")+" to approve",href:"apb-pto.html"});
+    if(mPend&&!mNc) attn.push({cls:"amber",icon:ICON.file,txt:mPend+" MTR"+(mPend>1?"s":"")+" to review",href:"apb-mtr.html"});
+    if(bill>0) attn.push({cls:"amber",icon:ICON.cash,txt:money(bill)+" ready to bill — hand to Accounting",href:"apb-accounting.html"});
+    cards=[ jobsCard(activeProjects), fieldCard(fieldReps), taskCard(tasks), complianceCard(cExp,cSoon), moneyGlanceCard(pipeOpen,bill) ];
+  }
+
+  setKpis(kpis);
+  var oa=document.getElementById("ovActions");
+  if(oa) oa.innerHTML = actions.map(function(a){ var ext=(a[0].indexOf("http")===0||a[0].indexOf("..")===0); return '<a class="qa'+(a[3]?' prim':'')+'" href="'+a[0]+'"'+(ext?' target="_blank" rel="noopener"':'')+'>'+a[2]+esc(a[1])+'</a>'; }).join("");
+  var strip=document.getElementById("attnStrip");
+  if(strip) strip.innerHTML = attn.length
+    ? attn.map(function(it){ return '<a class="attn-i '+it.cls+'" href="'+it.href+'">'+it.icon+'<span>'+esc(it.txt)+'</span><span class="ar">&rsaquo;</span></a>'; }).join("")
+    : '<div class="attn-clear">'+ICON.check+'<span>All clear — nothing needs you right now.</span></div>';
+  var grid=document.getElementById("ovGrid"); if(grid) grid.innerHTML = cards.join("");
+  var g=document.getElementById("ovGreeting"); if(g) g.textContent = greet+" — "+roleWord;
+  var sub=document.getElementById("ovSub");
+  if(sub){ var ds=now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"}); sub.textContent = ds + (attn.length ? (" · "+attn.length+" thing"+(attn.length>1?"s":"")+" need"+(attn.length>1?"":"s")+" you") : " · all clear"); }
+}
+function setRole(r){
+  if(r === "field") r = "tech";                 // migrate old value
+  if(!["admin","pm","tech","accounting","purchasing","fleet"].includes(r)) r = "admin";
+  localStorage.setItem("apb_role", r);
+  localStorage.removeItem("apb_home_view");      // retire old key
+  const staff = (r === "admin" || r === "pm" || r === "accounting" || r === "purchasing" || r === "fleet");
+  document.querySelectorAll('[data-view="staff"]').forEach(el => el.style.display = staff ? "" : "none");
+  document.querySelectorAll('[data-view="tech"]').forEach(el => el.style.display = (r === "tech") ? "" : "none");
+  if(staff){ applyWorld(r); renderOverview(); }  // each role sees only its world; build the overview
+  document.querySelectorAll(".view-btn").forEach(b => b.classList.toggle("active", b.dataset.for === r));
+  document.getElementById("srvBadge").style.display = (r === "tech") ? "none" : "";
+  // Role switcher is admin-only. An admin previewing another role keeps it (session flag) so they can switch back.
+  var preview = false; try { preview = sessionStorage.getItem("apb_preview") === "1"; } catch(e){}
+  var vt = document.getElementById("viewToggle");
+  if (vt) vt.style.display = (r === "admin" || preview) ? "" : "none";
+}
+// Only reachable from the toggle, which only admins (or an admin mid-preview) can see.
+function pickRole(r){
+  try { if (r === "admin") sessionStorage.removeItem("apb_preview"); else sessionStorage.setItem("apb_preview", "1"); } catch(e){}
+  // Accounting's portal IS the Financial Heartbeat — go straight there, not the tile grid.
+  if (r === "accounting"){ try{ localStorage.setItem("apb_role","accounting"); }catch(e){} location.href = "apb-accounting.html"; return; }
+  setRole(r);
+}
+// init on load (migrate legacy apb_home_view = admin|field)
+(function(){
+  let r = localStorage.getItem("apb_role");
+  if(!r){ const old = localStorage.getItem("apb_home_view"); r = old === "field" ? "tech" : (old || "admin"); }
+  if(r === "field") r = "tech";
+  if(!["admin","pm","tech","accounting","purchasing","fleet"].includes(r)) r = "admin";
+  // Admin lands on this Command Center. Accounting's portal is the Financial Heartbeat — send them there.
+  var params = new URLSearchParams(location.search);
+  if(r === "accounting" && params.get("hub") !== "1"){
+    location.replace("apb-accounting.html");
+    return;
+  }
+  setRole(r);
+})();
+// alias so any legacy callers still work
+function setView(v){ setRole(v); }
+
+// ── Tool search / command bar ──────────────────────
+(function(){
+  var inp = document.getElementById("toolSearch");
+  if(inp){
+    inp.addEventListener("input", function(){ onSearch(this.value); });
+    inp.addEventListener("keydown", function(e){ if(e.key==="Escape"){ clearSearch(); } });
+  }
+  document.addEventListener("keydown", function(e){
+    if(e.key === "/" && document.activeElement !== inp){
+      var tag = (document.activeElement && document.activeElement.tagName || "").toLowerCase();
+      if(tag==="input"||tag==="textarea"||tag==="select") return;
+      e.preventDefault(); if(inp) inp.focus();
+    }
+  });
+})();
+
+// ── Clock ──────────────────────────────────────────
+(function(){
+  const n = document.getElementById("now");
+  function t(){ n.textContent = new Date().toLocaleString("en-US",{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}); }
+  t(); setInterval(t, 30000);
+})();
+
+// ── Field date strip ───────────────────────────────
+(function(){
+  const el = document.getElementById("fieldDate");
+  if(el) el.textContent = new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+})();
+
+// ── Active jobs from localStorage (fallback to demo 25) ──
+(function(){
+  try {
+    const ov = JSON.parse(localStorage.getItem("apb_local_status") || "{}");
+    const n  = Object.keys(ov).length;
+    if(n > 0){
+      const kj = document.getElementById("kpiJobs"); if(kj) kj.textContent = n;
+    }
+  } catch{}
+})();
+
+// ── Proposals Out from saved drafts (fallback to demo 3) ──
+(function(){
+  try {
+    const drafts = JSON.parse(localStorage.getItem("apb_proposal_drafts") || "[]");
+    if(Array.isArray(drafts) && drafts.length){
+      document.getElementById("kpiProp").textContent = drafts.length;
+    }
+  } catch{}
+})();
+
+// ── Topbar scroll behavior ─────────────────────────
+window.addEventListener('scroll', () => {
+  document.querySelector('.topbar').classList.toggle('scrolled', window.scrollY > 40);
+});
+
+// ── KPI counter animation ──────────────────────────
+function animateCount(el, target, duration) {
+  duration = duration || 1200;
+  var start = performance.now();
+  var isNum = /^\d+$/.test(String(target));
+  if (!isNum) {
+    el.style.opacity = '0';
+    el.style.transition = 'opacity .6s';
+    setTimeout(function(){ el.style.opacity = '1'; }, 200);
+    return;
+  }
+  var n = parseInt(target, 10);
+  function frame(now) {
+    var p = Math.min((now - start) / duration, 1);
+    var ease = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(ease * n);
+    if (p < 1) { requestAnimationFrame(frame); }
+    else { el.textContent = target; }
+  }
+  requestAnimationFrame(frame);
 }
 
-// Check on load
-document.body.style.overflow='hidden';
-const _savedEmail = localStorage.getItem(AUTH_KEY);
-if(_savedEmail && ADMINS[_savedEmail]){
-  hideGate(_savedEmail);
-} else {
-  localStorage.removeItem(AUTH_KEY);
-  setTimeout(()=>document.getElementById('authEmail')?.focus(),100);
-}
+// Run KPI counters after a brief delay so values are set first
+setTimeout(function() {
+  var kpiJobs  = document.getElementById('kpiJobs');
+  var kpiBill  = document.getElementById('kpiBill');
+  var kpiLeads = document.getElementById('kpiLeads');
+  var kpiProp  = document.getElementById('kpiProp');
+  if (kpiJobs)  animateCount(kpiJobs,  kpiJobs.textContent.trim());
+  if (kpiBill)  animateCount(kpiBill,  kpiBill.textContent.trim());
+  if (kpiLeads) animateCount(kpiLeads, kpiLeads.textContent.trim());
+  if (kpiProp)  animateCount(kpiProp,  kpiProp.textContent.trim());
+}, 80);
 
-async function openQAJ(){
-  // Load engagements into dropdown
-  const sel = document.getElementById('qajVessel');
-  if(sel.options.length <= 1){
-    const{data}=await sb.from('apb_engagements').select('id,name').eq('status','Active').order('name');
-    (data||[]).forEach(e=>{
-      const o=document.createElement('option');
-      o.value=e.id; o.textContent=e.name;
-      sel.appendChild(o);
+// ── Scroll reveal (IntersectionObserver) ──────────
+(function() {
+  // Respect reduced-motion: only run if animations are enabled
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduced) {
+    // Make everything visible immediately
+    document.querySelectorAll('.tile,.pcard,.sec').forEach(function(el){
+      el.classList.add('visible');
+    });
+    return;
+  }
+
+  function revealBatch(entries, observer) {
+    // Group entries by their parent container so siblings stagger together
+    entries.forEach(function(entry) {
+      if (!entry.isIntersecting) return;
+      var el = entry.target;
+      // Find sibling index within the same parent for stagger
+      var siblings = Array.from(el.parentElement.querySelectorAll('.tile,.pcard'));
+      var idx = siblings.indexOf(el);
+      if (idx < 0) idx = 0;
+      el.style.transitionDelay = (idx * 60) + 'ms';
+      el.classList.add('visible');
+      // Reset delay after transition so hover etc. work cleanly
+      el.addEventListener('transitionend', function reset() {
+        el.style.transitionDelay = '';
+        el.removeEventListener('transitionend', reset);
+      });
+      observer.unobserve(el);
     });
   }
-  // Clear fields
-  ['qajJobNum','qajJobName','qajNotes'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('qajStatus').value='Approved';
-  document.getElementById('qajJobType').value='';
-  document.getElementById('qajRep').value='';
-  document.getElementById('qajMsg').style.display='none';
-  document.getElementById('qajScrim').classList.add('open');
-  document.getElementById('qajJobNum').focus();
-}
-function closeQAJ(){document.getElementById('qajScrim').classList.remove('open');}
-async function saveQAJ(){
-  const engId=document.getElementById('qajVessel').value;
-  const jobNum=document.getElementById('qajJobNum').value.trim();
-  const jobName=document.getElementById('qajJobName').value.trim();
-  const status=document.getElementById('qajStatus').value;
-  const jobType=document.getElementById('qajJobType').value;
-  const rep=document.getElementById('qajRep').value;
-  const notes=document.getElementById('qajNotes').value.trim();
-  const msg=document.getElementById('qajMsg');
-  if(!engId){msg.textContent='Select a vessel/project.';msg.style.display='block';return;}
-  if(!jobNum){msg.textContent='Job number is required.';msg.style.display='block';return;}
-  if(!jobName){msg.textContent='Job name is required.';msg.style.display='block';return;}
-  const btn=document.getElementById('qajSaveBtn');
-  btn.disabled=true; btn.textContent='Saving…';
-  const{error}=await sb.from('apb_jobs').insert({
-    engagement_id:engId,
-    job_number:jobNum,
-    job_name:jobName,
-    job_type:jobType||null,
-    status:status,
-    pm_notes:notes||null,
-    rep:rep||null
-  });
-  btn.disabled=false; btn.textContent='Add Job';
-  if(error){msg.textContent=error.message;msg.style.display='block';return;}
-  closeQAJ();
-  showToast('Job added ✓');
-  await loadAll();
-}
-// Close on backdrop click
-document.getElementById('qajScrim').addEventListener('click',e=>{if(e.target===e.currentTarget)closeQAJ();});
 
+  function revealSec(entries, observer) {
+    entries.forEach(function(entry) {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add('visible');
+      observer.unobserve(entry.target);
+    });
+  }
 
-loadAll(); loadTodos(); loadMarineForecast(); loadTides();
-loadStats().catch(e => {
-  document.getElementById('tsBody').innerHTML = '<tr><td colspan="4" class="empty">Could not load live data.</td></tr>';
-});
+  var tileObs = new IntersectionObserver(revealBatch, { threshold: 0.1 });
+  var secObs  = new IntersectionObserver(revealSec,   { threshold: 0.15 });
+
+  function attachObservers() {
+    // Tiles and partner cards (both views)
+    document.querySelectorAll('.tile,.pcard').forEach(function(el) {
+      tileObs.observe(el);
+    });
+    // Section dividers
+    document.querySelectorAll('.sec').forEach(function(el) {
+      secObs.observe(el);
+    });
+  }
+
+  // Run after setView has hidden/shown elements
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attachObservers);
+  } else {
+    attachObservers();
+  }
+
+  // Re-attach when role toggles so newly shown tiles animate in
+  var _origSetRole = window.setRole;
+  window.setRole = function(r) {
+    _origSetRole(r);
+    requestAnimationFrame(function() {
+      document.querySelectorAll('.tile,.pcard').forEach(function(el) {
+        if (!el.classList.contains('visible') && el.offsetParent !== null) {
+          tileObs.observe(el);
+        }
+      });
+    });
+  };
+})();
+
+// ── Cert Hub badge (expired / expiring count) ──────
+(function(){
+  try {
+    const raw = localStorage.getItem('apb_certs');
+    if (!raw) return;
+    const certs = JSON.parse(raw);
+    const today = new Date(); today.setHours(0,0,0,0);
+    let expired=0, soon=0;
+    certs.forEach(c => {
+      if (!c.expiryDate) return;
+      const d = Math.floor((new Date(c.expiryDate+'T00:00:00') - today) / 86400000);
+      if (d < 0) expired++;
+      else if (d <= 30) soon++;
+    });
+    const b = document.getElementById('badgeCerts');
+    if (b && (expired||soon)) {
+      b.textContent = expired ? expired + ' expired' : soon + ' expiring';
+      b.classList.add('vis');
+      b.style.background = expired ? 'var(--red)' : 'var(--amber)';
+    }
+  } catch {}
+})();
+
+// ── MTR badge (pending review count) ──────────────
+(function(){
+  try {
+    const mtrs = JSON.parse(localStorage.getItem('apb_mtrs') || '[]');
+    const pend = mtrs.filter(m => m.status === 'pending').length;
+    const nc   = mtrs.filter(m => m.status === 'nc').length;
+    const b = document.getElementById('badgeMtr');
+    if (b && (pend || nc)) {
+      b.textContent = nc ? nc + ' N/C' : pend + ' to review';
+      b.classList.add('vis');
+      b.style.background = nc ? 'var(--red)' : 'var(--amber)';
+    }
+  } catch {}
+})();
+
+// ── ISO readiness badge (% ready) ─────────────────
+(function(){
+  try {
+    const ISO_ITEMS = ['4.1','4.2','4.3','4.4','5.1','5.2','5.3','6.1','6.2','6.3','7.1','7.2','7.3','7.4','7.5','8.1','8.2','8.3','8.4','8.5','8.6','8.7','9.1','9.2','9.3','10.1','10.2','10.3'];
+    const DEF = {'4.4':'prog','5.3':'prog','7.1':'prog','7.2':'prog','7.4':'prog','7.5':'prog','8.1':'prog','8.2':'prog','8.3':'na','8.4':'prog','8.5':'prog','8.7':'prog'};
+    const saved = JSON.parse(localStorage.getItem('apb_iso') || '{}');
+    let done=0, prog=0, na=0, denom=0;
+    ISO_ITEMS.forEach(id=>{
+      const s = saved[id] || DEF[id] || 'todo';
+      if(s==='na'){ na++; return; }
+      denom++;
+      if(s==='done') done++; else if(s==='prog') prog++;
+    });
+    const pct = denom ? Math.round(((done + prog*0.5)/denom)*100) : 0;
+    const b = document.getElementById('badgeIso');
+    if (b) {
+      b.textContent = pct + '% ready';
+      b.classList.add('vis');
+      b.style.background = pct >= 75 ? 'var(--green)' : pct >= 40 ? 'var(--amber)' : 'var(--accent)';
+    }
+  } catch {}
+})();
+
+// ── Task Board badge (open task count) ────────────
+(function(){
+  try {
+    const tasks = JSON.parse(localStorage.getItem('apb_tasks') || '[]');
+    const open = tasks.filter(t => t.status !== 'done').length;
+    const b = document.getElementById('badgeTasks');
+    if (b && open > 0) {
+      b.textContent = open + ' open';
+      b.classList.add('vis');
+    }
+    // Tech "My Tasks" badge — tasks assigned to current identity
+    const me = localStorage.getItem('apb_me');
+    if (me) {
+      const mine = tasks.filter(t => t.assignee === me && t.status !== 'done').length;
+      const bm = document.getElementById('badgeMyTasks');
+      if (bm && mine > 0) {
+        bm.textContent = mine + ' for you';
+        bm.classList.add('vis');
+        bm.style.background = 'var(--accent)';
+      }
+    }
+  } catch {}
+})();
+
+// ── QB live data + server status badge ────────────
+(async function(){
+  const badge = document.getElementById("srvBadge");
+  const label = document.getElementById("srvLabel");
+  try {
+    const s = await fetch("/api/qbo/status",{signal:AbortSignal.timeout(3000)}).then(r=>r.json()).catch(()=>null);
+    if(!s){ label.textContent = "Server offline"; badge.className = "srv-badge"; document.getElementById("adminOfflineBar").style.display = "flex"; return; }
+
+    if(s.connected){
+      badge.className = "srv-badge qb";
+      label.textContent = s.companyName || "QB Connected";
+
+      // QB connected — replace demo KPIs with real data
+      fetch("/api/qbo/customers").then(r=>r.json()).then(d=>{
+        const n = (d?.QueryResponse?.Customer || []).length;
+        if(n){
+          // Replace "Ready to Bill" KPI with client count
+          const kpiBill = document.getElementById("kpiBill");
+          if(kpiBill){
+            kpiBill.textContent = n;
+            kpiBill.closest(".hk").querySelector("span").innerHTML = "QB Clients";
+          }
+          const b = document.getElementById("badgeClients");
+          if(b){ b.textContent = n + " clients"; b.classList.add("vis"); }
+        }
+      }).catch(()=>{});
+
+      fetch("/api/qbo/ar").then(r=>r.json()).then(d=>{
+        const rows = d?.QueryResponse?.rows;
+        if(rows?.[0]?.colData){
+          const v = parseFloat(rows[0].colData[0]?.value || 0);
+          if(v >= 0){
+            // Replace "Open Leads" KPI with AR outstanding
+            const kpiLeads = document.getElementById("kpiLeads");
+            if(kpiLeads){
+              kpiLeads.textContent = v > 0 ? "$" + new Intl.NumberFormat("en-US",{maximumFractionDigits:0}).format(v) : "$0";
+              kpiLeads.closest(".hk").querySelector("span").innerHTML = "AR Outstanding";
+            }
+          }
+        }
+      }).catch(()=>{});
+
+    } else {
+      badge.className = "srv-badge online";
+      label.textContent = "Server online";
+    }
+  } catch {
+    label.textContent = "Server offline";
+    badge.className = "srv-badge";
+    document.getElementById("adminOfflineBar").style.display = "flex";
+  }
+})();
 </script>
-
-<!-- ── Quick Add Job Modal ── -->
-<div class="qaj-scrim" id="qajScrim">
-  <div class="qaj-modal">
-    <div class="qaj-header">
-      <div class="qaj-title">Add Job to Active List</div>
-      <button class="qaj-close" onclick="closeQAJ()">×</button>
-    </div>
-    <div class="qaj-body">
-      <div class="qaj-row">
-        <div class="qaj-field full">
-          <label class="qaj-label">Vessel / Project *</label>
-          <select class="qaj-select" id="qajVessel">
-            <option value="">Select engagement…</option>
-          </select>
-        </div>
-      </div>
-      <div class="qaj-row">
-        <div class="qaj-field">
-          <label class="qaj-label">Job Number *</label>
-          <input class="qaj-input" id="qajJobNum" placeholder="e.g. 1.0, 2.0, 3.0">
-        </div>
-        <div class="qaj-field">
-          <label class="qaj-label">Status</label>
-          <select class="qaj-select" id="qajStatus">
-            <option>Lead</option>
-            <option>Estimating</option>
-            <option selected>Approved</option>
-            <option>In Progress</option>
-            <option>Ready To Be Billed</option>
-            <option>Invoice In Review</option>
-            <option>Invoice Sent</option>
-            <option>Paid</option>
-            <option>Canceled</option>
-          </select>
-        </div>
-      </div>
-      <div class="qaj-field">
-        <label class="qaj-label">Job Name *</label>
-        <input class="qaj-input" id="qajJobName" placeholder="e.g. 1.0 Hull Repair">
-      </div>
-      <div class="qaj-row">
-        <div class="qaj-field">
-          <label class="qaj-label">Job Type</label>
-          <select class="qaj-select" id="qajJobType">
-            <option value="">Select…</option>
-            <option>Mechanical</option>
-            <option>Electrical</option>
-            <option>Fabrication</option>
-            <option>Fiberglass</option>
-            <option>Paint / Refinishing</option>
-            <option>Carpentry</option>
-            <option>Project Management</option>
-            <option>R&D</option>
-            <option>Tow Eye</option>
-            <option>General</option>
-          </select>
-        </div>
-        <div class="qaj-field">
-          <label class="qaj-label">Rep</label>
-          <select class="qaj-select" id="qajRep">
-            <option value="">Select…</option>
-            <option>BW</option><option>BS</option><option>JC</option><option>JM</option><option>CC</option>
-          </select>
-        </div>
-      </div>
-      <div class="qaj-field">
-        <label class="qaj-label">Notes</label>
-        <input class="qaj-input" id="qajNotes" placeholder="Optional notes">
-      </div>
-    </div>
-    <div class="qaj-footer">
-      <div class="qaj-msg" id="qajMsg"></div>
-      <button class="qaj-btn-cancel" onclick="closeQAJ()">Cancel</button>
-      <button class="qaj-btn-save" id="qajSaveBtn" onclick="saveQAJ()">Add Job</button>
-    </div>
-  </div>
-</div>
-
 </body>
 </html>
-
-<!-- redeploy trigger -->
