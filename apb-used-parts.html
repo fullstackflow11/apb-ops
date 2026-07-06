@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>APB Used Parts</title>
+<script src="apb-roles.js"></script>
+<script src="apb-demo.js"></script>
+<script>APBRoles.guard(['admin','pm','purchasing'],'Used Parts');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDEEF2;--panel:#fff;--panel-2:#F5F6FA;
+  --ink:#0D1626;--ink-2:#3A4559;--ink-3:#6B7A92;--ink-4:#A5B0C0;
+  --line:#DDE1E8;--line-2:#E8EBF0;
+  --accent:#2457E6;--accent-2:#1B45B8;--accent-soft:#EAF0FE;
+  --green:#0B9E6A;--green-soft:#E4F5EE;
+  --amber:#B86A00;--amber-soft:#FBF0E2;
+  --red:#C43030;--red-soft:#FDEAEA;
+  --purple:#6B3DBB;--purple-soft:#F0EBFF;
+  --teal:#0A7E8C;--teal-soft:#E2F5F7;
+  --shadow-sm:0 1px 3px rgba(13,22,38,.07);
+  --shadow:0 8px 28px -12px rgba(13,22,38,.14);
+  --shadow-lg:0 20px 56px -12px rgba(13,22,38,.22);
+  --mono:"DM Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:Inter,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;letter-spacing:-.01em;font-size:14px;line-height:1.5}
+
+/* Topbar */
+.topbar{position:sticky;top:0;z-index:200;background:rgba(255,255,255,.90);backdrop-filter:saturate(180%) blur(14px);display:flex;align-items:center;gap:14px;padding:0 28px;height:62px;border-bottom:1px solid var(--line)}
+.topbar img{height:38px;width:auto}
+.topbar .t{border-left:1px solid var(--line);padding-left:14px}
+.topbar .t b{font-size:15px}
+.topbar .t span{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.topbar .sp{flex:1}
+.topbar a{font-size:12.5px;font-weight:600;color:var(--accent);padding:7px 13px;border:1px solid var(--line);border-radius:8px;background:var(--panel);cursor:pointer;text-decoration:none;transition:.12s}
+.topbar a:hover{border-color:var(--accent);background:var(--accent-soft)}
+
+.wrap{max-width:1200px;margin:0 auto;padding:28px 24px 80px}
+
+/* View toggle */
+.view-toggle{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;width:fit-content;margin-bottom:28px;box-shadow:var(--shadow-sm)}
+.vt-btn{padding:10px 28px;font-size:13px;font-weight:600;color:var(--ink-3);cursor:pointer;border:none;background:none;font-family:inherit;transition:.12s;display:flex;align-items:center;gap:7px}
+.vt-btn.active{background:var(--ink);color:#fff}
+.vt-btn:not(.active):hover{background:var(--panel-2);color:var(--ink)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:5px;height:34px;padding:0 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:.12s;border:none;font-family:inherit}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent-2)}
+.btn-ghost{background:var(--panel);color:var(--ink-2);border:1px solid var(--line)}.btn-ghost:hover{border-color:var(--ink-3);color:var(--ink)}
+.btn-green{background:var(--green-soft);color:var(--green);border:1px solid #b0dfc9}.btn-green:hover{background:#d0f0e3}
+.btn-red{background:var(--red-soft);color:var(--red);border:1px solid #f0c0c0}.btn-red:hover{background:#fad0d0}
+.btn-teal{background:var(--teal-soft);color:var(--teal);border:1px solid #a0cdd2}.btn-teal:hover{background:#c8eaed}
+.btn-amber{background:var(--amber-soft);color:var(--amber);border:1px solid #e0c090}.btn-amber:hover{background:#f5e0c0}
+.btn-sm{height:28px;padding:0 11px;font-size:12px}
+
+/* Card */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm);padding:24px}
+
+/* Form */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.form-row{display:flex;flex-direction:column;gap:6px}
+.form-row.full{grid-column:1/-1}
+.form-row.third{grid-column:span 1}
+.form-row label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.form-row input,.form-row select,.form-row textarea{border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;font-family:inherit;color:var(--ink);background:#fff;outline:none;transition:.12s}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:var(--accent)}
+.form-row textarea{min-height:90px;resize:vertical;line-height:1.6}
+.form-row select{height:36px}
+.form-sect{font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--teal);padding:8px 0 4px;border-top:1px solid var(--line-2);grid-column:1/-1;margin-top:4px}
+
+/* Price toggle */
+.price-toggle{display:flex;gap:8px;margin-bottom:8px}
+.ptog{padding:6px 14px;border:1px solid var(--line);border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;background:var(--panel-2);color:var(--ink-3);transition:.12s;font-family:inherit}
+.ptog.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+
+/* Condition badge */
+.cond-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+.cond-working{background:var(--green-soft);color:var(--green)}
+.cond-untested{background:var(--amber-soft);color:var(--amber)}
+.cond-asis{background:#f5f0e8;color:#8a6010}
+.cond-parts{background:var(--red-soft);color:var(--red)}
+
+/* Stage badge */
+.stage-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:600}
+.stage-received{background:var(--purple-soft);color:var(--purple)}
+.stage-photos{background:var(--amber-soft);color:var(--amber)}
+.stage-ready{background:var(--teal-soft);color:var(--teal)}
+.stage-listed{background:var(--accent-soft);color:var(--accent)}
+.stage-sold{background:var(--green-soft);color:var(--green)}
+.stage-pulled{background:#f0f0f0;color:var(--ink-3)}
+
+/* Price badge */
+.price-badge{font-family:var(--mono);font-size:12px;font-weight:500;padding:3px 9px;border-radius:6px;background:var(--green-soft);color:var(--green)}
+.price-badge.offer{background:var(--teal-soft);color:var(--teal)}
+.price-badge.call{background:var(--amber-soft);color:var(--amber)}
+
+/* Photo upload */
+.upload-zone{border:2px dashed var(--line);border-radius:12px;padding:28px;text-align:center;cursor:pointer;transition:.18s;background:var(--panel-2)}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--teal);background:var(--teal-soft)}
+.upload-zone .uz-icon{font-size:30px;margin-bottom:8px}
+.upload-zone p{font-size:13px;color:var(--ink-3);margin:0}
+.upload-zone strong{color:var(--teal)}
+.photo-thumbs{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.photo-thumb{position:relative;width:90px;height:90px;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.photo-thumb img{width:100%;height:100%;object-fit:cover}
+.photo-thumb .rm-photo{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+
+/* Hero */
+.hero-strip{position:relative;overflow:hidden;border-radius:18px;color:#fff;padding:28px 32px;margin-bottom:24px;
+  background:radial-gradient(600px 400px at 95% 110%,rgba(10,126,140,.55) 0%,transparent 60%),
+    linear-gradient(150deg,#0a1e22,#061215,#0d1e22);
+  box-shadow:var(--shadow-lg)}
+.hero-strip::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:radial-gradient(circle at 1px 1px,rgba(255,255,255,.04) 1px,transparent 0);
+  background-size:28px 28px}
+.hero-body{position:relative;z-index:1}
+.hero-body .eyebrow{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#5fcfdb;font-weight:700;margin-bottom:8px}
+.hero-body h2{font-size:26px;font-weight:800;letter-spacing:-.03em;margin:0 0 6px}
+.hero-body p{font-size:13px;color:rgba(255,255,255,.55);margin:0}
+
+/* Stats */
+.stat-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:24px}
+.stat-box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 18px;box-shadow:var(--shadow-sm)}
+.stat-box .sn{font-size:26px;font-weight:700;font-family:var(--mono);line-height:1}
+.stat-box .sl{font-size:10.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-top:4px}
+
+/* Kanban */
+.kanban{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;overflow-x:auto;padding-bottom:8px}
+.k-col{min-width:180px;background:var(--panel-2);border-radius:12px;border:1px solid var(--line);overflow:hidden}
+.k-col-hdr{padding:12px 14px;font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.k-col-hdr .k-count{background:var(--line);border-radius:20px;padding:1px 8px;font-size:10.5px;color:var(--ink-3)}
+.k-cards{padding:10px;display:flex;flex-direction:column;gap:8px;min-height:120px}
+.k-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;cursor:pointer;transition:.12s}
+.k-card:hover{box-shadow:var(--shadow);border-color:var(--ink-4);transform:translateY(-1px)}
+.k-card .k-thumb{width:100%;height:80px;border-radius:7px;object-fit:cover;margin-bottom:8px}
+.k-card .k-thumb-empty{width:100%;height:80px;border-radius:7px;background:var(--panel-2);margin-bottom:8px;display:flex;align-items:center;justify-content:center;color:var(--ink-4);font-size:22px}
+.k-card .k-title{font-size:12.5px;font-weight:600;color:var(--ink);margin-bottom:3px;line-height:1.3}
+.k-card .k-origin{font-size:11px;color:var(--teal);font-weight:600;margin-bottom:2px}
+.k-card .k-meta{font-size:11px;color:var(--ink-3)}
+.k-card .k-days{font-size:10.5px;color:var(--ink-4);margin-top:5px;font-family:var(--mono)}
+.k-empty{text-align:center;color:var(--ink-4);font-size:12px;padding:20px 10px}
+
+/* Parts list (marketing inventory view) */
+.parts-table{width:100%;border-collapse:collapse}
+.parts-table th{padding:9px 14px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);border-bottom:2px solid var(--line);background:var(--panel-2)}
+.parts-table td{padding:10px 14px;border-bottom:1px solid var(--line-2);font-size:13px;vertical-align:middle}
+.parts-table tr:hover td{background:var(--panel-2);cursor:pointer}
+.parts-table .td-thumb{width:52px;height:52px;border-radius:7px;object-fit:cover;border:1px solid var(--line)}
+.parts-table .td-thumb-empty{width:52px;height:52px;border-radius:7px;background:var(--panel-2);display:flex;align-items:center;justify-content:center;font-size:18px;border:1px solid var(--line)}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(13,22,38,.45);z-index:500;display:none}
+.modal-overlay.open{display:block}
+.modal-panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:501;background:var(--panel);border-radius:18px;box-shadow:var(--shadow-lg);width:min(860px,96vw);max-height:92vh;overflow:hidden;display:none;flex-direction:column}
+.modal-panel.open{display:flex}
+.modal-hdr{padding:20px 24px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;gap:10px}
+.modal-hdr-text{flex:1}
+.modal-hdr-text h3{font-size:16px;font-weight:700;margin:0 0 4px}
+.modal-hdr-text .origin{font-size:12.5px;color:var(--teal);font-weight:600}
+.modal-body{overflow-y:auto;padding:24px;flex:1}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* Photo carousel */
+.photo-carousel{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px}
+.photo-carousel img{height:160px;width:auto;border-radius:8px;border:1px solid var(--line);object-fit:cover;flex-shrink:0}
+
+/* Meta label */
+.mlbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3);margin-bottom:3px}
+
+/* Tag pill */
+.tag-pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11.5px;font-weight:500;background:var(--panel-2);border:1px solid var(--line);color:var(--ink-2)}
+
+/* Listing export */
+.listing-box{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:14px;font-family:var(--mono);font-size:12px;color:var(--ink-2);white-space:pre-wrap;line-height:1.7;overflow-x:auto}
+
+/* Platform chips */
+.platform-chips{display:flex;flex-wrap:wrap;gap:8px}
+.pchip{padding:5px 13px;border:1px solid var(--line);border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;background:var(--panel-2);color:var(--ink-3);transition:.12s;user-select:none}
+.pchip.on{background:var(--teal);color:#fff;border-color:var(--teal)}
+
+/* Stage history */
+.stage-hist{margin-top:4px}
+.hist-row{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line-2);font-size:12.5px}
+.hist-row:last-child{border-bottom:none}
+.hist-dot{width:7px;height:7px;border-radius:50%;background:var(--teal);flex-shrink:0;margin-top:4px}
+.hist-row .hd{color:var(--ink-3);font-family:var(--mono);font-size:11px;min-width:100px;flex-shrink:0}
+
+/* Listing URLs */
+.listing-url-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.listing-url-row .pname{font-size:12px;font-weight:600;color:var(--ink-3);min-width:120px;flex-shrink:0}
+.listing-url-row a{font-size:12.5px;color:var(--accent);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none}
+.listing-url-row a:hover{text-decoration:underline}
+.listing-url-row input{flex:1;height:30px;border:1px solid var(--line);border-radius:6px;padding:0 8px;font-size:12.5px;font-family:inherit;color:var(--ink);outline:none}
+
+/* Recent list */
+.recent-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:.12s}
+.recent-card:hover{box-shadow:var(--shadow);border-color:var(--ink-4)}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;padding:10px 22px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;transition:transform .28s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* Sub-tabs */
+.sub-tabs{display:flex;gap:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;width:fit-content;margin-bottom:20px}
+.st-btn{padding:8px 22px;font-size:13px;font-weight:600;color:var(--ink-3);cursor:pointer;border:none;background:none;font-family:inherit;transition:.12s}
+.st-btn.active{background:var(--teal);color:#fff}
+.st-btn:not(.active):hover{background:var(--panel-2);color:var(--ink)}
+
+@media(max-width:900px){
+  .form-grid{grid-template-columns:1fr}
+  .form-row.full{grid-column:1}
+  .kanban{grid-template-columns:repeat(3,minmax(165px,1fr))}
+  .stat-strip{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:600px){
+  .kanban{grid-template-columns:repeat(2,minmax(155px,1fr))}
+  .stat-strip{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+<link rel="stylesheet" href="apb-theme.css">
+</head>
+<body>
+
+<div class="topbar">
+  <img src="apb-logo.png" alt="APB">
+  <div class="t"><b>Used Parts</b><span>Surplus · Resale</span></div>
+  <div class="sp"></div>
+  <a href="index.html">⌂ Home</a>
+</div>
+
+<div class="wrap">
+
+  <div class="view-toggle">
+    <button class="vt-btn active" id="btnTech" onclick="setView('tech')">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      Tech — Submit Part
+    </button>
+    <button class="vt-btn" id="btnMkt" onclick="setView('marketing')">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+      Marketing — Inventory &amp; Listings
+    </button>
+  </div>
+
+  <!-- ══ TECH VIEW ══ -->
+  <div id="techView">
+
+    <div class="hero-strip">
+      <div class="hero-body">
+        <div class="eyebrow">APB Used Parts</div>
+        <h2>Submit a Part for Resale</h2>
+        <p>Fill in what you know — the more detail you give, the faster marketing can get it listed. Photos are the most important thing.</p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px">
+      <div class="form-grid">
+
+        <div class="form-row">
+          <label>Your Name</label>
+          <input type="text" id="fName" placeholder="First Last">
+        </div>
+
+        <div class="form-row">
+          <label>Item Title</label>
+          <input type="text" id="fTitle" placeholder="What is this part? Be specific">
+        </div>
+
+        <div class="form-row">
+          <label>Category</label>
+          <select id="fCat">
+            <option value="">— Select —</option>
+            <option>Engine &amp; Drivetrain</option>
+            <option>Electronics &amp; Navigation</option>
+            <option>Deck Hardware</option>
+            <option>Rigging &amp; Sails</option>
+            <option>Plumbing &amp; Systems</option>
+            <option>Electrical</option>
+            <option>Safety Equipment</option>
+            <option>Interior &amp; Furniture</option>
+            <option>Hull &amp; Structural</option>
+            <option>Stabilizers &amp; Gyros</option>
+            <option>Anchoring &amp; Docking</option>
+            <option>Communications</option>
+            <option>Other</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label>Condition</label>
+          <select id="fCond">
+            <option value="working">✅ Tested Working</option>
+            <option value="untested">⚠️ Untested / Not Verified</option>
+            <option value="asis">🔶 As-Is / Some Issues</option>
+            <option value="parts">🔴 Parts Only</option>
+          </select>
+        </div>
+
+        <!-- Boat origin section -->
+        <div class="form-sect">Where It Came From — critical for SEO</div>
+
+        <div class="form-row">
+          <label>Boat Make</label>
+          <input type="text" id="fBoatMake" placeholder="e.g. Hatteras, Viking, Bertram">
+        </div>
+
+        <div class="form-row">
+          <label>Boat Model</label>
+          <input type="text" id="fBoatModel" placeholder="e.g. 60 Convertible, 61 Flybridge">
+        </div>
+
+        <div class="form-row">
+          <label>Boat Year</label>
+          <input type="text" id="fBoatYear" placeholder="e.g. 2005">
+        </div>
+
+        <div class="form-row">
+          <label>Part Number <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--ink-4)">— if known</span></label>
+          <input type="text" id="fPartNum" placeholder="OEM or aftermarket part #">
+        </div>
+
+        <!-- Specs section -->
+        <div class="form-sect">Specs</div>
+
+        <div class="form-row full">
+          <label>What It Fits / Compatible With</label>
+          <input type="text" id="fFits" placeholder="e.g. Hatteras 55–65 series, CAT C18, Twin Disc MG5114">
+        </div>
+
+        <div class="form-row">
+          <label>Dimensions</label>
+          <input type="text" id="fDims" placeholder='e.g. 24" L × 8" W × 6" H'>
+        </div>
+
+        <div class="form-row">
+          <label>Weight (lbs) <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--ink-4)">— for shipping</span></label>
+          <input type="number" id="fWeight" placeholder="e.g. 14" min="0" step="0.1">
+        </div>
+
+        <div class="form-row full">
+          <label>Why Removed / Known Issues</label>
+          <textarea id="fIssues" placeholder="Why was this pulled? Any known faults, damage, or things a buyer should know? If it works fine, say that."></textarea>
+        </div>
+
+        <!-- Pricing section -->
+        <div class="form-sect">Pricing</div>
+
+        <div class="form-row full">
+          <label>Price</label>
+          <div class="price-toggle">
+            <button class="ptog active" id="ptFixed" onclick="setPricingType('fixed')">Set Price</button>
+            <button class="ptog" id="ptOffer" onclick="setPricingType('offer')">Make Offer</button>
+            <button class="ptog" id="ptCall" onclick="setPricingType('call')">Call for Price</button>
+          </div>
+          <div id="priceInput" style="margin-top:8px">
+            <input type="number" id="fPrice" placeholder="Asking price ($)" style="max-width:200px">
+          </div>
+        </div>
+
+        <!-- Location section -->
+        <div class="form-sect">Storage</div>
+
+        <div class="form-row">
+          <label>Shop Location</label>
+          <input type="text" id="fLocation" placeholder="e.g. Back shelf Bay 3, Yard rack A, Office">
+        </div>
+
+        <div class="form-row">
+          <label>Urgency</label>
+          <select id="fUrgency">
+            <option value="normal">No rush</option>
+            <option value="soon">Would like to move it</option>
+            <option value="asap">Needs to go ASAP</option>
+          </select>
+        </div>
+
+        <!-- Photos section -->
+        <div class="form-sect">Photos — the most important part</div>
+
+        <div class="form-row full">
+          <label>Photos <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--ink-4)">— up to 8 (compressed automatically). Get all angles, any labels/part numbers, condition details.</span></label>
+          <div class="upload-zone" id="uploadZone" onclick="document.getElementById('photoInput').click()">
+            <div class="uz-icon">📷</div>
+            <p><strong>Click to upload</strong> or drag &amp; drop</p>
+            <p style="margin-top:4px;font-size:11.5px">JPG · PNG · WEBP · up to 8 photos</p>
+          </div>
+          <input type="file" id="photoInput" accept="image/*" multiple style="display:none">
+          <div class="photo-thumbs" id="photoThumbs"></div>
+        </div>
+
+        <div class="form-row full">
+          <label>Additional Notes <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--ink-4)">— optional</span></label>
+          <textarea id="fNotes" placeholder="Anything else marketing or a buyer should know…" style="min-height:60px"></textarea>
+        </div>
+
+        <div class="form-row full" style="display:flex;gap:10px;align-items:center;margin-top:4px">
+          <button class="btn btn-primary" onclick="submitPart()" style="height:40px;padding:0 28px;font-size:14px;background:var(--teal)">Submit Part →</button>
+          <button class="btn btn-ghost" onclick="clearForm()">Clear</button>
+          <span id="submitMsg" style="font-size:13px;color:var(--green);display:none">✓ Submitted!</span>
+        </div>
+
+      </div>
+    </div>
+
+    <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin:0 0 12px">Your Recent Submissions</div>
+    <div id="myRecentList" style="display:grid;gap:10px"></div>
+    <p id="myRecentEmpty" style="font-size:13px;color:var(--ink-4);display:none">Nothing submitted yet from this browser.</p>
+
+  </div><!-- /techView -->
+
+  <!-- ══ MARKETING VIEW ══ -->
+  <div id="marketingView" style="display:none">
+
+    <div class="stat-strip">
+      <div class="stat-box"><div class="sn" id="mTotal" style="color:var(--teal)">0</div><div class="sl">Total Parts</div></div>
+      <div class="stat-box"><div class="sn" id="mNew" style="color:var(--purple)">0</div><div class="sl">Just Received</div></div>
+      <div class="stat-box"><div class="sn" id="mPhotos" style="color:var(--amber)">0</div><div class="sl">Needs Photos</div></div>
+      <div class="stat-box"><div class="sn" id="mReady" style="color:var(--teal)">0</div><div class="sl">Ready to List</div></div>
+      <div class="stat-box"><div class="sn" id="mListed" style="color:var(--accent)">0</div><div class="sl">Listed</div></div>
+      <div class="stat-box"><div class="sn" id="mSold" style="color:var(--green)">0</div><div class="sl">Sold</div></div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px">
+      <div class="sub-tabs" style="margin-bottom:0">
+        <button class="st-btn active" id="btnBoard" onclick="setMktTab('board')">📋 Pipeline</button>
+        <button class="st-btn" id="btnList" onclick="setMktTab('list')">📦 Inventory</button>
+      </div>
+      <div style="flex:1;min-width:200px;position:relative">
+        <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--ink-4)" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="upSearch" placeholder="Search parts, boat origin, category…" oninput="renderMarketing()" style="width:100%;height:36px;border:1px solid var(--line);border-radius:10px;padding:0 12px 0 32px;font-size:13px;font-family:inherit;color:var(--ink);background:var(--panel);outline:none;transition:.12s" onfocus="this.style.borderColor='var(--teal)'" onblur="this.style.borderColor='var(--line)'">
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-ghost btn-sm" id="ufAll"    onclick="setPartFilter('all')"    style="border-color:var(--teal);color:var(--teal)">All</button>
+        <button class="btn btn-ghost btn-sm" id="ufActive" onclick="setPartFilter('active')" >Active</button>
+        <button class="btn btn-ghost btn-sm" id="ufAsap"   onclick="setPartFilter('asap')"   >🔴 Urgent</button>
+        <button class="btn btn-ghost btn-sm" id="ufSold"   onclick="setPartFilter('sold')"   >Sold</button>
+      </div>
+    </div>
+
+    <div id="boardTab">
+      <div class="kanban" id="kanbanBoard"></div>
+    </div>
+
+    <div id="listTab" style="display:none">
+      <div class="card" style="padding:0;overflow:hidden">
+        <table class="parts-table" id="partsTable">
+          <thead><tr>
+            <th style="width:60px"></th>
+            <th>Item</th>
+            <th>Boat Origin</th>
+            <th>Condition</th>
+            <th>Price</th>
+            <th>Stage</th>
+            <th>Days In</th>
+          </tr></thead>
+          <tbody id="partsTableBody"></tbody>
+        </table>
+        <p id="listEmpty" style="font-size:13px;color:var(--ink-4);padding:24px;display:none;text-align:center">No parts yet.</p>
+      </div>
+    </div>
+
+  </div><!-- /marketingView -->
+
+</div><!-- /wrap -->
+
+<!-- ══ MODAL ══ -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal()"></div>
+<div class="modal-panel" id="modalPanel">
+  <div class="modal-hdr">
+    <div class="modal-hdr-text">
+      <h3 id="mTitle"></h3>
+      <div class="origin" id="mOrigin"></div>
+      <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+        <span id="mStageBadge" class="stage-badge"></span>
+        <span id="mCondBadge" class="cond-badge"></span>
+        <span id="mPriceBadge" class="price-badge"></span>
+      </div>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="closeModal()">✕ Close</button>
+  </div>
+  <div class="modal-body">
+
+    <div class="photo-carousel" id="mPhotosCarousel"></div>
+
+    <!-- Specs grid -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px">
+      <div><div class="mlbl">Category</div><div id="mCat" style="font-size:13px;font-weight:600"></div></div>
+      <div><div class="mlbl">Part Number</div><div id="mPartNum" style="font-size:13px;font-family:var(--mono)"></div></div>
+      <div><div class="mlbl">Location in Shop</div><div id="mShopLoc" style="font-size:13px"></div></div>
+      <div><div class="mlbl">Fits / Compatible</div><div id="mFits" style="font-size:13px;grid-column:span 2"></div></div>
+      <div><div class="mlbl">Dimensions</div><div id="mDims" style="font-size:13px;font-family:var(--mono)"></div></div>
+      <div><div class="mlbl">Weight</div><div id="mWeight" style="font-size:13px"></div></div>
+      <div><div class="mlbl">Urgency</div><div id="mUrgency" style="font-size:13px"></div></div>
+      <div><div class="mlbl">Submitted By</div><div id="mBy" style="font-size:13px"></div></div>
+    </div>
+
+    <!-- Why removed -->
+    <div id="mIssuesWrap" style="margin-bottom:18px">
+      <div class="mlbl">Why Removed / Known Issues</div>
+      <div id="mIssues" style="font-size:13px;line-height:1.6;color:var(--ink-2);background:var(--red-soft);border:1px solid #f0c8c8;border-radius:8px;padding:10px 12px;margin-top:4px"></div>
+    </div>
+
+    <!-- Notes -->
+    <div id="mNotesWrap" style="margin-bottom:18px;display:none">
+      <div class="mlbl">Additional Notes</div>
+      <div id="mNotes" style="font-size:13px;line-height:1.6;color:var(--ink-3);background:var(--panel-2);border-radius:8px;padding:10px 12px;margin-top:4px"></div>
+    </div>
+
+    <!-- Platforms -->
+    <div style="margin-bottom:18px">
+      <div class="mlbl" style="margin-bottom:8px">List On</div>
+      <div class="platform-chips" id="platformChips"></div>
+    </div>
+
+    <!-- Listing URLs -->
+    <div style="margin-bottom:18px">
+      <div class="mlbl" style="margin-bottom:8px">Active Listing Links <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--ink-4)">— paste the URL once it's live</span></div>
+      <div id="listingUrlList"></div>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <select id="urlPlatformSelect" style="height:32px;border:1px solid var(--line);border-radius:7px;padding:0 8px;font-size:12.5px;font-family:inherit;color:var(--ink);outline:none;background:#fff">
+          <option>Facebook Marketplace</option>
+          <option>eBay</option>
+          <option>APB Website</option>
+          <option>Craigslist</option>
+          <option>Other</option>
+        </select>
+        <input type="text" id="urlInput" placeholder="Paste listing URL…" style="flex:1;height:32px;border:1px solid var(--line);border-radius:7px;padding:0 9px;font-size:12.5px;font-family:inherit;color:var(--ink);outline:none">
+        <button class="btn btn-ghost btn-sm" onclick="addListingUrl()">+ Add</button>
+      </div>
+    </div>
+
+    <!-- Marketing notes -->
+    <div style="margin-bottom:18px">
+      <label class="mlbl" style="display:block;margin-bottom:6px">Marketing Notes</label>
+      <textarea id="mMktNotes" placeholder="Pricing notes, where to push this, target buyer, special considerations…" style="width:100%;min-height:70px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:13px;font-family:inherit;color:var(--ink);resize:vertical;outline:none" oninput="autoSave()"></textarea>
+    </div>
+
+    <!-- Auto-generated listing -->
+    <div style="margin-bottom:18px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="mlbl">Listing Text <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--ink-4)">— ready to paste into any platform</span></div>
+        <button class="btn btn-teal btn-sm" onclick="copyListing()">Copy</button>
+      </div>
+      <div class="listing-box" id="listingText"></div>
+    </div>
+
+    <!-- Stage history -->
+    <div>
+      <div class="mlbl" style="margin-bottom:6px">Stage History</div>
+      <div class="stage-hist" id="mHistory"></div>
+    </div>
+
+  </div>
+  <div class="modal-footer">
+    <div style="flex:1;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" id="btnPrev" onclick="moveStage(-1)">← Back</button>
+      <button class="btn btn-primary btn-sm" id="btnNext" onclick="moveStage(1)" style="background:var(--teal);border-color:var(--teal)">Advance →</button>
+      <button class="btn btn-green btn-sm" onclick="markSold()">✓ Mark Sold</button>
+      <button class="btn btn-amber btn-sm" onclick="pullFromSale()">Pull from Sale</button>
+    </div>
+    <button class="btn btn-red btn-sm" onclick="deletePart()">Delete</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════
+const SK   = 'apb_used_parts';
+const VK   = 'apb_used_parts_view';
+
+const STAGES = [
+  {key:'received', label:'📥 Received',      cls:'stage-received'},
+  {key:'photos',   label:'📷 Needs Photos',  cls:'stage-photos'},
+  {key:'ready',    label:'✅ Ready to List', cls:'stage-ready'},
+  {key:'listed',   label:'🛒 Listed',        cls:'stage-listed'},
+  {key:'sold',     label:'💰 Sold',          cls:'stage-sold'},
+  {key:'pulled',   label:'🚫 Pulled',        cls:'stage-pulled'},
+];
+const STAGE_KEYS = STAGES.map(s=>s.key);
+const ACTIVE_STAGES = ['received','photos','ready','listed'];
+
+const COND = {
+  working:  {label:'Tested Working',   cls:'cond-working'},
+  untested: {label:'Untested',         cls:'cond-untested'},
+  asis:     {label:'As-Is',            cls:'cond-asis'},
+  parts:    {label:'Parts Only',       cls:'cond-parts'},
+};
+
+const URGENCY_LABEL = {normal:'No rush',soon:'Would like to move it',asap:'Needs to go ASAP'};
+
+const PLATFORMS = ['Facebook Marketplace','eBay','APB Website','Craigslist','Other'];
+
+let parts = JSON.parse(localStorage.getItem(SK)||'[]');
+let currentId = null;
+let pricingType = 'fixed';
+let uploadedPhotos = [];
+let mktTab = 'board';
+let partFilter = 'all';
+
+function setPartFilter(f){
+  partFilter = f;
+  ['ufAll','ufActive','ufAsap','ufSold'].forEach(id=>{
+    const b = document.getElementById(id);
+    if(b){ b.style.borderColor=''; b.style.color=''; }
+  });
+  const map = {all:'ufAll',active:'ufActive',asap:'ufAsap',sold:'ufSold'};
+  const active = document.getElementById(map[f]);
+  if(active){ active.style.borderColor='var(--teal)'; active.style.color='var(--teal)'; }
+  renderMarketing();
+}
+
+function filteredParts(){
+  const q = (document.getElementById('upSearch')?.value||'').toLowerCase().trim();
+  const ACTIVE = ['received','photos','ready','listed'];
+  return parts.filter(p=>{
+    if(partFilter==='active' && !ACTIVE.includes(p.stage)) return false;
+    if(partFilter==='asap'   && p.urgency!=='asap')        return false;
+    if(partFilter==='sold'   && p.stage!=='sold')          return false;
+    if(!q) return true;
+    const origin = [p.boatYear,p.boatMake,p.boatModel].join(' ');
+    return (p.title+p.category+origin+(p.fits||'')+(p.submittedBy||'')).toLowerCase().includes(q);
+  });
+}
+
+function save(){ localStorage.setItem(SK, JSON.stringify(parts)); }
+function getById(id){ return parts.find(p=>p.id===id); }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ══════════════════════════════════════════
+// VIEW
+// ══════════════════════════════════════════
+function setView(v){
+  localStorage.setItem(VK, v);
+  document.getElementById('techView').style.display       = v==='tech'?'':'none';
+  document.getElementById('marketingView').style.display  = v==='marketing'?'':'none';
+  document.getElementById('btnTech').classList.toggle('active', v==='tech');
+  document.getElementById('btnMkt').classList.toggle('active',  v==='marketing');
+  if(v==='marketing') renderMarketing();
+  if(v==='tech')      renderRecent();
+}
+
+function setMktTab(t){
+  mktTab=t;
+  document.getElementById('boardTab').style.display = t==='board'?'':'none';
+  document.getElementById('listTab').style.display  = t==='list'?'':'none';
+  document.getElementById('btnBoard').classList.toggle('active', t==='board');
+  document.getElementById('btnList').classList.toggle('active',  t==='list');
+  if(t==='board') renderKanban();
+  else            renderTable();
+}
+
+// ══════════════════════════════════════════
+// PHOTO UPLOAD
+// ══════════════════════════════════════════
+function initUpload(){
+  const zone=document.getElementById('uploadZone');
+  const inp =document.getElementById('photoInput');
+  zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-over');});
+  zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
+  zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-over');handleFiles(e.dataTransfer.files);});
+  inp.addEventListener('change',()=>handleFiles(inp.files));
+}
+
+async function handleFiles(files){
+  const rem = 8-uploadedPhotos.length;
+  for(const f of Array.from(files).slice(0,rem)) uploadedPhotos.push(await resizeImage(f));
+  renderThumbs();
+  document.getElementById('photoInput').value='';
+}
+
+function resizeImage(file,maxW=900,maxH=900,q=0.82){
+  return new Promise(resolve=>{
+    const img=new Image(), url=URL.createObjectURL(file);
+    img.onload=()=>{
+      let{naturalWidth:w,naturalHeight:h}=img;
+      if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
+      if(h>maxH){w=Math.round(w*maxH/h);h=maxH;}
+      const c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL('image/jpeg',q));
+    };img.src=url;
+  });
+}
+
+function renderThumbs(){
+  document.getElementById('photoThumbs').innerHTML=uploadedPhotos.map((b,i)=>
+    `<div class="photo-thumb"><img src="${b}"><button class="rm-photo" onclick="removePhoto(${i})">✕</button></div>`
+  ).join('');
+  document.getElementById('uploadZone').style.display=uploadedPhotos.length>=8?'none':'';
+}
+function removePhoto(i){uploadedPhotos.splice(i,1);renderThumbs();}
+
+// ══════════════════════════════════════════
+// PRICING
+// ══════════════════════════════════════════
+function setPricingType(t){
+  pricingType=t;
+  ['fixed','offer','call'].forEach(k=>document.getElementById('pt'+k.charAt(0).toUpperCase()+k.slice(1)).classList.toggle('active',k===t));
+  document.getElementById('priceInput').style.display=t==='fixed'?'':'none';
+}
+
+function priceStr(p){
+  if(p.pricing.type==='offer') return 'Make Offer';
+  if(p.pricing.type==='call')  return 'Call for Price';
+  return p.pricing.amount ? '$'+Number(p.pricing.amount).toLocaleString() : '—';
+}
+function priceCls(p){
+  if(p.pricing.type==='offer') return 'offer';
+  if(p.pricing.type==='call')  return 'call';
+  return '';
+}
+
+// ══════════════════════════════════════════
+// SUBMIT
+// ══════════════════════════════════════════
+function submitPart(){
+  const name  = document.getElementById('fName').value.trim();
+  const title = document.getElementById('fTitle').value.trim();
+  const cat   = document.getElementById('fCat').value;
+
+  if(!name)  {showToast('Enter your name');return;}
+  if(!title) {showToast('Give the part a name');return;}
+  if(!cat)   {showToast('Select a category');return;}
+
+  const part = {
+    id: Date.now(),
+    title,
+    category:  cat,
+    condition: document.getElementById('fCond').value,
+    boatMake:  document.getElementById('fBoatMake').value.trim(),
+    boatModel: document.getElementById('fBoatModel').value.trim(),
+    boatYear:  document.getElementById('fBoatYear').value.trim(),
+    partNum:   document.getElementById('fPartNum').value.trim(),
+    fits:      document.getElementById('fFits').value.trim(),
+    dimensions:document.getElementById('fDims').value.trim(),
+    weight:    parseFloat(document.getElementById('fWeight').value)||null,
+    issues:    document.getElementById('fIssues').value.trim(),
+    location:  document.getElementById('fLocation').value.trim(),
+    urgency:   document.getElementById('fUrgency').value,
+    pricing:   {type:pricingType, amount:parseFloat(document.getElementById('fPrice').value)||null},
+    photos:    [...uploadedPhotos],
+    notes:     document.getElementById('fNotes').value.trim(),
+    stage:     'received',
+    submittedBy: name,
+    submittedAt: new Date().toISOString(),
+    stageHistory:[{stage:'received',date:new Date().toISOString(),note:'Submitted by '+name}],
+    platforms:  [],
+    listingUrls:[],
+    marketingNotes:'',
+  };
+
+  parts.unshift(part);
+  save();
+  localStorage.setItem('apb_up_last', name);
+  showToast('Submitted — thanks, '+name+'!');
+  clearForm(true);
+  renderRecent();
+}
+
+function clearForm(keepName=false){
+  if(!keepName) document.getElementById('fName').value='';
+  ['fTitle','fBoatMake','fBoatModel','fBoatYear','fPartNum','fFits','fDims','fNotes','fLocation'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fWeight').value='';
+  document.getElementById('fPrice').value='';
+  document.getElementById('fCat').value='';
+  document.getElementById('fCond').value='working';
+  document.getElementById('fUrgency').value='normal';
+  document.getElementById('fIssues').value='';
+  uploadedPhotos=[];renderThumbs();
+  setPricingType('fixed');
+  const m=document.getElementById('submitMsg');m.style.display='block';
+  setTimeout(()=>m.style.display='none',2500);
+}
+
+// ══════════════════════════════════════════
+// RECENT LIST (tech view)
+// ══════════════════════════════════════════
+function renderRecent(){
+  const lastName=localStorage.getItem('apb_up_last')||'';
+  const mine=lastName?parts.filter(p=>p.submittedBy===lastName):parts.slice(0,6);
+  const list=document.getElementById('myRecentList');
+  const empty=document.getElementById('myRecentEmpty');
+  if(!mine.length){list.innerHTML='';empty.style.display='';return;}
+  empty.style.display='none';
+  list.innerHTML=mine.slice(0,6).map(p=>{
+    const stage=STAGES.find(s=>s.key===p.stage)||STAGES[0];
+    const cond=COND[p.condition]||COND.untested;
+    const origin=[p.boatYear,p.boatMake,p.boatModel].filter(Boolean).join(' ')||'Unknown origin';
+    const thumb=p.photos.length
+      ?`<img src="${p.photos[0]}" style="width:56px;height:56px;border-radius:8px;object-fit:cover;flex-shrink:0">`
+      :`<div style="width:56px;height:56px;border-radius:8px;background:var(--panel-2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🔧</div>`;
+    return `<div class="recent-card" onclick="openModal(${p.id})">
+      ${thumb}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.title)}</div>
+        <div style="font-size:11.5px;color:var(--teal);font-weight:600;margin-top:1px">${esc(origin)}</div>
+      </div>
+      <span class="cond-badge ${cond.cls}" style="font-size:11px">${cond.label}</span>
+      <span class="stage-badge ${stage.cls}">${stage.label}</span>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// MARKETING — STATS
+// ══════════════════════════════════════════
+function renderStats(){
+  document.getElementById('mTotal').textContent   = parts.length;
+  document.getElementById('mNew').textContent     = parts.filter(p=>p.stage==='received').length;
+  document.getElementById('mPhotos').textContent  = parts.filter(p=>p.stage==='photos').length;
+  document.getElementById('mReady').textContent   = parts.filter(p=>p.stage==='ready').length;
+  document.getElementById('mListed').textContent  = parts.filter(p=>p.stage==='listed').length;
+  document.getElementById('mSold').textContent    = parts.filter(p=>p.stage==='sold').length;
+}
+
+function renderMarketing(){
+  renderStats();
+  if(mktTab==='board') renderKanban();
+  else renderTable();
+}
+
+// ══════════════════════════════════════════
+// KANBAN
+// ══════════════════════════════════════════
+function renderKanban(){
+  renderStats();
+  const fp = filteredParts();
+  document.getElementById('kanbanBoard').innerHTML=STAGES.map(stage=>{
+    const cards=fp.filter(p=>p.stage===stage.key);
+    return `<div class="k-col">
+      <div class="k-col-hdr">${stage.label}<span class="k-count">${cards.length}</span></div>
+      <div class="k-cards">${cards.length?cards.map(kanbanCard).join(''):'<div class="k-empty">Empty</div>'}</div>
+    </div>`;
+  }).join('');
+}
+
+function kanbanCard(p){
+  const cond=COND[p.condition]||COND.untested;
+  const origin=[p.boatYear,p.boatMake,p.boatModel].filter(Boolean).join(' ')||'Unknown origin';
+  const days=Math.floor((Date.now()-new Date(p.submittedAt))/86400000);
+  const thumb=p.photos.length
+    ?`<img class="k-thumb" src="${p.photos[0]}" alt="">`
+    :`<div class="k-thumb-empty">🔧</div>`;
+  const urgentBar = p.urgency==='asap'
+    ? `<div style="background:var(--red);color:#fff;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;margin:-12px -12px 8px;border-radius:7px 7px 0 0">⚡ Needs to Go</div>`
+    : p.urgency==='soon'
+    ? `<div style="background:var(--amber-soft);color:var(--amber);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;margin:-12px -12px 8px;border-radius:7px 7px 0 0">Move Soon</div>`
+    : '';
+  const urgentBorder = p.urgency==='asap' ? 'border-color:var(--red);' : p.urgency==='soon' ? 'border-color:var(--amber);' : '';
+  return `<div class="k-card" style="${urgentBorder}" onclick="openModal(${p.id})">
+    ${urgentBar}
+    ${thumb}
+    <div class="k-origin">${esc(origin)}</div>
+    <div class="k-title">${esc(p.title)}</div>
+    <div class="k-meta"><span class="cond-badge ${cond.cls}" style="font-size:10.5px;padding:1px 7px">${cond.label}</span></div>
+    <div class="k-days">${esc(p.submittedBy)} · ${days}d</div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════
+// TABLE (inventory list)
+// ══════════════════════════════════════════
+function renderTable(){
+  renderStats();
+  const fp = filteredParts();
+  const tbody=document.getElementById('partsTableBody');
+  const empty=document.getElementById('listEmpty');
+  if(!fp.length){tbody.innerHTML='';empty.style.display='';return;}
+  empty.style.display='none';
+  const sorted=[...fp].sort((a,b)=>b.id-a.id);
+  tbody.innerHTML=sorted.map(p=>{
+    const stage=STAGES.find(s=>s.key===p.stage)||STAGES[0];
+    const cond=COND[p.condition]||COND.untested;
+    const origin=[p.boatYear,p.boatMake,p.boatModel].filter(Boolean).join(' ')||'—';
+    const days=Math.floor((Date.now()-new Date(p.submittedAt))/86400000);
+    const thumb=p.photos.length
+      ?`<img class="td-thumb" src="${p.photos[0]}" alt="">`
+      :`<div class="td-thumb-empty">🔧</div>`;
+    return `<tr onclick="openModal(${p.id})">
+      <td>${thumb}</td>
+      <td><div style="font-weight:600;font-size:13px">${esc(p.title)}</div><div style="font-size:11.5px;color:var(--ink-3)">${esc(p.category)}</div></td>
+      <td style="color:var(--teal);font-weight:600;font-size:12.5px">${esc(origin)}</td>
+      <td><span class="cond-badge ${cond.cls}">${cond.label}</span></td>
+      <td><span class="price-badge ${priceCls(p)}">${esc(priceStr(p))}</span></td>
+      <td><span class="stage-badge ${stage.cls}">${stage.label}</span></td>
+      <td style="font-family:var(--mono);color:var(--ink-3);font-size:12px">${days}d</td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// MODAL
+// ══════════════════════════════════════════
+function openModal(id){
+  const p=getById(id);if(!p)return;
+  currentId=id;
+  const stage=STAGES.find(s=>s.key===p.stage)||STAGES[0];
+  const stageIdx=STAGE_KEYS.indexOf(p.stage);
+  const cond=COND[p.condition]||COND.untested;
+  const origin=[p.boatYear,p.boatMake,p.boatModel].filter(Boolean).join(' ')||'Unknown origin';
+
+  document.getElementById('mTitle').textContent     = p.title;
+  document.getElementById('mOrigin').textContent    = origin + (p.partNum?' · Part# '+p.partNum:'');
+  document.getElementById('mStageBadge').textContent= stage.label;
+  document.getElementById('mStageBadge').className  = 'stage-badge '+stage.cls;
+  document.getElementById('mCondBadge').textContent = cond.label;
+  document.getElementById('mCondBadge').className   = 'cond-badge '+cond.cls;
+  document.getElementById('mPriceBadge').textContent= priceStr(p);
+  document.getElementById('mPriceBadge').className  = 'price-badge '+priceCls(p);
+
+  document.getElementById('mCat').textContent     = p.category||'—';
+  document.getElementById('mPartNum').textContent = p.partNum||'—';
+  document.getElementById('mShopLoc').textContent = p.location||'—';
+  document.getElementById('mFits').textContent    = p.fits||'—';
+  document.getElementById('mDims').textContent    = p.dimensions||'—';
+  document.getElementById('mWeight').textContent  = p.weight?p.weight+' lbs':'—';
+  document.getElementById('mUrgency').textContent = URGENCY_LABEL[p.urgency]||'—';
+  document.getElementById('mBy').textContent      = p.submittedBy+' · '+new Date(p.submittedAt).toLocaleDateString();
+  document.getElementById('mMktNotes').value      = p.marketingNotes||'';
+
+  // Issues
+  const issWrap=document.getElementById('mIssuesWrap');
+  if(p.issues){issWrap.style.display='';document.getElementById('mIssues').textContent=p.issues;}
+  else issWrap.style.display='none';
+
+  // Notes
+  const nWrap=document.getElementById('mNotesWrap');
+  if(p.notes){nWrap.style.display='';document.getElementById('mNotes').textContent=p.notes;}
+  else nWrap.style.display='none';
+
+  // Photos
+  document.getElementById('mPhotosCarousel').innerHTML=p.photos.length
+    ?p.photos.map(ph=>`<img src="${ph}" alt="">`).join('')
+    :'<span style="color:var(--ink-4);font-size:13px">No photos — please add some before listing</span>';
+
+  // Platforms
+  renderPlatformChips(p);
+
+  // Listing URLs
+  renderListingUrls(p);
+
+  // Listing text
+  buildListingText(p);
+
+  // History
+  document.getElementById('mHistory').innerHTML=(p.stageHistory||[]).slice().reverse().map(h=>{
+    const s=STAGES.find(st=>st.key===h.stage);
+    return `<div class="hist-row"><div class="hist-dot"></div><span class="hd">${new Date(h.date).toLocaleDateString()}</span><span>${s?s.label:h.stage} — ${esc(h.note)}</span></div>`;
+  }).join('');
+
+  // Stage buttons
+  document.getElementById('btnPrev').disabled = stageIdx<=0;
+  document.getElementById('btnNext').disabled = stageIdx>=STAGE_KEYS.length-1;
+  const nextS=STAGES[stageIdx+1];
+  document.getElementById('btnNext').textContent=nextS?'→ '+nextS.label:'Final stage';
+
+  document.getElementById('modalOverlay').classList.add('open');
+  document.getElementById('modalPanel').classList.add('open');
+}
+
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.getElementById('modalPanel').classList.remove('open');
+  currentId=null;
+}
+
+function autoSave(){
+  const p=getById(currentId);
+  if(p){p.marketingNotes=document.getElementById('mMktNotes').value;save();}
+}
+
+// ══════════════════════════════════════════
+// PLATFORMS
+// ══════════════════════════════════════════
+function renderPlatformChips(p){
+  document.getElementById('platformChips').innerHTML=PLATFORMS.map(pl=>{
+    const on=(p.platforms||[]).includes(pl);
+    return `<div class="pchip${on?' on':''}" onclick="togglePlatform('${esc(pl)}')">${esc(pl)}</div>`;
+  }).join('');
+}
+
+function togglePlatform(pl){
+  const p=getById(currentId);if(!p)return;
+  if(!p.platforms)p.platforms=[];
+  const idx=p.platforms.indexOf(pl);
+  if(idx>=0)p.platforms.splice(idx,1);
+  else p.platforms.push(pl);
+  save();
+  renderPlatformChips(p);
+}
+
+// ══════════════════════════════════════════
+// LISTING URLS
+// ══════════════════════════════════════════
+function renderListingUrls(p){
+  document.getElementById('listingUrlList').innerHTML=(p.listingUrls||[]).map((lu,i)=>
+    `<div class="listing-url-row">
+      <span class="pname">${esc(lu.platform)}</span>
+      <a href="${esc(lu.url)}" target="_blank" rel="noopener">${esc(lu.url)}</a>
+      <button class="btn btn-ghost btn-sm" onclick="removeListingUrl(${i})">✕</button>
+    </div>`
+  ).join('');
+}
+
+function addListingUrl(){
+  const pl=document.getElementById('urlPlatformSelect').value;
+  const url=document.getElementById('urlInput').value.trim();
+  if(!url){showToast('Paste a URL first');return;}
+  const p=getById(currentId);if(!p)return;
+  if(!p.listingUrls)p.listingUrls=[];
+  p.listingUrls.push({platform:pl,url});
+  save();
+  document.getElementById('urlInput').value='';
+  renderListingUrls(p);
+  // auto advance to "listed" if still in ready
+  if(p.stage==='ready'||p.stage==='received'||p.stage==='photos'){
+    p.stage='listed';
+    p.stageHistory.push({stage:'listed',date:new Date().toISOString(),note:'Listing URL added'});
+    save();
+    const stage=STAGES.find(s=>s.key==='listed');
+    document.getElementById('mStageBadge').textContent=stage.label;
+    document.getElementById('mStageBadge').className='stage-badge '+stage.cls;
+    renderStats();
+  }
+}
+
+function removeListingUrl(i){
+  const p=getById(currentId);if(!p)return;
+  p.listingUrls.splice(i,1);save();renderListingUrls(p);
+}
+
+// ══════════════════════════════════════════
+// LISTING TEXT
+// ══════════════════════════════════════════
+function buildListingText(p){
+  const origin=[p.boatYear,p.boatMake,p.boatModel].filter(Boolean).join(' ');
+  const titleLine=origin?`${p.title} — ${origin}`:p.title;
+  const cond=COND[p.condition]||COND.untested;
+  const ps=priceStr(p);
+
+  const lines=[
+    `🔧 ${titleLine}`,
+    ``,
+    `💰 Price: ${ps}`,
+    `📋 Condition: ${cond.label}`,
+    ``,
+  ];
+
+  if(p.fits)        lines.push(`✅ Fits: ${p.fits}`);
+  if(p.partNum)     lines.push(`🔩 Part #: ${p.partNum}`);
+  if(p.dimensions)  lines.push(`📐 Dimensions: ${p.dimensions}`);
+  if(p.weight)      lines.push(`⚖️ Weight: ${p.weight} lbs`);
+  if(p.fits||p.partNum||p.dimensions||p.weight) lines.push('');
+
+  if(p.issues){
+    lines.push(`📝 Notes:`);
+    lines.push(p.issues);
+    lines.push('');
+  }
+
+  if(p.notes){
+    lines.push(p.notes);
+    lines.push('');
+  }
+
+  lines.push(`📍 Fort Lauderdale, FL — local pickup available`);
+  lines.push(`All Points Boats — Marine Fabrication & Repair`);
+  lines.push(`📞 (954) 767-8255 | info@apb1.com`);
+
+  document.getElementById('listingText').textContent=lines.join('\n');
+}
+
+function copyListing(){
+  const text=document.getElementById('listingText').textContent;
+  navigator.clipboard.writeText(text).then(()=>showToast('Copied ✓')).catch(()=>showToast('Select and copy manually'));
+}
+
+// ══════════════════════════════════════════
+// STAGE / SOLD / PULL
+// ══════════════════════════════════════════
+function moveStage(dir){
+  const p=getById(currentId);if(!p)return;
+  const idx=STAGE_KEYS.indexOf(p.stage);
+  const newIdx=idx+dir;
+  if(newIdx<0||newIdx>=STAGE_KEYS.length)return;
+  p.stage=STAGE_KEYS[newIdx];
+  p.stageHistory.push({stage:p.stage,date:new Date().toISOString(),note:'Stage updated'});
+  save();closeModal();
+  if(mktTab==='board')renderKanban();else renderTable();
+  renderStats();
+  showToast('Moved to '+STAGES[newIdx].label);
+}
+
+function markSold(){
+  const p=getById(currentId);if(!p)return;
+  p.stage='sold';
+  p.stageHistory.push({stage:'sold',date:new Date().toISOString(),note:'Marked as sold'});
+  save();closeModal();
+  if(mktTab==='board')renderKanban();else renderTable();
+  renderStats();
+  showToast('Marked as sold 💰');
+}
+
+function pullFromSale(){
+  const p=getById(currentId);if(!p)return;
+  p.stage='pulled';
+  p.stageHistory.push({stage:'pulled',date:new Date().toISOString(),note:'Pulled from sale'});
+  save();closeModal();
+  if(mktTab==='board')renderKanban();else renderTable();
+  renderStats();
+  showToast('Pulled from sale');
+}
+
+function deletePart(){
+  if(!confirm('Delete this part record? This cannot be undone.'))return;
+  parts=parts.filter(p=>p.id!==currentId);
+  save();closeModal();
+  if(mktTab==='board')renderKanban();else renderTable();
+  renderStats();renderRecent();
+  showToast('Deleted');
+}
+
+// ══════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+function init(){
+  initUpload();
+  const v=localStorage.getItem(VK)||'tech';
+  setView(v);
+  const last=localStorage.getItem('apb_up_last');
+  if(last) document.getElementById('fName').value=last;
+}
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>

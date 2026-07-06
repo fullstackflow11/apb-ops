@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Task Board · APB</title>
+<script src="apb-roles.js"></script>
+<script src="apb-demo.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDEEF2;--panel:#fff;--panel-2:#F5F6FA;
+  --ink:#0D1626;--ink-2:#3A4559;--ink-3:#6B7A92;
+  --line:#DDE1E8;--line-2:#E8EBF0;
+  --accent:#2457E6;--accent-2:#1B45B8;--accent-soft:#EAF0FE;
+  --green:#0B9E6A;--green-soft:#E4F5EE;
+  --amber:#B86A00;--amber-soft:#FBF0E2;
+  --orange:#C05300;--orange-soft:#F8E6D8;
+  --red:#C43030;--red-soft:#FDEAEA;
+  --purple:#6B3DBB;--purple-soft:#F0EBFF;
+  --shadow-sm:0 1px 3px rgba(13,22,38,.07);
+  --shadow:0 8px 28px -12px rgba(13,22,38,.14);
+  --mono:"DM Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:Inter,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;letter-spacing:-.01em;min-height:100vh}
+
+/* topbar */
+.topbar{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.9);backdrop-filter:saturate(180%) blur(14px);display:flex;align-items:center;gap:14px;padding:0 28px;height:62px;border-bottom:1px solid var(--line)}
+.topbar img{height:38px;width:auto;display:block}
+.topbar .t{border-left:1px solid var(--line);padding-left:14px}
+.topbar .t b{font-size:15px}
+.topbar .t span{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.topbar .sp{flex:1}
+.topbar .navbtn{font-size:12.5px;font-weight:600;color:var(--accent);padding:7px 13px;border:1px solid var(--line);border-radius:8px;background:var(--panel);cursor:pointer;text-decoration:none;transition:.12s;white-space:nowrap}
+.topbar .navbtn:hover{border-color:var(--accent);background:var(--accent-soft)}
+.role-pill{font-family:var(--mono);font-size:11px;font-weight:600;padding:5px 11px;border-radius:20px;background:var(--accent-soft);color:var(--accent-2);letter-spacing:.04em}
+.whoami{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-3)}
+.whoami select{font:inherit;font-size:12.5px;padding:5px 8px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer}
+
+.wrap{max-width:1180px;margin:0 auto;padding:26px 24px 60px}
+
+/* stat strip */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm);padding:16px 18px;border-top:3px solid var(--line)}
+.stat .v{font-family:var(--mono);font-size:26px;font-weight:500;line-height:1;letter-spacing:-.02em}
+.stat .l{font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-top:6px}
+.stat.todo{border-top-color:var(--ink-3)} .stat.todo .v{color:var(--ink-2)}
+.stat.doing{border-top-color:var(--accent)} .stat.doing .v{color:var(--accent)}
+.stat.done{border-top-color:var(--green)} .stat.done .v{color:var(--green)}
+.stat.over{border-top-color:var(--red)} .stat.over .v{color:var(--red)}
+
+.sec{display:flex;align-items:center;gap:12px;margin:6px 2px 16px}
+.sec h2{font-size:16px;font-weight:800;letter-spacing:-.02em;margin:0}
+.sec .sp{flex:1}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:9px;font-size:13.5px;font-weight:600;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink-2);transition:.12s;text-decoration:none}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.prim{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.prim:hover{background:var(--accent-2);color:#fff}
+.btn svg{width:15px;height:15px;stroke-width:2.4}
+.filter-sel{font:inherit;font-size:13px;padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--ink);cursor:pointer}
+
+/* board */
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:start}
+.col{background:var(--panel-2);border:1px solid var(--line);border-radius:16px;padding:14px;min-height:120px}
+.col-head{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin:2px 4px 12px}
+.col-head .dot{width:9px;height:9px;border-radius:50%}
+.col.todo .dot{background:var(--ink-3)} .col.doing .dot{background:var(--accent)} .col.done .dot{background:var(--green)}
+.col-head .cnt{margin-left:auto;font-family:var(--mono);font-weight:500;color:var(--ink-3)}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-sm);padding:13px 14px;margin-bottom:10px;position:relative}
+.card.overdue{border-color:#ecc9c6;box-shadow:inset 3px 0 0 var(--red)}
+.card .ttl{font-size:14px;font-weight:700;letter-spacing:-.01em;margin:0 0 5px;line-height:1.3}
+.card .desc{font-size:12px;color:var(--ink-3);line-height:1.45;margin:0 0 9px}
+.card .meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;font-family:var(--mono);padding:2px 8px;border-radius:6px;background:var(--panel-2);color:var(--ink-2);border:1px solid var(--line)}
+.tag.who{background:var(--accent-soft);color:var(--accent-2);border-color:#c7d7f8}
+.tag.job{background:var(--purple-soft);color:var(--purple);border-color:#d8caf3}
+.tag.due{background:var(--panel-2)}
+.tag.due.late{background:var(--red-soft);color:var(--red);border-color:#ecc9c6}
+.pri{position:absolute;top:13px;right:13px;font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:5px}
+.pri.urgent{background:var(--red-soft);color:var(--red)}
+.pri.high{background:var(--orange-soft);color:var(--orange)}
+.pri.normal{background:var(--accent-soft);color:var(--accent-2)}
+.pri.low{background:var(--panel-2);color:var(--ink-3)}
+.card-actions{display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--line-2);padding-top:9px}
+.ca{font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:7px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink-2);cursor:pointer;transition:.12s}
+.ca:hover{border-color:var(--accent);color:var(--accent)}
+.ca.go:hover{border-color:var(--accent)} .ca.done:hover{border-color:var(--green);color:var(--green);background:var(--green-soft)}
+.ca.del{margin-left:auto} .ca.del:hover{border-color:var(--red);color:var(--red);background:var(--red-soft)}
+.notes{margin:8px 0 0;padding:8px 0 0;border-top:1px dashed var(--line)}
+.note{font-size:11.5px;color:var(--ink-2);line-height:1.4;margin-bottom:4px}
+.note b{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);font-weight:500}
+
+.empty{grid-column:1/-1;text-align:center;padding:50px 20px;color:var(--ink-3)}
+.empty svg{width:46px;height:46px;stroke:var(--line);stroke-width:1.5;display:block;margin:0 auto 14px}
+
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(13,22,38,.45);backdrop-filter:blur(2px);display:none;place-items:center;z-index:60;padding:20px}
+.modal-bg.open{display:grid}
+.modal{background:var(--panel);border-radius:18px;box-shadow:0 24px 60px -20px rgba(13,22,38,.4);width:100%;max-width:520px;padding:26px 26px 22px;max-height:90vh;overflow:auto}
+.modal h3{margin:0 0 18px;font-size:17px;font-weight:800;letter-spacing:-.02em}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:13px}
+.fg label{font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2)}
+.fg input,.fg select,.fg textarea{font:inherit;font-size:13.5px;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);outline:none;transition:.12s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(36,87,230,.1)}
+.fg textarea{resize:vertical;min-height:62px}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.modal-actions{display:flex;gap:10px;margin-top:8px;padding-top:16px;border-top:1px solid var(--line-2)}
+.modal-actions .sp{flex:1}
+
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(70px);background:#11151c;color:#fff;padding:11px 20px;border-radius:11px;font-size:13.5px;font-weight:500;z-index:90;opacity:0;transition:.25s;pointer-events:none}
+.toast.show{transform:translateX(-50%);opacity:1}
+.toast.green{background:#0a7a52}.toast.red{background:var(--red)}
+
+.note-empty{font-size:13px;color:var(--ink-3)}
+.idcard{max-width:440px;margin:40px auto;background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:34px 30px;text-align:center}
+.idcard h2{margin:0 0 8px;font-size:20px;font-weight:800}
+.idcard p{color:var(--ink-3);font-size:13.5px;margin:0 0 20px}
+
+@media(max-width:880px){.board{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.f2{grid-template-columns:1fr}}
+</style>
+<link rel="stylesheet" href="apb-theme.css">
+</head>
+<body>
+
+<header class="topbar">
+  <img src="apb-logo.png" alt="APB">
+  <div class="t"><b>Task Board</b><span id="subTitle">APB Dispatch</span></div>
+  <div class="sp"></div>
+  <div class="whoami" id="whoami"></div>
+  <span class="role-pill" id="rolePill">—</span>
+  <a class="navbtn" href="index.html">⌂ Home</a>
+</header>
+
+<main class="wrap" id="app"></main>
+
+<!-- Task modal (admin) -->
+<div class="modal-bg" id="taskModal">
+  <div class="modal">
+    <h3 id="taskModalTitle">Assign work</h3>
+    <div class="f2">
+      <div class="fg"><label>Project / vessel *</label><input id="tJob" type="text" placeholder="e.g. Redundansea 2.0"></div>
+      <div class="fg"><label>Assign to *</label><select id="tAssignee"></select></div>
+    </div>
+    <div class="fg"><label>Message <span style="color:var(--ink-3);font-weight:400;text-transform:none;letter-spacing:0">— optional</span></label><textarea id="tDesc" placeholder="Anything they need to know — scope, where on the boat, parts, deadline…"></textarea></div>
+    <div class="fg" style="max-width:220px"><label>Target date — optional</label><input id="tDue" type="date"></div>
+    <input type="hidden" id="tTitle"><input type="hidden" id="tPriority" value="normal">
+    <div class="modal-actions">
+      <button class="btn prim" onclick="saveTask()">Assign</button>
+      <button class="btn" onclick="closeTaskModal()">Cancel</button>
+      <span class="sp"></span>
+      <button class="btn" id="manageTeamBtn" onclick="openTeam()" title="Add or edit people">Manage team</button>
+    </div>
+  </div>
+</div>
+
+<!-- Team modal (admin) -->
+<div class="modal-bg" id="teamModal">
+  <div class="modal" style="max-width:460px">
+    <h3>Team</h3>
+    <div id="teamList" style="margin-bottom:14px"></div>
+    <div class="f2">
+      <div class="fg"><label>Name</label><input id="mName" type="text" placeholder="Full name"></div>
+      <div class="fg"><label>Role</label><select id="mRole"><option value="tech">Tech</option><option value="pm">PM</option></select></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn prim" onclick="addMember()">Add person</button>
+      <button class="btn" onclick="closeTeam()">Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const LS_TASKS='apb_tasks', LS_TEAM='apb_team', LS_ME='apb_me';
+const DAY=86400000;
+const role = (window.APBRoles ? APBRoles.role() : 'admin');
+const isAdmin = role==='admin';
+
+const SEED_TEAM=[
+  {name:'Jerry Clark',role:'tech'},{name:'Tommy Borden',role:'tech'},
+  {name:'Christian Yancy',role:'tech'},{name:'Jared Sandoval',role:'tech'},
+  {name:'Jesse Lopez Sanchez',role:'tech'},{name:'Jordan Mirador',role:'tech'},
+  {name:'David Brown',role:'tech'},{name:'Brandon Wezkiewicz',role:'tech'}
+];
+
+function load(k,f){ try{ return JSON.parse(localStorage.getItem(k)||f); }catch(e){ return JSON.parse(f); } }
+function save(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+function tasks(){ return load(LS_TASKS,'[]'); }
+function team(){ let t=load(LS_TEAM,'null'); if(!t){ t=SEED_TEAM.slice(); save(LS_TEAM,t); } return t; }
+function me(){ return localStorage.getItem(LS_ME)||''; }
+function setMe(n){ localStorage.setItem(LS_ME,n); }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function pdate(s){ return s? new Date(s+'T00:00:00') : null; }
+function fmtDue(s){ if(!s) return null; const d=pdate(s); return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+function isOverdue(t){ if(t.status==='done'||!t.due) return false; return pdate(t.due).getTime() < new Date().setHours(0,0,0,0); }
+
+let editingId=null;
+
+// ── Boot ────────────────────────────────────────────────────────────────────
+document.getElementById('rolePill').textContent = window.APBRoles?APBRoles.label():'Admin';
+boot();
+
+function boot(){
+  if(isAdmin){ document.getElementById('subTitle').textContent='Who is working on what'; renderWhoAmI(true); renderAdmin(); }
+  else { document.getElementById('subTitle').textContent='My assigned work'; renderWhoAmI(false); renderMine(); }
+}
+
+// ── Identity ("viewing as") ─────────────────────────────────────────────────
+function renderWhoAmI(admin){
+  const el=document.getElementById('whoami');
+  const roster=team();
+  if(admin){
+    el.innerHTML = 'View: <select id="viewAs" onchange="renderAdmin()"><option value="">Everyone</option>'+
+      roster.map(m=>`<option value="${esc(m.name)}">${esc(m.name)}</option>`).join('')+'</select>';
+  } else {
+    el.innerHTML = 'You: <select id="meSel" onchange="setMe(this.value);renderMine()">'+
+      '<option value="">— pick your name —</option>'+
+      roster.map(m=>`<option value="${esc(m.name)}" ${m.name===me()?'selected':''}>${esc(m.name)}</option>`).join('')+'</select>';
+  }
+}
+
+// ── Admin board ─────────────────────────────────────────────────────────────
+function renderAdmin(){
+  const app=document.getElementById('app');
+  const filter = (document.getElementById('viewAs')||{}).value || '';
+  let all=tasks();
+  if(filter) all=all.filter(t=>t.assignee===filter);
+  const c={todo:0,doing:0,done:0,over:0};
+  all.forEach(t=>{ c[t.status]=(c[t.status]||0)+1; if(isOverdue(t))c.over++; });
+
+  app.innerHTML = `
+    <div class="stats">
+      <div class="stat todo"><div class="v">${c.todo||0}</div><div class="l">To Do</div></div>
+      <div class="stat doing"><div class="v">${c.doing||0}</div><div class="l">In Progress</div></div>
+      <div class="stat done"><div class="v">${c.done||0}</div><div class="l">Done</div></div>
+      <div class="stat over"><div class="v">${c.over||0}</div><div class="l">Overdue</div></div>
+    </div>
+    <div class="sec">
+      <h2>${filter?esc(filter)+"'s work":"Who's working on what"}</h2><span class="sp"></span>
+      <button class="btn prim" onclick="openTaskModal()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Assign work</button>
+    </div>
+    <div class="board">
+      ${col('todo','To Do',all)}
+      ${col('doing','In Progress',all)}
+      ${col('done','Done',all)}
+    </div>`;
+  updateBadge();
+}
+
+function col(status,label,all){
+  const list=all.filter(t=>t.status===status).sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999'));
+  const cards = list.length ? list.map(t=>card(t,true)).join('')
+    : `<div class="note-empty" style="padding:8px 4px">Nothing here.</div>`;
+  return `<div class="col ${status}"><div class="col-head"><span class="dot"></span>${label}<span class="cnt">${list.length}</span></div>${cards}</div>`;
+}
+
+function card(t,admin){
+  const late=isOverdue(t);
+  const due=t.due?`<span class="tag due ${late?'late':''}">⏱ ${fmtDue(t.due)}${late?' · late':''}</span>`:'';
+  const job=t.job?`<span class="tag job">⚓ ${esc(t.job)}</span>`:'';
+  const who=admin?`<span class="tag who">${esc(t.assignee||'Unassigned')}</span>`:'';
+  let actions='';
+  if(t.status==='todo') actions=`<button class="ca go" onclick="setStatus('${t.id}','doing')">▸ Start</button><button class="ca done" onclick="setStatus('${t.id}','done')">✓ Done</button>`;
+  else if(t.status==='doing') actions=`<button class="ca done" onclick="setStatus('${t.id}','done')">✓ Done</button><button class="ca" onclick="setStatus('${t.id}','todo')">↺ To Do</button>`;
+  else actions=`<button class="ca" onclick="setStatus('${t.id}','doing')">↺ Reopen</button>`;
+  if(admin) actions+=`<button class="ca" onclick="editTask('${t.id}')">Edit</button><button class="ca del" onclick="delTask('${t.id}')">Delete</button>`;
+  else actions+=`<button class="ca" onclick="addNote('${t.id}')">+ Note</button>`;
+  const notes=(t.notes&&t.notes.length)?`<div class="notes">${t.notes.slice(-3).map(n=>`<div class="note"><b>${esc(n.by)} · ${n.at}</b> — ${esc(n.text)}</div>`).join('')}</div>`:'';
+  return `<div class="card ${late?'overdue':''}">
+    <p class="ttl">⚓ ${esc(t.job||t.title||'—')}</p>
+    ${t.desc?`<p class="desc">${esc(t.desc)}</p>`:''}
+    <div class="meta">${who}${due}</div>
+    ${notes}
+    <div class="card-actions">${actions}</div>
+  </div>`;
+}
+
+// ── My tasks (pm / tech) ────────────────────────────────────────────────────
+function renderMine(){
+  const app=document.getElementById('app');
+  if(!me()){
+    app.innerHTML=`<div class="idcard"><h2>Who are you?</h2><p>Pick your name so we can show the jobs assigned to you.</p>
+      <select class="filter-sel" style="font-size:15px;padding:11px 14px" onchange="setMe(this.value);renderWhoAmI(false);renderMine()">
+        <option value="">— select your name —</option>
+        ${team().map(m=>`<option value="${esc(m.name)}">${esc(m.name)} · ${m.role.toUpperCase()}</option>`).join('')}
+      </select></div>`;
+    return;
+  }
+  const mine=tasks().filter(t=>t.assignee===me());
+  const open=mine.filter(t=>t.status!=='done');
+  const done=mine.filter(t=>t.status==='done');
+  const over=mine.filter(isOverdue).length;
+  app.innerHTML=`
+    <div class="stats">
+      <div class="stat doing"><div class="v">${open.length}</div><div class="l">To Do</div></div>
+      <div class="stat over"><div class="v">${over}</div><div class="l">Overdue</div></div>
+      <div class="stat done"><div class="v">${done.length}</div><div class="l">Completed</div></div>
+      <div class="stat todo"><div class="v">${mine.length}</div><div class="l">Total</div></div>
+    </div>
+    <div class="sec"><h2>What you're working on, ${esc(me().split(' ')[0])}</h2></div>
+    <div class="board" style="grid-template-columns:1fr">
+      ${ open.length ? open.sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999')).map(t=>card(t,false)).join('')
+        : `<div class="empty"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><p>All clear — nothing assigned right now.</p></div>` }
+    </div>
+    ${ done.length ? `<div class="sec" style="margin-top:26px"><h2 style="font-size:13px;color:var(--ink-3)">Completed (${done.length})</h2></div>
+       <div class="board" style="grid-template-columns:1fr;opacity:.7">${done.slice(-6).reverse().map(t=>card(t,false)).join('')}</div>`:'' }`;
+  updateBadge();
+}
+
+// ── Mutations ───────────────────────────────────────────────────────────────
+function setStatus(id,st){
+  const all=tasks(); const t=all.find(x=>x.id===id); if(!t) return;
+  t.status=st; t.updatedAt=Date.now(); save(LS_TASKS,all);
+  isAdmin?renderAdmin():renderMine();
+  toast(st==='done'?'Marked done ✓':'Updated','green');
+}
+function addNote(id){
+  const text=prompt('Add a note / update:'); if(!text) return;
+  const all=tasks(); const t=all.find(x=>x.id===id); if(!t) return;
+  t.notes=t.notes||[]; t.notes.push({by:me()||APBRoles.label(),at:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),text});
+  t.updatedAt=Date.now(); save(LS_TASKS,all); renderMine();
+}
+function delTask(id){
+  if(!confirm('Delete this task?')) return;
+  save(LS_TASKS, tasks().filter(t=>t.id!==id)); renderAdmin(); toast('Deleted','red');
+}
+
+// ── Task modal (admin) ──────────────────────────────────────────────────────
+function fillAssignees(sel){
+  sel.innerHTML = team().map(m=>`<option value="${esc(m.name)}">${esc(m.name)} · ${m.role.toUpperCase()}</option>`).join('');
+}
+function openTaskModal(){
+  editingId=null;
+  document.getElementById('taskModalTitle').textContent='Assign work';
+  fillAssignees(document.getElementById('tAssignee'));
+  ['tTitle','tJob','tDue','tDesc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('tPriority').value='normal';
+  document.getElementById('taskModal').classList.add('open');
+  document.getElementById('tJob').focus();
+}
+function editTask(id){
+  const t=tasks().find(x=>x.id===id); if(!t) return;
+  editingId=id;
+  document.getElementById('taskModalTitle').textContent='Edit assignment';
+  fillAssignees(document.getElementById('tAssignee'));
+  document.getElementById('tTitle').value=t.title||'';
+  document.getElementById('tAssignee').value=t.assignee||'';
+  document.getElementById('tJob').value=t.job||'';
+  document.getElementById('tPriority').value=t.priority||'normal';
+  document.getElementById('tDue').value=t.due||'';
+  document.getElementById('tDesc').value=t.desc||'';
+  document.getElementById('taskModal').classList.add('open');
+}
+function closeTaskModal(){ document.getElementById('taskModal').classList.remove('open'); }
+function saveTask(){
+  const job=document.getElementById('tJob').value.trim();
+  if(!job){ toast('Add a project / vessel','red'); return; }
+  const assignee=document.getElementById('tAssignee').value;
+  if(!assignee){ toast('Pick who to assign','red'); return; }
+  const m=team().find(x=>x.name===assignee);
+  const data={ title:job, assignee, assigneeRole:m?m.role:'tech',
+    job:job, priority:'normal',
+    due:document.getElementById('tDue').value,
+    desc:document.getElementById('tDesc').value.trim() };
+  const all=tasks();
+  if(editingId){ const t=all.find(x=>x.id===editingId); Object.assign(t,data); t.updatedAt=Date.now(); toast('Updated','green'); }
+  else { all.push({ id:uid(), ...data, status:'todo', notes:[], createdBy:APBRoles.label(), createdAt:Date.now(), updatedAt:Date.now() }); toast((assignee.split(' ')[0])+' assigned to '+job,'green'); }
+  save(LS_TASKS,all); closeTaskModal(); renderAdmin();
+}
+
+// ── Team modal ──────────────────────────────────────────────────────────────
+function openTeam(){ renderTeamList(); document.getElementById('teamModal').classList.add('open'); }
+function closeTeam(){ document.getElementById('teamModal').classList.remove('open'); }
+function renderTeamList(){
+  const t=team();
+  document.getElementById('teamList').innerHTML = t.length? t.map((m,i)=>
+    `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line-2)">
+      <span style="flex:1;font-size:13.5px;font-weight:600">${esc(m.name)}</span>
+      <span class="tag">${m.role.toUpperCase()}</span>
+      <button class="ca del" onclick="delMember(${i})">✕</button>
+    </div>`).join('') : '<p class="note-empty">No team members yet.</p>';
+}
+function addMember(){
+  const name=document.getElementById('mName').value.trim();
+  if(!name){ toast('Name required','red'); return; }
+  const t=team(); t.push({name,role:document.getElementById('mRole').value}); save(LS_TEAM,t);
+  document.getElementById('mName').value='';
+  renderTeamList(); renderWhoAmI(true);
+  if(document.getElementById('taskModal').classList.contains('open')) fillAssignees(document.getElementById('tAssignee'));
+  toast('Added '+name,'green');
+}
+function delMember(i){ const t=team(); t.splice(i,1); save(LS_TEAM,t); renderTeamList(); renderWhoAmI(true); }
+
+// hide team button for non-admin (defensive; non-admin never sees modal)
+if(!isAdmin){ const b=document.getElementById('manageTeamBtn'); if(b) b.style.display='none'; }
+
+function updateBadge(){ /* reserved: home tile badges read apb_tasks directly */ }
+
+let toastT;
+function toast(msg,cls){ const el=document.getElementById('toast'); el.textContent=msg; el.className='toast show'+(cls?' '+cls:''); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),2600); }
+
+// close modals on backdrop click
+document.querySelectorAll('.modal-bg').forEach(bg=>bg.addEventListener('click',e=>{ if(e.target===bg) bg.classList.remove('open'); }));
+</script>
+</body>
+</html>
