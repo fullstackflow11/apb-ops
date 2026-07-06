@@ -334,6 +334,26 @@ function switchTab(tab){
   renderBoard();
 }
 
+// ── Board columns ──
+const LEAD_COLS=[
+  {key:'Lead',            label:'Lead',            color:'#94A3B8', dot:'dot-new'},
+  {key:'Estimating',      label:'Estimating',      color:'#C0A020', dot:'dot-estimating'},
+  {key:'Proposal Created',label:'Proposal Created',color:'#8B5CF6', dot:'dot-proposal'},
+  {key:'Proposal Sent',   label:'Proposal Sent',   color:'#8B5CF6', dot:'dot-proposal'},
+  {key:'Approved',        label:'Approved',        color:'#0B9E6A', dot:'dot-approved'},
+];
+const JOB_COLS=[
+  {key:'Lead',              label:'Lead',              color:'#94A3B8', dot:'dot-new'},
+  {key:'Estimating',        label:'Estimating',        color:'#C0A020', dot:'dot-estimating'},
+  {key:'Approved',          label:'Approved',          color:'#8B5CF6', dot:'dot-approved'},
+  {key:'In Progress',       label:'In Progress',       color:'#2a9fd8', dot:'dot-inprogress'},
+  {key:'Ready To Be Billed',label:'Ready To Be Billed',color:'#B86A00', dot:'dot-ready'},
+  {key:'Invoice In Review', label:'Invoice In Review', color:'#B86A00', dot:'dot-ready'},
+  {key:'Invoice Sent',      label:'Invoice Sent',      color:'#7C3AED', dot:'dot-invoiced'},
+  {key:'Paid',              label:'Paid',              color:'#0B9E6A', dot:'dot-paid'},
+  {key:'Canceled',          label:'Canceled',          color:'#6B7280', dot:'dot-cancelled'},
+];
+
 // ── Render board ──
 function renderBoard(){
   const q=document.getElementById('searchInput').value.toLowerCase();
