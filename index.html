@@ -710,7 +710,6 @@ body.theme-light .foot b{color:#48597a}
             <a class="nav-i" href="apb-certs.html"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M9 12l-4 9 7-3 7 3-4-9"/></svg>Cert hub</a>
             <a class="nav-i" href="apb-iso.html"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>ISO 9001</a>
             <a class="nav-i" href="apb-compliance.html"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Compliance hub</a>
-            <a class="nav-i" href="../APB Lead Opportunities/index.html" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M8 11h6M11 8v6"/></svg>GovCon bids</a>
           </div>
 
           <div class="nav-group">
@@ -858,7 +857,7 @@ var WORLD = {
   "apb-proposal.html":["pm"], "apb-estimate.html":["pm"], "apb-sop.html":["pm"],
   "apb-mtr.html":["pm","purchasing"], "apb-purchasing.html":["pm","purchasing"], "apb-procurement.html":["pm","purchasing"],
   "apb-accounting.html":["accounting"], "apb-contacts.html":["accounting"],
-  "apb-compliance.html":[], "Lead Opportunities":[], "apb-iso.html":[], "apb-dealer.html":[],
+  "apb-compliance.html":[], "apb-iso.html":[], "apb-dealer.html":[],
   "apb-certs.html":["pm"], "apb-products.html":["pm"],
   "apb-used-parts.html":["pm","purchasing"], "apb-portals.html":["pm","purchasing"],
   "apb-pto.html":["pm","tech","accounting","purchasing"],
@@ -882,7 +881,6 @@ var NAV_KW = {
   "apb-sop.html":"procedures training videos standard operating",
   "apb-contacts.html":"clients customers directory",
   "apb-compliance.html":"insurance coi certificates facility",
-  "Lead Opportunities":"govcon government sam bids federal",
   "apb-iso.html":"9001 quality readiness audit",
   "apb-dealer.html":"partner brand marketing assets",
   "apb-products.html":"store retail ideas product studio",
@@ -1100,7 +1098,7 @@ function renderOverview(){
   } else {
     // ADMIN — operational command center. Financials are a SECONDARY glance only.
     kpis=[[activeProjects.length,"Active projects"],[tOpen,"Open tasks"],[propN,"Proposals out"],[(mNc+mPend),"MTRs open"]];
-    actions=[["apb-proposal.html","New proposal",ICON.fileplus,1],["../APB Lead Opportunities/index.html","Track a bid",ICON.search],["apb-tasks.html","New task",ICON.plus],["apb-pto.html","Request PTO",ICON.cal]];
+    actions=[["apb-proposal.html","New proposal",ICON.fileplus,1],["apb-tasks.html","New task",ICON.plus],["apb-pto.html","Request PTO",ICON.cal]];
     if(tOver) attn.push({cls:"red",icon:ICON.check,txt:tOver+" task"+(tOver>1?"s":"")+" overdue",href:"apb-tasks.html"});
     if(mNc) attn.push({cls:"red",icon:ICON.file,txt:mNc+" MTR"+(mNc>1?"s":"")+" flagged non-conforming",href:"apb-mtr.html"});
     if(cExp) attn.push({cls:"red",icon:ICON.cert,txt:cExp+" certification"+(cExp>1?"s":"")+" expired",href:"apb-certs.html"});
