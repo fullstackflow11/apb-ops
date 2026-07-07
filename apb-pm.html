@@ -236,6 +236,12 @@ tbody tr:last-child td{border-bottom:none}
 .grp .reportbtn{display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); background:var(--panel);
   border-radius:8px; padding:6px 11px; font:inherit; font-size:12px; font-weight:600; color:var(--ink-2); cursor:pointer}
 .grp .reportbtn:hover{border-color:var(--accent); color:var(--accent)}
+.grp .reportbtn.danger{color:#C43030}
+.grp .reportbtn.danger:hover{border-color:#C43030; background:#FBEAEA}
+.jobdel{border:none;background:transparent;color:var(--ink-4);font-size:13px;cursor:pointer;padding:4px 6px;border-radius:6px;margin-right:6px}
+.jobdel:hover{color:#C43030;background:#FBEAEA}
+.pd-jobrow .pj-del{border:1px solid #CFD6E1;background:#F7F9FC;border-radius:7px;padding:5px 9px;font-size:12px;cursor:pointer;color:#C43030;margin-left:6px}
+.pd-jobrow .pj-del:hover{border-color:#C43030;background:#FBEAEA}
 tr.jobrow td:first-child{padding-left:44px}
 tr.jobrow td:first-child{position:relative}
 tr.jobrow td:first-child::before{content:""; position:absolute; left:26px; top:0; bottom:0; width:2px; background:var(--line-2)}
@@ -789,6 +795,33 @@ function writeJobsCache(){
 function persistEdit(job){ const ed=lsGet("apb_local_edits",{});
   ed[job.id]={job_number:job.job_number,job_name:job.job_name,engagement:job.engagement,rep:job.rep,status:job.status,pct:job.job_status_pct};
   lsSet("apb_local_edits",ed); }
+async function deleteJobRow(id,skipConfirm){
+  const j=JOBS.find(x=>x.id===id); if(!j) return;
+  if(!skipConfirm && !confirm(`Delete job ${j.job_number?j.job_number+' — ':''}${j.job_name||'(no scope)'}? This cannot be undone.`)) return;
+  if(LIVE && !String(id).startsWith("demo-") && !String(id).startsWith("job_")){
+    try{
+      await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_jobs?id=eq.${id}`,{
+        method:"DELETE",
+        headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+CONFIG.SUPABASE_ANON_KEY}
+      });
+    }catch(e){ toast("Delete failed — check connection"); return; }
+  }
+  JOBS=JOBS.filter(x=>x.id!==id);
+  const lj=lsGet("apb_local_jobs",[]); lsSet("apb_local_jobs",lj.filter(x=>x.id!==id));
+  const ed=lsGet("apb_local_edits",{}); delete ed[id]; lsSet("apb_local_edits",ed);
+  const ov=lsGet("apb_local_status",{}); delete ov[id]; lsSet("apb_local_status",ov);
+  writeJobsCache();
+  if(!skipConfirm){ buildFilters(); refreshViews(); toast(`Job deleted`); if(typeof renderProjJobs==="function"&&document.getElementById("projDrawer").classList.contains("open")) renderProjJobs(); }
+}
+async function deleteProjectGroup(name){
+  const jobs=pjobs(name);
+  if(!jobs.length) return;
+  if(!confirm(`Delete "${name}" and all ${jobs.length} job${jobs.length>1?'s':''} under it? This cannot be undone.`)) return;
+  for(const j of jobs){ await deleteJobRow(j.id,true); }
+  const m=lsGet("apb_proj_meta",{}); delete m[name]; lsSet("apb_proj_meta",m);
+  const pf=lsGet(PFAC_KEY,{}); delete pf[name]; lsSet(PFAC_KEY,pf);
+  buildFilters(); refreshViews(); toast(`Deleted ${name} (${jobs.length} job${jobs.length>1?'s':''})`);
+}
 /* project-level metadata that doesn't live on the jobs (customer, notes) */
 function getProjMeta(name){ const m=lsGet("apb_proj_meta",{}); return m[name]||{}; }
 function setProjMeta(name,meta){ const m=lsGet("apb_proj_meta",{}); m[name]=Object.assign({},m[name],meta); lsSet("apb_proj_meta",m); }
@@ -1076,6 +1109,7 @@ function render(){
         <button class="reportbtn openbtn" data-projopen="${esc(p)}" title="Open project — edit details, add a job">Open ›</button>
         <button class="reportbtn" data-projreport="${esc(p)}" data-rtype="status" title="Status report">Status</button>
         <button class="reportbtn" data-projreport="${esc(p)}" data-rtype="completion" title="Completion report">Completion</button>
+        <button class="reportbtn danger" data-projdel="${esc(p)}" title="Delete this project and all its jobs">✕</button>
       </div></td></tr>`;
     if(!isC){
       jobs.forEach(j=>{
@@ -1084,18 +1118,21 @@ function render(){
           <td><span class="chip ${chipClass(j.status)}"><i></i>${esc(j.status)}</span></td>
           <td>${meterHTML(j.job_status_pct)}</td>
           <td class="hide-sm"><span class="updated">${j.updated_at?fmtAgo(j.updated_at):'—'}</span></td>
-          <td><span class="chev">›</span></td>
+          <td><button class="jobdel" data-jobdel="${esc(j.id)}" title="Delete job">✕</button><span class="chev">›</span></td>
         </tr>`;
       });
     }
   });
   tb.innerHTML=html;
 
-  tb.querySelectorAll("tr.jobrow").forEach(tr=>tr.onclick=()=>openDrawer(tr.dataset.id));
+  tb.querySelectorAll("tr.jobrow").forEach(tr=>tr.onclick=e=>{ if(e.target.closest("[data-jobdel]")) return; openDrawer(tr.dataset.id); });
+  tb.querySelectorAll("[data-jobdel]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); deleteJobRow(b.dataset.jobdel); });
+  tb.querySelectorAll("[data-projdel]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); deleteProjectGroup(b.dataset.projdel); });
   tb.querySelectorAll(".grp").forEach(g=>g.onclick=e=>{
     if(e.target.closest("[data-projreport]")) return;
     if(e.target.closest("[data-facpick]")) return;
     if(e.target.closest("[data-projopen]")) return;
+    if(e.target.closest("[data-projdel]")) return;
     const p=g.dataset.proj; collapsed.has(p)?collapsed.delete(p):collapsed.add(p); render();
   });
   tb.querySelectorAll("[data-projopen]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); openProject(b.dataset.projopen); });
@@ -1294,8 +1331,10 @@ function renderProjJobs(){
         <div><span class="chip ${chipClass(j.status)}" style="margin-top:5px"><i></i>${esc(j.status)}</span></div></div>
       <span class="pj-pct">${(+j.job_status_pct||0)}%</span>
       <button class="pj-edit" data-edit="${esc(j.id)}">Edit</button>
+      <button class="pj-del" data-jobdel="${esc(j.id)}" title="Delete job">✕</button>
     </div>`).join("") : '<div style="color:#6B7480;font-size:13px;padding:6px 2px">No jobs yet — add the first one below.</div>';
   G("pdJobs").querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{ closeProject(); openDrawer(b.dataset.edit); });
+  G("pdJobs").querySelectorAll("[data-jobdel]").forEach(b=>b.onclick=async()=>{ await deleteJobRow(b.dataset.jobdel); renderProjJobs(); });
 }
 function addJobToProject(){
   const name=G("pdJobName").value.trim();
