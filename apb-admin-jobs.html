@@ -174,6 +174,9 @@ header{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.92);backdr
 <!-- Toolbar -->
 <div class="toolbar">
   <input class="search-input" id="searchInput" placeholder="Search..." oninput="renderBoard()">
+  <label id="showPaidWrap" style="display:none;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-3);cursor:pointer;user-select:none">
+    <input type="checkbox" id="showPaidToggle" onchange="renderBoard()"> Show Paid/Invoiced (<span id="paidCount">0</span>)
+  </label>
 </div>
 
 <!-- Board -->
@@ -350,15 +353,22 @@ const JOB_COLS=[
   {key:'Ready To Be Billed',label:'Ready To Be Billed',color:'#B86A00', dot:'dot-ready'},
   {key:'Invoice In Review', label:'Invoice In Review', color:'#B86A00', dot:'dot-ready'},
   {key:'Invoice Sent',      label:'Invoice Sent',      color:'#7C3AED', dot:'dot-invoiced'},
-  {key:'Paid',              label:'Paid',              color:'#0B9E6A', dot:'dot-paid'},
   {key:'Canceled',          label:'Canceled',          color:'#6B7280', dot:'dot-cancelled'},
+];
+const JOB_COLS_PAID=[
+  {key:'Paid',              label:'Paid',              color:'#0B9E6A', dot:'dot-paid'},
 ];
 
 // ── Render board ──
 function renderBoard(){
   const q=document.getElementById('searchInput').value.toLowerCase();
   const board=document.getElementById('board');
-  const cols=currentTab==='leads'?LEAD_COLS:JOB_COLS;
+  const showPaidWrap=document.getElementById('showPaidWrap');
+  const showPaid=document.getElementById('showPaidToggle').checked;
+  showPaidWrap.style.display=currentTab==='jobs'?'flex':'none';
+  const paidCount=currentTab==='jobs'?allJobs.filter(j=>j.status==='Paid').length:0;
+  document.getElementById('paidCount').textContent=paidCount;
+  const cols=currentTab==='leads'?LEAD_COLS:(showPaid?[...JOB_COLS,...JOB_COLS_PAID]:JOB_COLS);
   const items=currentTab==='leads'?allLeads:allJobs;
 
   const filtered=items.filter(it=>{
