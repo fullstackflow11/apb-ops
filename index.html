@@ -1161,6 +1161,40 @@ function pickRole(r){
 // alias so any legacy callers still work
 function setView(v){ setRole(v); }
 
+// ── QuickBooks pending-entry badge (admin only) ──────────────
+// Runs once, after the init above has already called setRole()/
+// renderOverview() and populated #attnStrip. Independent of the
+// localStorage-cached overview -- queries Supabase directly for a live
+// count, since qbo_synced status changes in real time from the Jobs &
+// Leads CRM and shouldn't wait on a stale cache.
+(async function checkQboPending(){
+  if(ROLE!=="admin") return;
+  var SB_URL="https://aanrxyiocxxndkvkeocv.supabase.co";
+  var SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU";
+  function countPending(table){
+    return fetch(SB_URL+"/rest/v1/"+table+"?select=id&qbo_synced=eq.false",{
+      headers:{apikey:SB_KEY,Authorization:"Bearer "+SB_KEY,Prefer:"count=exact",Range:"0-0"}
+    }).then(function(r){
+      var cr=r.headers.get("content-range"); // e.g. "0-0/7"
+      return cr ? (parseInt(cr.split("/")[1],10)||0) : 0;
+    }).catch(function(){ return 0; });
+  }
+  try{
+    var counts=await Promise.all([countPending("apb_jobs"),countPending("apb_engagements")]);
+    var total=counts[0]+counts[1];
+    if(total<1) return;
+    var strip=document.getElementById("attnStrip");
+    if(!strip) return;
+    var clear=strip.querySelector(".attn-clear");
+    if(clear) clear.remove();
+    var a=document.createElement("a");
+    a.className="attn-i amber";
+    a.href="apb-admin-jobs.html";
+    a.innerHTML=ICON.cash+"<span>"+total+" item"+(total>1?"s":"")+" need"+(total>1?"":"s")+" adding to QuickBooks</span><span class=\"ar\">&rsaquo;</span>";
+    strip.insertBefore(a, strip.firstChild);
+  }catch(e){}
+})();
+
 // ── Tool search / command bar ──────────────────────
 (function(){
   var inp = document.getElementById("toolSearch");
