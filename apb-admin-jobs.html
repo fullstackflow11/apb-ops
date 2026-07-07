@@ -174,9 +174,6 @@ header{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.92);backdr
 <!-- Toolbar -->
 <div class="toolbar">
   <input class="search-input" id="searchInput" placeholder="Search..." oninput="renderBoard()">
-  <label id="showPaidWrap" style="display:none;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-3);cursor:pointer;user-select:none">
-    <input type="checkbox" id="showPaidToggle" onchange="renderBoard()"> Show Paid/Invoiced (<span id="paidCount">0</span>)
-  </label>
 </div>
 
 <!-- Board -->
@@ -321,7 +318,7 @@ async function loadLeads(){
   if(currentTab==='leads') renderBoard();
 }
 async function loadJobs(){
-  const{data,error}=await sb.from('apb_jobs').select('id,job_name,job_number,job_type,status,ms_list_item_id,pm_notes,admin_notes,rd_flag,created_at,proposal_url,proposal_filename,apb_engagements(name,location,rep,status)').order('created_at',{ascending:false});
+  const{data,error}=await sb.from('apb_jobs').select('id,job_name,job_number,job_type,status,ms_list_item_id,pm_notes,admin_notes,rd_flag,created_at,proposal_url,proposal_filename,estimated_value,department,vessel_name,vessel_type,vessel_length,vessel_year,vessel_make,vessel_flag,qbo_synced,apb_engagements(name,location,rep,status)').order('created_at',{ascending:false});
   if(error){console.error(error);return;}
   allJobs=data||[];
   document.getElementById('jobTabCount').textContent=allJobs.length;
@@ -353,22 +350,15 @@ const JOB_COLS=[
   {key:'Ready To Be Billed',label:'Ready To Be Billed',color:'#B86A00', dot:'dot-ready'},
   {key:'Invoice In Review', label:'Invoice In Review', color:'#B86A00', dot:'dot-ready'},
   {key:'Invoice Sent',      label:'Invoice Sent',      color:'#7C3AED', dot:'dot-invoiced'},
-  {key:'Canceled',          label:'Canceled',          color:'#6B7280', dot:'dot-cancelled'},
-];
-const JOB_COLS_PAID=[
   {key:'Paid',              label:'Paid',              color:'#0B9E6A', dot:'dot-paid'},
+  {key:'Canceled',          label:'Canceled',          color:'#6B7280', dot:'dot-cancelled'},
 ];
 
 // ── Render board ──
 function renderBoard(){
   const q=document.getElementById('searchInput').value.toLowerCase();
   const board=document.getElementById('board');
-  const showPaidWrap=document.getElementById('showPaidWrap');
-  const showPaid=document.getElementById('showPaidToggle').checked;
-  showPaidWrap.style.display=currentTab==='jobs'?'flex':'none';
-  const paidCount=currentTab==='jobs'?allJobs.filter(j=>j.status==='Paid').length:0;
-  document.getElementById('paidCount').textContent=paidCount;
-  const cols=currentTab==='leads'?LEAD_COLS:(showPaid?[...JOB_COLS,...JOB_COLS_PAID]:JOB_COLS);
+  const cols=currentTab==='leads'?LEAD_COLS:JOB_COLS;
   const items=currentTab==='leads'?allLeads:allJobs;
 
   const filtered=items.filter(it=>{
@@ -436,6 +426,7 @@ function jobCard(j){
         <button class="kcard-action danger" onclick="deleteJob('${j.id}')" title="Delete">✕</button>
       </div>
     </div>
+    ${!j.qbo_synced?`<div class="kcard-meta" style="font-size:11px;color:var(--amber);font-weight:600">⚠ Needs QuickBooks entry</div>`:''}
     ${vesselName?`<div class="kcard-vessel">⚓ ${esc(vesselName)}${vesselLength?' · '+vesselLength+'ft':''}</div>`:''}
     ${j.job_number?`<div class="kcard-meta"><span class="kcard-jobno">${esc(j.job_number)}</span></div>`:''}
     ${j.job_type?`<div class="kcard-meta" style="font-size:11px;color:var(--ink-4)">${esc(j.job_type)}</div>`:''}
@@ -585,6 +576,12 @@ async function saveJob(){
   const payload={
     job_name:name,job_number:v('jf_job_number'),
     status:v('jf_status')||'Approved',
+    estimated_value:v('jf_estimated_value')?parseFloat(v('jf_estimated_value')):null,
+    department:v('jf_department'),
+    vessel_name:v('jf_vessel_name'),vessel_type:v('jf_vessel_type'),
+    vessel_length:v('jf_vessel_length')?parseFloat(v('jf_vessel_length')):null,
+    vessel_year:v('jf_vessel_year')?parseInt(v('jf_vessel_year')):null,
+    vessel_make:v('jf_vessel_make'),vessel_flag:v('jf_vessel_flag'),
     pm_notes:v('jf_scope_of_work'),admin_notes:v('jf_notes'),
     proposal_url:upload.url||null,proposal_filename:upload.filename||null,
   };
@@ -606,11 +603,12 @@ function showJobDetail(id){
     <div class="detail-row">
       <div class="detail-field"><div class="detail-label">Status</div><div class="detail-value"><span class="status-badge badge-${statusKey}">${j.status||'—'}</span></div></div>
       <div class="detail-field"><div class="detail-label">Job Number</div><div class="detail-value" style="font-family:var(--mono)">${esc(j.job_number||'—')}</div></div>
-      <div class="detail-field"><div class="detail-label">Vessel</div><div class="detail-value">${esc(j.apb_engagements?.vessel_name||'—')}</div></div>
-      <div class="detail-field"><div class="detail-label">Type / Length</div><div class="detail-value">${[j.apb_engagements?.vessel_type,j.apb_engagements?.vessel_length?j.apb_engagements.vessel_length+'ft':''].filter(Boolean).join(' · ')||'—'}</div></div>
-      
-      
+      <div class="detail-field"><div class="detail-label">Vessel</div><div class="detail-value">${esc(j.vessel_name||'—')}</div></div>
+      <div class="detail-field"><div class="detail-label">Type / Length</div><div class="detail-value">${[j.vessel_type,j.vessel_length?j.vessel_length+'ft':''].filter(Boolean).join(' · ')||'—'}</div></div>
+      <div class="detail-field"><div class="detail-label">Estimated Value</div><div class="detail-value">${j.estimated_value?'$'+Number(j.estimated_value).toLocaleString():'—'}</div></div>
+      <div class="detail-field"><div class="detail-label">Department</div><div class="detail-value">${esc(j.department||'—')}</div></div>
       <div class="detail-field"><div class="detail-label">Added</div><div class="detail-value">${fmtDate(j.created_at)}</div></div>
+      <div class="detail-field"><div class="detail-label">QuickBooks</div><div class="detail-value">${j.qbo_synced?'<span style="color:var(--green)">✓ Added</span>':'<span style="color:var(--amber)">Not yet added</span>'}</div></div>
       ${j.ms_list_item_id?`<div class="detail-field"><div class="detail-label">SharePoint</div><div class="detail-value"><a href="https://allpointsboats1.sharepoint.com/sites/operations/Lists/Jobs/DispForm.aspx?ID=${j.ms_list_item_id}" target="_blank" style="color:var(--accent)">Open job →</a></div></div>`:''}
     </div>
     ${j.pm_notes?`<div class="detail-section">Scope of Work</div><div class="detail-value" style="white-space:pre-wrap">${esc(j.pm_notes)}</div>`:''}
@@ -620,8 +618,13 @@ function showJobDetail(id){
     <button class="btn btn-cancel" onclick="closeDetail()">Close</button>
     <div class="spacer"></div>
     ${j.apb_engagements?.name?`<a class="btn btn-ghost" href="${spFolderUrl(j.apb_engagements.name)}" target="_blank">SharePoint ↗</a>`:''}
+    <button class="btn ${j.qbo_synced?'btn-ghost':'btn-save'}" onclick="toggleQboSynced('${j.id}',${!j.qbo_synced})">${j.qbo_synced?'Mark Not Added':'Mark Added to QuickBooks ✓'}</button>
     <button class="btn btn-save" onclick="closeDetail();openJobModal('${j.id}')">Edit Job</button>`;
   document.getElementById('detailModal').classList.add('open');
+}
+async function toggleQboSynced(id,val){
+  await sb.from('apb_jobs').update({qbo_synced:val}).eq('id',id);
+  await loadJobs();showJobDetail(id);showToast(val?'Marked as added to QuickBooks ✓':'Marked as not yet added');
 }
 function closeDetail(){document.getElementById('detailModal').classList.remove('open');}
 
