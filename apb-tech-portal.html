@@ -586,10 +586,36 @@ async function saveLineEdit(lineId){
   await sb.from('apb_timesheets').update({total_hours:newTotal}).eq('id',l.timesheet_id);
   cancelLineEdit(lineId);loadHistory();
 }
+function openVisitEdit(visitId){
+  const v=window.__visitCache?.[visitId];if(!v)return;
+  document.getElementById('visitEditForm-'+visitId).innerHTML=`<div class="ln-edit-form">
+    <label style="font-size:12px;color:var(--ink-3)">Correct the date</label>
+    <input type="date" id="editdate-${visitId}" value="${v.visit_date}">
+    <div class="ln-edit-actions">
+      <button class="save" onclick="saveVisitEdit('${visitId}')">Save Correction</button>
+      <button onclick="cancelVisitEdit('${visitId}')">Cancel</button>
+    </div>
+  </div>`;
+}
+function cancelVisitEdit(visitId){document.getElementById('visitEditForm-'+visitId).innerHTML='';}
+async function saveVisitEdit(visitId){
+  const{data:fresh}=await sb.from('apb_timesheets').select('*').eq('id',visitId).single();
+  if(!fresh||fresh.reviewed){alert('This entry was reviewed by a manager and can no longer be edited.');loadHistory();return;}
+  const newDate=document.getElementById('editdate-'+visitId).value;
+  if(!newDate){alert('Pick a date.');return;}
+  const oldDate=fresh.visit_date;
+  if(newDate===oldDate){cancelVisitEdit(visitId);return;}
+  const trail=`Date corrected by ${currentTech.name} on ${new Date().toLocaleString()} (was ${oldDate})`;
+  const newNotes=[fresh.notes,trail].filter(Boolean).join(' | ');
+  const{error}=await sb.from('apb_timesheets').update({visit_date:newDate,notes:newNotes}).eq('id',visitId);
+  if(error){alert('Save failed: '+error.message);return;}
+  cancelVisitEdit(visitId);loadHistory();
+}
 async function loadHistory(){
   const{data:visits}=await sb.from('apb_timesheets').select('*,apb_engagements(name)').eq('tech_name',currentTech.name).order('visit_date',{ascending:false}).limit(30);
   const el=document.getElementById('historyContent');
   if(!visits?.length){el.innerHTML='<div class="empty-state">No timesheets logged yet.<br>Submit your first timesheet on the Log Time tab.</div>';document.getElementById('weekSummary').innerHTML='';return;}
+  window.__visitCache=Object.fromEntries(visits.map(v=>[v.id,v]));
   const ids=visits.map(v=>v.id);
   const{data:allLines}=await sb.from('apb_timesheet_lines').select('*,apb_jobs(job_name,job_number)').in('timesheet_id',ids).order('created_at');
   window.__lineCache=Object.fromEntries((allLines||[]).map(l=>[l.id,l]));
@@ -608,9 +634,10 @@ async function loadHistory(){
     const ot=Math.max(0,h-8);
     return`<div class="history-entry">
       <div class="history-header">
-        <div><div class="history-vessel">${v.apb_engagements?.name||v.vessel_name||'—'}</div><div class="history-meta">${dateStr}</div></div>
+        <div><div class="history-vessel">${v.apb_engagements?.name||v.vessel_name||'—'}</div><div class="history-meta">${dateStr}${v.reviewed?' · <span class="ln-locked">✓ reviewed</span>':` · <button class="ln-edit-btn" style="position:static;display:inline;margin-left:6px" onclick="openVisitEdit('${v.id}')">Edit date</button>`}</div></div>
         <div style="text-align:right"><div class="history-hours">${h.toFixed(1)}h${ot>0?`<span class="history-ot">+${ot.toFixed(1)}h OT</span>`:''}</div></div>
       </div>
+      <div id="visitEditForm-${v.id}"></div>
       ${lines.map(l=>{
         const jNum=l.job_number||l.apb_jobs?.job_number||'';
         const jName=l.job_name||l.apb_jobs?.job_name||l.shop_category||'';
