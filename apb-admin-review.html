@@ -811,15 +811,17 @@ function isBillable(l){if(l.billable===true)return true;if(l.billable===false)re
 
 // ── Export CSV ──
 function exportCSV(){
-  const rows=[['Date','Tech','Vessel/Project','Job','Description','Hours','OT','Billable','Reviewed']];
-  visits.forEach(v=>{
-    const vLines=lines.filter(l=>l.timesheet_id===v.id);
-    const vessel=v.apb_engagements?.name||v.vessel_name||'—';
-    vLines.forEach(l=>{
-      const h=parseFloat(l.hours||0);
-      rows.push([v.visit_date||'',v.tech_name||'',vessel,l.job_number||l.job_no||'',l.work_description||l.description||'',h.toFixed(2),Math.max(0,h-8).toFixed(2),isBillable(l)?'Y':'N',l.reviewed?'Y':'N']);
-    });
-  });
+  const header=['Date','Tech','Vessel/Project','Job','Description','Hours','OT','Billable','Reviewed'];
+  const visitById={}; visits.forEach(v=>{ visitById[v.id]=v; });
+  const body=lines.map(l=>{
+    const v=visitById[l.timesheet_id]||null;
+    const vessel=l.vessel_name||v?.apb_engagements?.name||v?.vessel_name||'—';
+    const tech=l.tech_name||v?.tech_name||'';
+    const date=v?.visit_date||(l.created_at?l.created_at.split('T')[0]:'');
+    const h=parseFloat(l.hours||0);
+    return [date,tech,vessel,l.job_number||l.job_no||'',l.work_description||l.description||'',h.toFixed(2),Math.max(0,h-8).toFixed(2),isBillable(l)?'Y':'N',l.reviewed?'Y':'N'];
+  }).sort((a,b)=>(b[0]||'').localeCompare(a[0]||''));
+  const rows=[header,...body];
   const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
   const blob=new Blob([csv],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
