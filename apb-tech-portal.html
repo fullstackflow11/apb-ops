@@ -560,8 +560,15 @@ function showMsg(type,text){const el=document.getElementById('logMsg');el.textCo
 // ── History ──
 function openLineEdit(lineId){
   const l=window.__lineCache[lineId];if(!l||l.reviewed)return;
+  let currentVesselVal='';
+  if(l.engagement_id)currentVesselVal=l.engagement_id;
+  else if(l.vessel_name==='Shop')currentVesselVal='SHOP';
+  else if(l.vessel_name==='Admin')currentVesselVal='ADMIN';
   document.getElementById('editform-'+lineId).innerHTML=`<div class="ln-edit-form">
-    <label style="font-size:11px;font-weight:700;color:var(--ink-3);display:block;margin-bottom:3px">Hours</label>
+    <label style="font-size:11px;font-weight:700;color:var(--ink-3);display:block;margin-bottom:3px">Vessel / Project</label>
+    <select id="editvessel-${lineId}" onchange="onEditVesselChange('${lineId}')">${vesselOptionsHtml()}</select>
+    <div id="editjobslot-${lineId}" style="margin-top:8px"></div>
+    <label style="font-size:11px;font-weight:700;color:var(--ink-3);display:block;margin-top:8px;margin-bottom:3px">Hours</label>
     <input type="number" step="0.1" min="0.1" max="24" id="edithrs-${lineId}" value="${l.hours}">
     <label style="font-size:11px;font-weight:700;color:var(--ink-3);display:block;margin-top:8px;margin-bottom:3px">Description</label>
     <textarea id="editdesc-${lineId}" rows="2">${l.work_description||''}</textarea>
@@ -569,17 +576,67 @@ function openLineEdit(lineId){
       <button class="save" onclick="saveLineEdit('${lineId}')">Save Correction</button>
       <button onclick="cancelLineEdit('${lineId}')">Cancel</button>
     </div></div>`;
+  document.getElementById('editvessel-'+lineId).value=currentVesselVal;
+  onEditVesselChange(lineId,true);
+}
+async function onEditVesselChange(lineId,isInitial){
+  const l=window.__lineCache[lineId];
+  const val=document.getElementById('editvessel-'+lineId).value;
+  const jobSlot=document.getElementById('editjobslot-'+lineId);
+  if(!val){jobSlot.innerHTML='';return;}
+  if(val==='SHOP'||val==='ADMIN'){
+    const catLabel=val==='SHOP'?'Shop Category':'Admin Category';
+    const optsHtml=val==='SHOP'?shopOptionsHtml():adminOptionsHtml();
+    jobSlot.innerHTML=`<label style="font-size:11px;font-weight:700;color:var(--ink-3);display:block;margin-bottom:3px">${catLabel}</label><select class="edit-job-select" id="editjob-${lineId}">${optsHtml}</select>`;
+    if(isInitial&&l.shop_category)document.getElementById('editjob-'+lineId).value=l.shop_category;
+  } else {
+    jobSlot.innerHTML=`<label style="font-size:11px;font-weight:700;color:var(--ink-3);display:block;margin-bottom:3px">Job</label><select class="edit-job-select" id="editjob-${lineId}"><option>Loading…</option></select>`;
+    const jobs=await getJobsForEngagement(val);
+    if(!jobs.length){
+      jobSlot.innerHTML=`<label style="font-size:11px;font-weight:700;color:var(--ink-3);display:block;margin-bottom:3px">Job</label><div class="job-no-warn">⚠ No active jobs for this vessel.</div><input type="hidden" class="edit-job-select" id="editjob-${lineId}" value="NO_JOBS">`;
+    } else {
+      jobSlot.innerHTML=`<label style="font-size:11px;font-weight:700;color:var(--ink-3);display:block;margin-bottom:3px">Job</label><select class="edit-job-select" id="editjob-${lineId}">${jobOptionsHtml(jobs)}</select>`;
+      if(isInitial&&l.job_id)document.getElementById('editjob-'+lineId).value=l.job_id;
+    }
+  }
 }
 function cancelLineEdit(lineId){document.getElementById('editform-'+lineId).innerHTML='';}
 async function saveLineEdit(lineId){
   const l=window.__lineCache[lineId];
   const{data:fresh}=await sb.from('apb_timesheet_lines').select('reviewed,hours').eq('id',lineId).single();
   if(!fresh||fresh.reviewed){alert('This entry was reviewed by a manager and can no longer be edited.');loadHistory();return;}
+  const vesselSelect=document.getElementById('editvessel-'+lineId);
+  const vesselVal=vesselSelect.value;
+  if(!vesselVal)return alert('Select a vessel / project.');
+  const jobEl=document.getElementById('editjob-'+lineId);
+  const jobVal=jobEl?jobEl.value:'';
+  if(!jobVal)return alert(vesselVal==='SHOP'||vesselVal==='ADMIN'?'Select a category.':'Select a job.');
+  if(jobVal==='NO_JOBS')return alert('No active jobs for this vessel — contact management.');
   const newHours=parseFloat(document.getElementById('edithrs-'+lineId).value);
   const newDesc=document.getElementById('editdesc-'+lineId).value.trim();
   if(!newHours||newHours<=0)return alert('Enter hours > 0.');
   if(!newDesc)return alert('Description cannot be empty.');
-  const{error}=await sb.from('apb_timesheet_lines').update({hours:newHours,work_description:newDesc,edited_by:currentTech.name,edited_at:new Date().toISOString(),original_hours:l.original_hours??l.hours,edit_note:'Self-correction by tech'}).eq('id',lineId);
+  const isShop=vesselVal==='SHOP',isAdmin=vesselVal==='ADMIN';
+  let updateFields;
+  if(isShop||isAdmin){
+    updateFields={
+      engagement_id:null,vessel_name:isShop?'Shop':'Admin',job_id:null,job_number:null,job_name:null,
+      shop_category:jobVal,hours:newHours,work_description:newDesc,
+      edited_by:currentTech.name,edited_at:new Date().toISOString(),
+      original_hours:l.original_hours??l.hours,edit_note:'Self-correction by tech'
+    };
+  } else {
+    const vesselLabel=vesselSelect.options[vesselSelect.selectedIndex].text;
+    const jobOption=jobEl.options[jobEl.selectedIndex];
+    updateFields={
+      engagement_id:vesselVal,vessel_name:vesselLabel,job_id:jobVal,
+      job_number:jobOption?.dataset.jobNumber||null,job_name:jobOption?.dataset.jobName||null,
+      shop_category:null,hours:newHours,work_description:newDesc,
+      edited_by:currentTech.name,edited_at:new Date().toISOString(),
+      original_hours:l.original_hours??l.hours,edit_note:'Self-correction by tech'
+    };
+  }
+  const{error}=await sb.from('apb_timesheet_lines').update(updateFields).eq('id',lineId);
   if(error)return alert('Save failed: '+error.message);
   const{data:siblings}=await sb.from('apb_timesheet_lines').select('hours').eq('timesheet_id',l.timesheet_id);
   const newTotal=(siblings||[]).reduce((s,x)=>s+parseFloat(x.hours||0),0);
