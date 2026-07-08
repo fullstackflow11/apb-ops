@@ -632,9 +632,13 @@ async function loadHistory(){
     const photos=v.photo_urls?v.photo_urls.split(',').filter(Boolean):[];
     const h=parseFloat(v.total_hours||0);
     const ot=Math.max(0,h-8);
+    const headerVessel=v.apb_engagements?.name||v.vessel_name||'—';
+    const distinctLineVessels=[...new Set(lines.map(l=>l.vessel_name).filter(Boolean))];
+    const isMixed=distinctLineVessels.length>1||(distinctLineVessels.length===1&&distinctLineVessels[0]!==headerVessel&&headerVessel!=='—');
+    const vesselHeader=isMixed?`Multiple projects (${distinctLineVessels.length||lines.length})`:headerVessel;
     return`<div class="history-entry">
       <div class="history-header">
-        <div><div class="history-vessel">${v.apb_engagements?.name||v.vessel_name||'—'}</div><div class="history-meta">${dateStr}${v.reviewed?' · <span class="ln-locked">✓ reviewed</span>':` · <button class="ln-edit-btn" style="position:static;display:inline;margin-left:6px" onclick="openVisitEdit('${v.id}')">Edit date</button>`}</div></div>
+        <div><div class="history-vessel">${vesselHeader}</div><div class="history-meta">${dateStr}${v.reviewed?' · <span class="ln-locked">✓ reviewed</span>':` · <button class="ln-edit-btn" style="position:static;display:inline;margin-left:6px" onclick="openVisitEdit('${v.id}')">Edit date</button>`}</div></div>
         <div style="text-align:right"><div class="history-hours">${h.toFixed(1)}h${ot>0?`<span class="history-ot">+${ot.toFixed(1)}h OT</span>`:''}</div></div>
       </div>
       <div id="visitEditForm-${v.id}"></div>
@@ -645,6 +649,7 @@ async function loadHistory(){
         const locked=!!l.reviewed;
         return`<div class="history-line" id="line-${l.id}">
           ${locked?`<span class="ln-locked">✓ reviewed</span>`:`<button class="ln-edit-btn" onclick="openLineEdit('${l.id}')">Edit</button>`}
+          <div class="ln-vessel" style="font-size:11px;color:#6B7A92;font-weight:600;margin-bottom:2px">${l.vessel_name||headerVessel}</div>
           <div class="ln-job">${label||'—'} <span class="ln-hrs">· ${parseFloat(l.hours).toFixed(1)}h</span></div>
           <div class="ln-desc">${l.work_description||''}</div>
           ${l.edited_by?`<div class="ln-edited-tag">✎ edited by ${l.edited_by}</div>`:''}
