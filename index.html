@@ -638,10 +638,6 @@ body.theme-light .foot b{color:#48597a}
     <button class="view-btn" data-for="fleet" onclick="pickRole('fleet')">Fleet</button>
     <button class="view-btn" data-for="tech" onclick="pickRole('tech')">Tech</button>
   </div>
-  <div class="srv-badge" id="srvBadge">
-    <div class="srv-dot"></div>
-    <span id="srvLabel">Checking…</span>
-  </div>
   <button class="theme-btn" id="themeToggle" onclick="toggleTheme()" title="Toggle light / dark" aria-label="Toggle theme">🌙</button>
   <button class="navbtn" onclick="history.back()">← Back</button>
   <button class="navbtn" onclick="if(confirm('Sign out?'))apbSignOut()">Sign Out</button>
@@ -661,12 +657,6 @@ body.theme-light .foot b{color:#48597a}
       <div class="hk"><b id="kpi2v">—</b><span id="kpi2l">—</span></div>
       <div class="hk"><b id="kpi3v">—</b><span id="kpi3l">—</span></div>
       <div class="hk"><b id="kpi4v">—</b><span id="kpi4l">—</span></div>
-    </div>
-
-    <!-- ── Server offline bar ───────────────────── -->
-    <div class="admin-bar" id="adminOfflineBar" style="display:none;margin-bottom:16px">
-      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg>
-      Hub server isn't running — double-click <b style="margin:0 4px">Start Hub Server.bat</b> in the Claude Hub folder, then refresh.
     </div>
 
     <div class="sb-backdrop" id="sbBackdrop" onclick="closeSidebar()"></div>
@@ -1133,7 +1123,6 @@ function setRole(r){
   document.querySelectorAll('[data-view="tech"]').forEach(el => el.style.display = (r === "tech") ? "" : "none");
   if(staff){ applyWorld(r); renderOverview(); }  // each role sees only its world; build the overview
   document.querySelectorAll(".view-btn").forEach(b => b.classList.toggle("active", b.dataset.for === r));
-  document.getElementById("srvBadge").style.display = (r === "tech") ? "none" : "";
   // Role switcher is admin-only. An admin previewing another role keeps it (session flag) so they can switch back.
   var preview = false; try { preview = sessionStorage.getItem("apb_preview") === "1"; } catch(e){}
   var vt = document.getElementById("viewToggle");
@@ -1444,59 +1433,6 @@ setTimeout(function() {
       }
     }
   } catch {}
-})();
-
-// ── QB live data + server status badge ────────────
-(async function(){
-  const badge = document.getElementById("srvBadge");
-  const label = document.getElementById("srvLabel");
-  try {
-    const s = await fetch("/api/qbo/status",{signal:AbortSignal.timeout(3000)}).then(r=>r.json()).catch(()=>null);
-    if(!s){ label.textContent = "Server offline"; badge.className = "srv-badge"; document.getElementById("adminOfflineBar").style.display = "flex"; return; }
-
-    if(s.connected){
-      badge.className = "srv-badge qb";
-      label.textContent = s.companyName || "QB Connected";
-
-      // QB connected — replace demo KPIs with real data
-      fetch("/api/qbo/customers").then(r=>r.json()).then(d=>{
-        const n = (d?.QueryResponse?.Customer || []).length;
-        if(n){
-          // Replace "Ready to Bill" KPI with client count
-          const kpiBill = document.getElementById("kpiBill");
-          if(kpiBill){
-            kpiBill.textContent = n;
-            kpiBill.closest(".hk").querySelector("span").innerHTML = "QB Clients";
-          }
-          const b = document.getElementById("badgeClients");
-          if(b){ b.textContent = n + " clients"; b.classList.add("vis"); }
-        }
-      }).catch(()=>{});
-
-      fetch("/api/qbo/ar").then(r=>r.json()).then(d=>{
-        const rows = d?.QueryResponse?.rows;
-        if(rows?.[0]?.colData){
-          const v = parseFloat(rows[0].colData[0]?.value || 0);
-          if(v >= 0){
-            // Replace "Open Leads" KPI with AR outstanding
-            const kpiLeads = document.getElementById("kpiLeads");
-            if(kpiLeads){
-              kpiLeads.textContent = v > 0 ? "$" + new Intl.NumberFormat("en-US",{maximumFractionDigits:0}).format(v) : "$0";
-              kpiLeads.closest(".hk").querySelector("span").innerHTML = "AR Outstanding";
-            }
-          }
-        }
-      }).catch(()=>{});
-
-    } else {
-      badge.className = "srv-badge online";
-      label.textContent = "Server online";
-    }
-  } catch {
-    label.textContent = "Server offline";
-    badge.className = "srv-badge";
-    document.getElementById("adminOfflineBar").style.display = "flex";
-  }
 })();
 </script>
 </body>
