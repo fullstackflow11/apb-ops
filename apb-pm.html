@@ -665,8 +665,8 @@ textarea:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 4px va
 <div class="cscrim" id="connectScrim"></div>
 <div class="cmodal" id="connectModal">
   <h3>Connect to live data</h3>
-  <p>Show real jobs straight from the <b>Active List</b> (via Supabase) instead of demo data. Paste the <b>anon key</b> from your dashboard — the same one already inside <code>apb-dashboard.html</code>.</p>
-  <label>Supabase URL</label>
+  <p>Show real jobs straight from the <b>Active List</b> instead of demo data. Paste the <b>anon key</b> from your dashboard — the same one already inside <code>apb-dashboard.html</code>.</p>
+  <label>Database URL</label>
   <input id="cfgUrl" value="https://aanrxyiocxxndkvkeocv.supabase.co" readonly>
   <label>Anon key</label>
   <input id="cfgKey" type="password" placeholder="eyJhbGciOi…" autocomplete="off" spellcheck="false">
@@ -781,7 +781,7 @@ async function load(){
   const dt=document.getElementById("datatag");
   dt.classList.add("clickable"); dt.onclick=openConnect; dt.title="Connect / disconnect live data";
   dt.innerHTML = LIVE
-    ? `<span class="dot"></span><span>Live · Supabase</span>`
+    ? `<span class="dot"></span><span>Live</span>`
     : `<span class="dot demo"></span><span>Demo data — connect live →</span>`;
   buildFilters(); refreshViews();
 }
@@ -1061,7 +1061,7 @@ async function newLead(){
       if(r.ok){
         const rows = await r.json();
         lead.id = rows[0].id; lead.updated_at = rows[0].updated_at;
-      } else { toast("Saved locally — Supabase write failed, will retry"); }
+      } else { toast("Saved locally — sync failed, will retry"); }
     }catch(e){ toast("Saved locally — offline, will retry"); }
   }
   JOBS.unshift(lead);
@@ -1259,7 +1259,7 @@ async function pushToActiveList(job, changes){
         headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+CONFIG.SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"return=minimal"},
         body: JSON.stringify(body)
       });
-      if(!r.ok){ toast("Saved locally — Supabase update failed"); return false; }
+      if(!r.ok){ toast("Saved locally — sync failed"); return false; }
       return true;
     }catch(e){ toast("Saved locally — offline, will retry"); return false; }
   }
@@ -1348,7 +1348,7 @@ async function convertToProject(job){
     JOBS = JOBS.filter(x=>x.id!==job.id);
     const ll=lsGet("apb_local_leads",[]); lsSet("apb_local_leads", ll.filter(x=>x.id!==job.id));
     buildFilters(); refreshViews(); closeDrawer();
-    toast(newJobId ? "Approved · "+job.engagement+" → Active Projects" : "Approved locally — Supabase write failed, will retry");
+    toast(newJobId ? "Approved · "+job.engagement+" → Active Projects" : "Approved locally — sync failed, will retry");
     if(newJobId || !LIVE) await load();
   } else {
     job.status = "In Progress"; job.updated_at = new Date().toISOString();
@@ -1457,7 +1457,7 @@ async function addJobToProject(){
         if(r.ok){
           const rows = await r.json();
           job.id = rows[0].id; job.engagement_id = engId; job.updated_at = rows[0].updated_at;
-        } else { toast("Saved locally — Supabase write failed, will retry"); }
+        } else { toast("Saved locally — sync failed, will retry"); }
       }catch(e){ toast("Saved locally — offline, will retry"); }
     }
   }
@@ -2032,7 +2032,7 @@ async function migrateLocalOnlyRecords(){
   if(migrated){
     lsSet("apb_local_leads", leads.filter(l=>!l._migrated));
     lsSet("apb_local_jobs", jobs.filter(l=>!l._migrated));
-    toast(`Synced ${migrated} local ${migrated===1?"entry":"entries"} to Supabase${failed?` (${failed} failed — still saved locally)`:""}`);
+    toast(`Synced ${migrated} local ${migrated===1?"entry":"entries"}${failed?` (${failed} failed — still saved locally)`:""}`);
     await load();
   } else if(failed){
     toast(`Couldn't sync ${failed} local ${failed===1?"entry":"entries"} — still saved locally, will retry next visit`);
