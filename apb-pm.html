@@ -1042,11 +1042,13 @@ function renderLeads(){
       <div class="lc-actions">
         <button class="btn ghost sm" data-prop="${esc(j.id)}">Create Proposal</button>
         <button class="btn primary sm" data-appr="${esc(j.id)}">Approve →</button>
+        <button class="btn ghost sm" data-leaddel="${esc(j.id)}" title="Delete lead" style="color:#C43030;border-color:#E9C7C7">✕</button>
       </div>
     </div>`).join("");
-  el.querySelectorAll(".leadcard").forEach(c=>c.onclick=e=>{ if(e.target.closest("[data-prop],[data-appr]")) return; openDrawer(c.dataset.id); });
+  el.querySelectorAll(".leadcard").forEach(c=>c.onclick=e=>{ if(e.target.closest("[data-prop],[data-appr],[data-leaddel]")) return; openDrawer(c.dataset.id); });
   el.querySelectorAll("[data-prop]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); const j=JOBS.find(x=>x.id===b.dataset.prop); if(j) createProposalFromLead(j); });
   el.querySelectorAll("[data-appr]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); const j=JOBS.find(x=>x.id===b.dataset.appr); if(j) convertToProject(j); });
+  el.querySelectorAll("[data-leaddel]").forEach(b=>b.onclick=async e=>{ e.stopPropagation(); await deleteJobRow(b.dataset.leaddel); refreshViews(); });
 }
 async function newLead(){
   const name=prompt("New lead — vessel / client name:"); if(!name) return;
