@@ -5,8 +5,25 @@
    Shows a green "Live" state where it can verify a real connection
    (currently: Supabase anon key in localStorage).
    ══════════════════════════════════════════════════════════════════ */
-(function () {
-  function hasSupabase() { try { return !!localStorage.getItem("apb_supabase_key"); } catch (e) { return false; } }
+(async function () {
+  var SB_URL = "https://aanrxyiocxxndkvkeocv.supabase.co";
+  var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU";
+  async function hasSupabase() {
+    // Legacy manual-connect flag still counts as live.
+    try { if (localStorage.getItem("apb_supabase_key")) return true; } catch (e) {}
+    // Otherwise verify the shared connection actually works right now — every
+    // page ships with this same key baked in, so "live" is the default state.
+    try {
+      var ctrl = new AbortController();
+      var t = setTimeout(function () { ctrl.abort(); }, 3000);
+      var r = await fetch(SB_URL + "/rest/v1/apb_jobs?select=id&limit=1", {
+        headers: { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY },
+        signal: ctrl.signal
+      });
+      clearTimeout(t);
+      return r.ok;
+    } catch (e) { return false; }
+  }
 
   var path = location.pathname.toLowerCase();
   var file = (path.split("/").pop() || "index.html");
@@ -34,7 +51,7 @@
     "apb-proposal.html":   { area: "Proposals", need: "Generation is live; saved drafts stay in this browser until connected to the shared database." },
     "apb-dealer.html":     { area: "Dealer assets", need: "Logos, photos & videos load from the dealer SharePoint library once it's connected." },
     "apb-portals.html":    { area: "Partner & supplier links", need: "These are live links — no connection needed." },
-    "index.html":          { area: "Command center", need: "Mirrors each tool's data — fully live once Supabase & QuickBooks are connected. Open the Project Console once to load jobs here." }
+    "index.html":          { area: "Command center", supabase: true, liveSrc: "Supabase", need: "Mirrors each tool's data — fully live once Supabase & QuickBooks are connected. Open the Project Console once to load jobs here." }
   };
 
   var info;
@@ -45,7 +62,7 @@
   }
   if (!info) return;
 
-  var live = info.supabase ? hasSupabase() : false;
+  var live = info.supabase ? await hasSupabase() : false;
   var key = "apbDemoDismiss_" + (isGov ? "gov" : file);
 
   function injectCSS() {
