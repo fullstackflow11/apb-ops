@@ -681,8 +681,14 @@ textarea:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 4px va
    ============================================================ */
 const CONFIG = {
   SUPABASE_URL: "https://aanrxyiocxxndkvkeocv.supabase.co",
-  SUPABASE_ANON_KEY: (window.localStorage && localStorage.getItem("apb_supabase_key")) || ""  // set via the Connect button
+  // Same public anon key already baked into index.html / apb-dashboard.html.
+  // The Connect button can still override it (stored per-browser), and
+  // Disconnect still forces demo mode for the current session.
+  SUPABASE_ANON_KEY: (window.localStorage && localStorage.getItem("apb_supabase_key"))
+    || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU"
 };
+// True when the current job/lead id is a real Supabase row (not a local-only placeholder).
+function isRealId(id){ return typeof id==="string" && !/^(lead_|job_|demo-)/.test(id); }
 
 /* status vocabulary (matches the Active List pipeline) */
 const STATUSES = [
@@ -744,11 +750,11 @@ async function load(){
   const {SUPABASE_URL:u, SUPABASE_ANON_KEY:k} = CONFIG;
   if(k){
     try{
-      const sel = "select=id,job_number,job_name,status,job_status_pct,pm_notes,ms_list_item_id,updated_at,apb_engagements(name,rep)&order=updated_at.desc";
+      const sel = "select=id,engagement_id,job_number,job_name,status,job_status_pct,pm_notes,ms_list_item_id,updated_at,apb_engagements(name,rep)&order=updated_at.desc";
       const r = await fetch(`${u}/rest/v1/apb_jobs?${sel}`,{headers:{apikey:k,Authorization:"Bearer "+k}});
       const data = await r.json();
       JOBS = data.map(j=>({
-        id:j.id, engagement:(j.apb_engagements&&j.apb_engagements.name)||"—",
+        id:j.id, engagement_id:j.engagement_id, engagement:(j.apb_engagements&&j.apb_engagements.name)||"—",
         rep:(j.apb_engagements&&j.apb_engagements.rep)||"", job_number:j.job_number||"",
         job_name:j.job_name||"", status:j.status||"Lead", job_status_pct:j.job_status_pct||0,
         pm_notes:j.pm_notes||"", ms_list_item_id:j.ms_list_item_id, updated_at:j.updated_at
@@ -764,6 +770,23 @@ async function load(){
     ? `<span class="dot"></span><span>Live · Supabase</span>`
     : `<span class="dot demo"></span><span>Demo data — connect live →</span>`;
   buildFilters(); refreshViews();
+}
+
+/* ---------- write seam: resolve/create the engagement a lead or job belongs to ---------- */
+async function ensureEngagementId(name){
+  const existing = JOBS.find(j=>j.engagement===name && j.engagement_id);
+  if(existing) return existing.engagement_id;
+  if(!LIVE || !CONFIG.SUPABASE_ANON_KEY) return null;
+  try{
+    const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_engagements`,{
+      method:"POST",
+      headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+CONFIG.SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"return=representation"},
+      body: JSON.stringify({name, status:"Lead"})
+    });
+    if(!r.ok) return null;
+    const rows = await r.json();
+    return (rows[0] && rows[0].id) || null;
+  }catch(e){ return null; }
 }
 
 /* ---------- tabs, leads view & local persistence ---------- */
@@ -1010,9 +1033,25 @@ function renderLeads(){
   el.querySelectorAll("[data-prop]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); const j=JOBS.find(x=>x.id===b.dataset.prop); if(j) createProposalFromLead(j); });
   el.querySelectorAll("[data-appr]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); const j=JOBS.find(x=>x.id===b.dataset.appr); if(j) convertToProject(j); });
 }
-function newLead(){
+async function newLead(){
   const name=prompt("New lead — vessel / client name:"); if(!name) return;
   const lead={ id:"lead_"+Date.now(), engagement:name, rep:"", job_number:"", job_name:"", status:"Lead", job_status_pct:0, pm_notes:"", ms_list_item_id:null, updated_at:new Date().toISOString() };
+  if(LIVE){
+    const engId = await ensureEngagementId(name);
+    if(engId){
+      try{
+        const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_jobs`,{
+          method:"POST",
+          headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+CONFIG.SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"return=representation"},
+          body: JSON.stringify({engagement_id:engId, job_name:"", status:"Lead", job_status_pct:0})
+        });
+        if(r.ok){
+          const rows = await r.json();
+          lead.id = rows[0].id; lead.engagement_id = engId; lead.updated_at = rows[0].updated_at;
+        } else { toast("Saved locally — Supabase write failed, will retry"); }
+      }catch(e){ toast("Saved locally — offline, will retry"); }
+    }
+  }
   JOBS.unshift(lead);
   const ll=lsGet("apb_local_leads",[]); ll.unshift(lead); lsSet("apb_local_leads",ll);
   buildFilters(); switchView("leads"); refreshViews();
@@ -1197,7 +1236,19 @@ document.getElementById("dSave").onclick=save;
    the single source of truth — this UI never writes it directly.
    ============================================================= */
 async function pushToActiveList(job, changes){
-  // PHASE 2 (uncomment & set the flow URL):
+  if(LIVE && isRealId(job.id)){
+    try{
+      const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_jobs?id=eq.${job.id}`,{
+        method:"PATCH",
+        headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+CONFIG.SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"return=minimal"},
+        body: JSON.stringify({status:changes.status, job_status_pct:changes.pct, pm_notes:changes.notes, updated_at:new Date().toISOString()})
+      });
+      if(!r.ok){ toast("Saved locally — Supabase update failed"); return false; }
+      return true;
+    }catch(e){ toast("Saved locally — offline, will retry"); return false; }
+  }
+  // PHASE 2 (uncomment & set the flow URL) once the Active List (MS Lists) becomes
+  // the system of record instead of Supabase:
   // await fetch(POWER_AUTOMATE_FLOW_URL, {method:"POST", headers:{"Content-Type":"application/json"},
   //   body: JSON.stringify({ ms_list_item_id: job.ms_list_item_id, status: changes.status,
   //   job_status_pct: changes.pct, pm_notes: changes.notes })});
@@ -1253,6 +1304,7 @@ async function convertToProject(job){
   if(!ok) return;
   job.status = "In Progress"; job.updated_at = new Date().toISOString();
   await runConvertFlow(job);
+  await pushToActiveList(job, {status:job.status, pct:job.job_status_pct, notes:job.pm_notes||""});
   persistStatus(job); buildFilters(); refreshViews(); closeDrawer();
   toast("Approved · "+job.engagement+" → Active List");
 }
@@ -1336,7 +1388,7 @@ function renderProjJobs(){
   G("pdJobs").querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{ closeProject(); openDrawer(b.dataset.edit); });
   G("pdJobs").querySelectorAll("[data-jobdel]").forEach(b=>b.onclick=async()=>{ await deleteJobRow(b.dataset.jobdel); renderProjJobs(); });
 }
-function addJobToProject(){
+async function addJobToProject(){
   const name=G("pdJobName").value.trim();
   const num=G("pdJobNum").value.trim();
   if(!name && !num){ G("pdJobName").focus(); toast("Add a job name or number"); return; }
@@ -1344,6 +1396,22 @@ function addJobToProject(){
     job_number:num, job_name:name, status:G("pdJobStatus").value||"In Progress",
     job_status_pct:Math.max(0,Math.min(100,+G("pdJobPct").value||0)),
     pm_notes:"", ms_list_item_id:null, updated_at:new Date().toISOString() };
+  if(LIVE){
+    const engId = await ensureEngagementId(curProj);
+    if(engId){
+      try{
+        const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_jobs`,{
+          method:"POST",
+          headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+CONFIG.SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"return=representation"},
+          body: JSON.stringify({engagement_id:engId, job_number:num||null, job_name:name||"", status:job.status, job_status_pct:job.job_status_pct})
+        });
+        if(r.ok){
+          const rows = await r.json();
+          job.id = rows[0].id; job.engagement_id = engId; job.updated_at = rows[0].updated_at;
+        } else { toast("Saved locally — Supabase write failed, will retry"); }
+      }catch(e){ toast("Saved locally — offline, will retry"); }
+    }
+  }
   JOBS.unshift(job);
   const lj=lsGet("apb_local_jobs",[]); lj.unshift(job); lsSet("apb_local_jobs",lj);
   G("pdJobName").value=""; G("pdJobNum").value=""; G("pdJobPct").value=0;
