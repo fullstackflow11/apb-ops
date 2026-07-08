@@ -1943,12 +1943,48 @@ function deleteFac(id){
   toast("Removed · " + fac.name);
 }
 
+/* ---------- one-time migration: push pre-fix local-only leads/jobs into Supabase ---------- */
+async function migrateLocalOnlyRecords(){
+  if(!LIVE) return;
+  const leads = lsGet("apb_local_leads",[]);
+  const jobs = lsGet("apb_local_jobs",[]);
+  let migrated = 0, failed = 0;
+  for(const rec of [...leads, ...jobs]){
+    if(isRealId(rec.id)) continue; // already a real Supabase row, nothing to do
+    const engId = await ensureEngagementId(rec.engagement);
+    if(!engId){ failed++; continue; }
+    try{
+      const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_jobs`,{
+        method:"POST",
+        headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+CONFIG.SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"return=representation"},
+        body: JSON.stringify({
+          engagement_id: engId,
+          job_number: rec.job_number || null,
+          job_name: rec.job_name || "",
+          status: rec.status || "Lead",
+          job_status_pct: rec.job_status_pct || 0,
+          pm_notes: rec.pm_notes || null
+        })
+      });
+      if(r.ok){ rec._migrated = true; migrated++; } else { failed++; }
+    }catch(e){ failed++; }
+  }
+  if(migrated){
+    lsSet("apb_local_leads", leads.filter(l=>!l._migrated));
+    lsSet("apb_local_jobs", jobs.filter(l=>!l._migrated));
+    toast(`Synced ${migrated} local ${migrated===1?"entry":"entries"} to Supabase${failed?` (${failed} failed — still saved locally)`:""}`);
+    await load();
+  } else if(failed){
+    toast(`Couldn't sync ${failed} local ${failed===1?"entry":"entries"} — still saved locally, will retry next visit`);
+  }
+}
+
 /* ---------- wire & go ---------- */
 ["q","fStatus","fProj"].forEach(id=>document.getElementById(id).addEventListener("input",render));
 document.getElementById("refresh").onclick=load;
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeDrawer();closeConnect();closePipeModal();closeFacPicker();closeFacManager();}});
 applyRole();
-load().then(startAutoRefresh);
+load().then(startAutoRefresh).then(migrateLocalOnlyRecords);
 </script>
 </body>
 </html>
