@@ -675,6 +675,7 @@ body.theme-light .foot b{color:#48597a}
           <div class="nav-group">
             <div class="nav-g">Operations</div>
             <a class="nav-i" href="apb-pm.html"><svg viewBox="0 0 24 24"><path d="M3 3h18v4H3zM3 10h18v11H3z"/><path d="M7 14h6"/></svg>Project console</a>
+            <a class="nav-i" href="apb-admin-review.html"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M9 21v-4M15 21v-4"/></svg>Timesheet review</a>
             <a class="nav-i" href="apb-fleet.html"><svg viewBox="0 0 24 24"><path d="M3 18l9-15 9 15"/><path d="M3 18a9 4 0 0 0 18 0"/></svg>Fleet command</a>
             <a class="nav-i" href="apb-tasks.html"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 7h6M9 12h6M9 16h3"/></svg>Task board</a>
             <a class="nav-i" href="apb-pto.html"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Time off</a>
@@ -994,6 +995,10 @@ function taskCard(tasks){
   var todo=tasks.filter(function(t){return t.status==="todo"||!t.status;}).length, doing=tasks.filter(function(t){return t.status==="doing";}).length, done=tasks.filter(function(t){return t.status==="done";}).length;
   return '<div class="ov-card">'+head+'<div class="mini-stats"><div><b>'+todo+'</b><span>To do</span></div><div class="'+(doing?'warn':'')+'"><b>'+doing+'</b><span>In progress</span></div><div><b>'+done+'</b><span>Done</span></div></div></div>';
 }
+function timesheetReviewCard(){
+  var head='<h4>'+ICON.check+'Timesheet review <a href="apb-admin-review.html">Open</a></h4>';
+  return '<div class="ov-card">'+head+'<p class="ov-note">Review and approve tech hours, then export for QuickBooks.</p></div>';
+}
 function mtrCard(mNc,mPend){
   var head='<h4>'+ICON.file+'Material traceability <a href="apb-mtr.html">Open</a></h4>';
   return '<div class="ov-card">'+head+'<div class="mini-stats"><div class="'+(mNc?'bad':'')+'"><b>'+mNc+'</b><span>Non-conf.</span></div><div class="'+(mPend?'warn':'')+'"><b>'+mPend+'</b><span>To review</span></div></div></div>';
@@ -1098,7 +1103,7 @@ function renderOverview(){
     if(ptoPend) attn.push({cls:"blue",icon:ICON.cal,txt:ptoPend+" time-off request"+(ptoPend>1?"s":"")+" to approve",href:"apb-pto.html"});
     if(mPend&&!mNc) attn.push({cls:"amber",icon:ICON.file,txt:mPend+" MTR"+(mPend>1?"s":"")+" to review",href:"apb-mtr.html"});
     if(bill>0) attn.push({cls:"amber",icon:ICON.cash,txt:money(bill)+" ready to bill — hand to Accounting",href:"apb-accounting.html"});
-    cards=[ jobsCard(activeProjects), fieldCard(fieldReps), taskCard(tasks), complianceCard(cExp,cSoon), moneyGlanceCard(pipeOpen,bill) ];
+    cards=[ jobsCard(activeProjects), fieldCard(fieldReps), taskCard(tasks), timesheetReviewCard(), complianceCard(cExp,cSoon), moneyGlanceCard(pipeOpen,bill) ];
   }
 
   setKpis(kpis);
