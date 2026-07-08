@@ -838,6 +838,19 @@ async function exportQuickBooks(){
 
 // ── Toast ──
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+// ── Expose to inline onclick/onchange handlers ──
+// Everything above is scoped inside this IIFE (needed so the auth gate can
+// run its startup delay before the rest of the page wires up). But inline
+// onclick="fn()" / onchange="fn()" attributes in the HTML resolve names in
+// the GLOBAL scope, not this closure — so every one of these has to be
+// explicitly attached to window or the buttons silently no-op.
+Object.assign(window, {
+  approveFromModal, batchApproveAll, batchApproveSelected, cancelEdit, clearDates, clearSelection,
+  closeReviewModal, deleteVisit, exportCSV, exportQuickBooks, flagFromModal, markAllReviewed,
+  openReviewModal, saveDesc, saveHours, setFilter, startEditDesc, startEditHours,
+  toggleBillable, toggleCard, toggleReviewed, toggleTechSummary, renderVisits
+});
 })();
 </script>
 </body>
