@@ -754,11 +754,25 @@ async function load(){
       const r = await fetch(`${u}/rest/v1/apb_jobs?${sel}`,{headers:{apikey:k,Authorization:"Bearer "+k}});
       const data = await r.json();
       JOBS = data.map(j=>({
-        id:j.id, engagement_id:j.engagement_id, engagement:(j.apb_engagements&&j.apb_engagements.name)||"—",
+        id:j.id, source:"job", engagement_id:j.engagement_id, engagement:(j.apb_engagements&&j.apb_engagements.name)||"—",
         rep:(j.apb_engagements&&j.apb_engagements.rep)||"", job_number:j.job_number||"",
         job_name:j.job_name||"", status:j.status||"Lead", job_status_pct:j.job_status_pct||0,
         pm_notes:j.pm_notes||"", ms_list_item_id:j.ms_list_item_id, updated_at:j.updated_at
       }));
+      // Brand-new, not-yet-a-client prospects live in apb_leads until approved/converted.
+      try{
+        const lsel = "select=id,name,rep,lead_source,description,notes,status,contact_name,contact_email,contact_phone,ms_list_item_id,updated_at&converted=eq.false&order=updated_at.desc";
+        const lr = await fetch(`${u}/rest/v1/apb_leads?${lsel}`,{headers:{apikey:k,Authorization:"Bearer "+k}});
+        const ldata = await lr.json();
+        if(Array.isArray(ldata)){
+          JOBS = JOBS.concat(ldata.map(l=>({
+            id:l.id, source:"lead", engagement_id:null, engagement:l.name||"—", rep:l.rep||"",
+            job_number:"", job_name:l.description||"", status:l.status||"Lead", job_status_pct:0,
+            pm_notes:l.notes||"", ms_list_item_id:l.ms_list_item_id, updated_at:l.updated_at,
+            lead_source:l.lead_source||"", contact_name:l.contact_name||"", contact_email:l.contact_email||"", contact_phone:l.contact_phone||""
+          })));
+        }
+      }catch(e){ /* apb_leads is a nice-to-have merge; don't break the whole load if it fails */ }
       LIVE = true;
     }catch(e){ JOBS = demoJobs(); LIVE = false; }
   } else { JOBS = demoJobs(); LIVE = false; }
@@ -795,8 +809,8 @@ function isLead(j){ return j.status==="Lead" || j.status==="Estimating"; }
 function lsGet(k,d){ try{ const v=JSON.parse(localStorage.getItem(k)); return v==null?d:v; }catch(e){ return d; } }
 function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
 function applyLocalData(){
-  lsGet("apb_local_leads",[]).forEach(l=>{ if(!JOBS.some(j=>j.id===l.id)) JOBS.unshift(l); });
-  lsGet("apb_local_jobs",[]).forEach(l=>{ if(!JOBS.some(j=>j.id===l.id)) JOBS.unshift(l); });
+  lsGet("apb_local_leads",[]).forEach(l=>{ if(!JOBS.some(j=>j.id===l.id)){ if(!l.source) l.source="lead"; JOBS.unshift(l); } });
+  lsGet("apb_local_jobs",[]).forEach(l=>{ if(!JOBS.some(j=>j.id===l.id)){ if(!l.source) l.source="job"; JOBS.unshift(l); } });
   const ov=lsGet("apb_local_status",{});
   JOBS.forEach(j=>{ if(ov[j.id]){ j.status=ov[j.id].status; if(ov[j.id].pct!=null) j.job_status_pct=ov[j.id].pct; } });
   // Full-field edits (job #/name/rep/engagement) made in the Project drawer.
@@ -821,9 +835,10 @@ function persistEdit(job){ const ed=lsGet("apb_local_edits",{});
 async function deleteJobRow(id,skipConfirm){
   const j=JOBS.find(x=>x.id===id); if(!j) return;
   if(!skipConfirm && !confirm(`Delete job ${j.job_number?j.job_number+' — ':''}${j.job_name||'(no scope)'}? This cannot be undone.`)) return;
-  if(LIVE && !String(id).startsWith("demo-") && !String(id).startsWith("job_")){
+  if(LIVE && isRealId(id)){
     try{
-      await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_jobs?id=eq.${id}`,{
+      const table = j.source==="lead" ? "apb_leads" : "apb_jobs";
+      await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`,{
         method:"DELETE",
         headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+CONFIG.SUPABASE_ANON_KEY}
       });
@@ -1035,22 +1050,19 @@ function renderLeads(){
 }
 async function newLead(){
   const name=prompt("New lead — vessel / client name:"); if(!name) return;
-  const lead={ id:"lead_"+Date.now(), engagement:name, rep:"", job_number:"", job_name:"", status:"Lead", job_status_pct:0, pm_notes:"", ms_list_item_id:null, updated_at:new Date().toISOString() };
+  const lead={ id:"lead_"+Date.now(), source:"lead", engagement:name, rep:"", job_number:"", job_name:"", status:"Lead", job_status_pct:0, pm_notes:"", ms_list_item_id:null, updated_at:new Date().toISOString() };
   if(LIVE){
-    const engId = await ensureEngagementId(name);
-    if(engId){
-      try{
-        const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_jobs`,{
-          method:"POST",
-          headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+CONFIG.SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"return=representation"},
-          body: JSON.stringify({engagement_id:engId, job_name:"", status:"Lead", job_status_pct:0})
-        });
-        if(r.ok){
-          const rows = await r.json();
-          lead.id = rows[0].id; lead.engagement_id = engId; lead.updated_at = rows[0].updated_at;
-        } else { toast("Saved locally — Supabase write failed, will retry"); }
-      }catch(e){ toast("Saved locally — offline, will retry"); }
-    }
+    try{
+      const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_leads`,{
+        method:"POST",
+        headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+CONFIG.SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"return=representation"},
+        body: JSON.stringify({name, status:"Lead"})
+      });
+      if(r.ok){
+        const rows = await r.json();
+        lead.id = rows[0].id; lead.updated_at = rows[0].updated_at;
+      } else { toast("Saved locally — Supabase write failed, will retry"); }
+    }catch(e){ toast("Saved locally — offline, will retry"); }
   }
   JOBS.unshift(lead);
   const ll=lsGet("apb_local_leads",[]); ll.unshift(lead); lsSet("apb_local_leads",ll);
@@ -1238,10 +1250,14 @@ document.getElementById("dSave").onclick=save;
 async function pushToActiveList(job, changes){
   if(LIVE && isRealId(job.id)){
     try{
-      const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_jobs?id=eq.${job.id}`,{
+      const table = job.source==="lead" ? "apb_leads" : "apb_jobs";
+      const body = job.source==="lead"
+        ? {status:changes.status, notes:changes.notes, updated_at:new Date().toISOString()}
+        : {status:changes.status, job_status_pct:changes.pct, pm_notes:changes.notes, updated_at:new Date().toISOString()};
+      const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/${table}?id=eq.${job.id}`,{
         method:"PATCH",
         headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+CONFIG.SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"return=minimal"},
-        body: JSON.stringify({status:changes.status, job_status_pct:changes.pct, pm_notes:changes.notes, updated_at:new Date().toISOString()})
+        body: JSON.stringify(body)
       });
       if(!r.ok){ toast("Saved locally — Supabase update failed"); return false; }
       return true;
@@ -1302,11 +1318,44 @@ function createProposalFromLead(job){
 async function convertToProject(job){
   const ok = confirm('Approve “'+job.engagement+'” and convert it to an active project?\n\nThis will:\n  • set its status to In Progress on the Active List\n  • create the SharePoint project folders\n      (Proposals, Reports, Photos, Schedules, Correspondences, MTRs)\n  • set up MTR routing for the vessel\n  • announce it in the Projects channel');
   if(!ok) return;
-  job.status = "In Progress"; job.updated_at = new Date().toISOString();
   await runConvertFlow(job);
-  await pushToActiveList(job, {status:job.status, pct:job.job_status_pct, notes:job.pm_notes||""});
-  persistStatus(job); buildFilters(); refreshViews(); closeDrawer();
-  toast("Approved · "+job.engagement+" → Active List");
+  if(job.source==="lead"){
+    // Brand-new prospect: create the real engagement + first job, then mark the lead converted.
+    let engId = null, newJobId = null;
+    if(LIVE){
+      engId = await ensureEngagementId(job.engagement);
+      if(engId){
+        try{
+          const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_jobs`,{
+            method:"POST",
+            headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+CONFIG.SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"return=representation"},
+            body: JSON.stringify({engagement_id:engId, job_name:job.job_name||"", status:"In Progress", job_status_pct:0, pm_notes:job.pm_notes||null})
+          });
+          if(r.ok) newJobId = (await r.json())[0].id;
+        }catch(e){}
+      }
+      if(isRealId(job.id)){
+        try{
+          await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_leads?id=eq.${job.id}`,{
+            method:"PATCH",
+            headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+CONFIG.SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"return=minimal"},
+            body: JSON.stringify({converted:true, engagement_id:engId, status:"Converted", updated_at:new Date().toISOString()})
+          });
+        }catch(e){}
+      }
+    }
+    // Drop the lead from the Leads tab now that it's a real project; local cache follows.
+    JOBS = JOBS.filter(x=>x.id!==job.id);
+    const ll=lsGet("apb_local_leads",[]); lsSet("apb_local_leads", ll.filter(x=>x.id!==job.id));
+    buildFilters(); refreshViews(); closeDrawer();
+    toast(newJobId ? "Approved · "+job.engagement+" → Active Projects" : "Approved locally — Supabase write failed, will retry");
+    if(newJobId || !LIVE) await load();
+  } else {
+    job.status = "In Progress"; job.updated_at = new Date().toISOString();
+    await pushToActiveList(job, {status:job.status, pct:job.job_status_pct, notes:job.pm_notes||""});
+    persistStatus(job); buildFilters(); refreshViews(); closeDrawer();
+    toast("Approved · "+job.engagement+" → Active List");
+  }
 }
 /* =============================================================
    runConvertFlow — CONVERT AUTOMATION SEAM (build now, wire later)
@@ -1949,8 +1998,19 @@ async function migrateLocalOnlyRecords(){
   const leads = lsGet("apb_local_leads",[]);
   const jobs = lsGet("apb_local_jobs",[]);
   let migrated = 0, failed = 0;
-  for(const rec of [...leads, ...jobs]){
+  for(const rec of leads){
     if(isRealId(rec.id)) continue; // already a real Supabase row, nothing to do
+    try{
+      const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_leads`,{
+        method:"POST",
+        headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+CONFIG.SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"return=representation"},
+        body: JSON.stringify({name: rec.engagement, status: rec.status||"Lead", notes: rec.pm_notes||null})
+      });
+      if(r.ok){ rec._migrated = true; migrated++; } else { failed++; }
+    }catch(e){ failed++; }
+  }
+  for(const rec of jobs){
+    if(isRealId(rec.id)) continue;
     const engId = await ensureEngagementId(rec.engagement);
     if(!engId){ failed++; continue; }
     try{
