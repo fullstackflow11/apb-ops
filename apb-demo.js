@@ -89,7 +89,7 @@
     bar.id = "apbDemoBar";
     bar.className = "apb-demo-bar" + (live ? " live" : "");
     bar.innerHTML = live
-      ? '<span class="dm-ic">🟢</span><span class="dm-txt"><b>Live data</b> &middot; ' + info.area + ' — connected to ' + (info.liveSrc || "the live source") + '.</span>'
+      ? '<span class="dm-ic">🟢</span><span class="dm-txt"><b>Live data</b> &middot; ' + info.area + '.</span>'
       : '<span class="dm-ic">🧪</span><span class="dm-txt"><b>Demo data</b> &middot; ' + info.area + '. <span class="dm-need">To go live: ' + info.need + '</span></span>';
     var x = document.createElement("button");
     x.className = "dm-x"; x.setAttribute("aria-label", "Hide notice"); x.innerHTML = "&times;";
