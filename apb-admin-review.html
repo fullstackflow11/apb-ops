@@ -529,7 +529,10 @@ function renderCard(v){
   const vLines=lines.filter(l=>l.timesheet_id===v.id);
   const allReviewed=vLines.length&&vLines.every(l=>l.reviewed);
   const hasPending=vLines.some(l=>!l.reviewed);
-  const vesselName=v.apb_engagements?.name||v.vessel_name||'—';
+  const headerVessel=v.apb_engagements?.name||v.vessel_name||'—';
+  const distinctLineVessels=[...new Set(vLines.map(l=>l.vessel_name).filter(Boolean))];
+  const isMixed=distinctLineVessels.length>1||(distinctLineVessels.length===1&&distinctLineVessels[0]!==headerVessel&&headerVessel!=='—');
+  const vesselName=isMixed?`Multiple projects (${distinctLineVessels.length||vLines.length})`:headerVessel;
   const dateStr=v.visit_date?new Date(v.visit_date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'}):'—';
   const photos=v.photo_urls?v.photo_urls.split(',').filter(Boolean):[];
   const selected=selectedVisits.has(v.id);
@@ -541,7 +544,7 @@ function renderCard(v){
         <tr>
           <td style="white-space:nowrap">
             <span class="job-tag">${l.job_number||l.job_no||l.shop_category?.split(' ').slice(0,2).join(' ')||'—'}</span>
-            ${l.vessel_name&&l.vessel_name!==vesselName?`<div style="font-size:10px;color:var(--ink-4);margin-top:3px">${l.vessel_name}</div>`:''}
+            <div style="font-size:11px;color:var(--ink-3);font-weight:600;margin-top:3px">${l.vessel_name||headerVessel}</div>
           </td>
           <td>
             <span class="work-desc" id="desc-${l.id}">${l.work_description||l.description||''}</span>
