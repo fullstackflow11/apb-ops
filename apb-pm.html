@@ -701,6 +701,16 @@ const STATUSES = [
   ["Approved","c-appr","var(--green)"],
   ["On Hold","c-hold","var(--red)"]
 ];
+// apb_leads has its own DB check constraint — a different, smaller set of
+// valid values than apb_jobs. Showing the wrong list here means the save
+// silently fails (violates the constraint) with no visible error.
+const LEAD_STATUSES = [
+  ["Lead","c-lead","var(--slate)"],
+  ["Estimating","c-est","var(--violet)"],
+  ["Proposal Sent","c-sent","var(--cyan)"],
+  ["Proposal Created","c-rev","var(--amber)"],
+  ["Approved","c-appr","var(--green)"]
+];
 const SMAP = Object.fromEntries(STATUSES.map(s=>[s[0],s]));
 function chipClass(s){return (SMAP[s]||["","c-lead"])[1];}
 function statusColor(s){return (SMAP[s]||["","","var(--slate)"])[2];}
@@ -1207,7 +1217,8 @@ function openDrawer(id){
   document.getElementById("dTitle").textContent = current.job_name||"—";
   document.getElementById("dMeta").innerHTML = `${esc(current.engagement)}${current.rep?` &nbsp;·&nbsp; Rep ${esc(current.rep)}`:""}`;
   // status buttons
-  document.getElementById("dStatus").innerHTML = STATUSES.map(s=>`
+  const statusOptions = current.source==="lead" ? LEAD_STATUSES : STATUSES;
+  document.getElementById("dStatus").innerHTML = statusOptions.map(s=>`
     <button data-s="${s[0]}" class="${s[0]===draft.status?'sel':''}">
       <i style="background:${s[2]}"></i>${s[0]}</button>`).join("");
   document.querySelectorAll("#dStatus button").forEach(b=>b.onclick=()=>{
@@ -1324,7 +1335,7 @@ async function convertToProject(job){
   await runConvertFlow(job);
   if(job.source==="lead"){
     // Brand-new prospect: create the real engagement + first job, then mark the lead converted.
-    let engId = null, newJobId = null;
+    let engId = null, newJobId = null, leadMarked = false;
     if(LIVE){
       engId = await ensureEngagementId(job.engagement);
       if(engId){
@@ -1339,11 +1350,12 @@ async function convertToProject(job){
       }
       if(isRealId(job.id)){
         try{
-          await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_leads?id=eq.${job.id}`,{
+          const r2 = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_leads?id=eq.${job.id}`,{
             method:"PATCH",
             headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+CONFIG.SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"return=minimal"},
-            body: JSON.stringify({converted:true, engagement_id:engId, status:"Converted", updated_at:new Date().toISOString()})
+            body: JSON.stringify({converted:true, engagement_id:engId, status:"Approved", updated_at:new Date().toISOString()})
           });
+          leadMarked = r2.ok;
         }catch(e){}
       }
     }
@@ -1351,7 +1363,13 @@ async function convertToProject(job){
     JOBS = JOBS.filter(x=>x.id!==job.id);
     const ll=lsGet("apb_local_leads",[]); lsSet("apb_local_leads", ll.filter(x=>x.id!==job.id));
     buildFilters(); refreshViews(); closeDrawer();
-    toast(newJobId ? "Approved · "+job.engagement+" → Active Projects" : "Approved locally — sync failed, will retry");
+    if(newJobId && leadMarked){
+      toast("Approved · "+job.engagement+" → Active Projects");
+    } else if(newJobId && !leadMarked){
+      toast("Project created, but couldn't mark the lead converted — check the Leads tab for a leftover entry.");
+    } else {
+      toast("Approved locally — sync failed, will retry");
+    }
     if(newJobId || !LIVE) await load();
   } else {
     job.status = "In Progress"; job.updated_at = new Date().toISOString();
