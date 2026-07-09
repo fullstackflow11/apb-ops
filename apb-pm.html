@@ -1098,9 +1098,10 @@ function startAutoRefresh(){
 
 /* ---------- readout ---------- */
 function readout(){
-  const n=s=>JOBS.filter(j=>j.status===s).length;
-  const active = JOBS.filter(j=>!["Approved","On Hold"].includes(j.status)).length;
-  const inProg = JOBS.filter(j=>j.status==="In Progress");
+  const activeJobs=JOBS.filter(j=>!isLead(j));
+  const n=s=>activeJobs.filter(j=>j.status===s).length;
+  const active = activeJobs.filter(j=>!["Approved","On Hold"].includes(j.status)).length;
+  const inProg = activeJobs.filter(j=>j.status==="In Progress");
   const avg = inProg.length? Math.round(inProg.reduce((a,j)=>a+(+j.job_status_pct||0),0)/inProg.length):0;
   const cards=[
     ["",active,"Active engagements"],
@@ -1111,7 +1112,7 @@ function readout(){
   ];
   document.getElementById("readout").innerHTML = cards.map(c=>`
     <div class="stat ${c[0]}"><div class="lbl">${c[2]}</div><div class="n">${c[1]}</div>
-    <div class="sub">across ${JOBS.length} jobs</div></div>`).join("");
+    <div class="sub">across ${activeJobs.length} jobs</div></div>`).join("");
 }
 
 /* ---------- table ---------- */
