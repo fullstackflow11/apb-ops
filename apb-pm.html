@@ -374,7 +374,7 @@ textarea:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 4px va
     <span id="roleLabel">PM</span>
   </button>
   <div class="datatag" id="datatag"><span class="dot demo"></span><span id="datatagtxt">Demo data</span></div>
-  <button class="iconbtn" onclick="history.back()" title="Back">
+  <button class="iconbtn" onclick="if(document.referrer&&new URL(document.referrer).host===location.host){history.back()}else{location.href='index.html'}" title="Back">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     Back
   </button>
@@ -434,7 +434,7 @@ textarea:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 4px va
         <h1>Leads</h1>
         <p>New enquiries &amp; pipeline. Send a proposal, then <b>Approve</b> to move it to the Active List.</p>
       </div>
-      <button class="btn primary" id="newLead">+ New Proposal</button>
+      <button class="btn primary" id="newLead">+ New Lead</button>
     </div>
     <div id="leadCards"></div>
   </div>
@@ -605,6 +605,10 @@ textarea:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 4px va
         <div class="field"><label>Job name / scope</label><input type="text" id="pdJobName" class="tin" placeholder="e.g. Engine room shelving"></div>
         <div class="field"><label>Status</label><select id="pdJobStatus" class="tin"></select></div>
         <button class="btn ghost" id="pdAddJob" style="width:100%">Add job</button>
+      </div>
+
+      <div style="margin-top:22px;padding-top:14px;border-top:1px solid #F0D4D4">
+        <button class="btn" id="pdDeleteProject" style="width:100%;color:#C43030;border-color:#E9C7C7;background:#fff">Cancel / delete this project…</button>
       </div>
     </div>
     <div class="pd-side">
@@ -842,9 +846,21 @@ function writeJobsCache(){
 function persistEdit(job){ const ed=lsGet("apb_local_edits",{});
   ed[job.id]={job_number:job.job_number,job_name:job.job_name,engagement:job.engagement,rep:job.rep,status:job.status,pct:job.job_status_pct};
   lsSet("apb_local_edits",ed); }
+function askDeleteReason(what){
+  const reason=(prompt(`Delete ${what}?\n\nThis cannot be undone. Type a reason to confirm (required):`)||"").trim();
+  if(!reason){ toast("Delete cancelled — a reason is required"); return null; }
+  return reason;
+}
+function logDeletion(entry){
+  try{ const log=lsGet("apb_delete_log",[]); log.unshift(Object.assign({at:new Date().toISOString()},entry)); lsSet("apb_delete_log",log.slice(0,500)); }catch(e){}
+}
 async function deleteJobRow(id,skipConfirm){
   const j=JOBS.find(x=>x.id===id); if(!j) return;
-  if(!skipConfirm && !confirm(`Delete job ${j.job_number?j.job_number+' — ':''}${j.job_name||'(no scope)'}? This cannot be undone.`)) return;
+  if(!skipConfirm){
+    const _lbl=`job ${j.job_number?j.job_number+' — ':''}${j.job_name||'(no scope)'}`;
+    const _r=askDeleteReason(_lbl); if(!_r) return;
+    logDeletion({type:(j.source==="lead"?"lead":"job"),id:j.id,label:_lbl,project:j.engagement||"",reason:_r});
+  }
   if(LIVE && isRealId(id)){
     try{
       const table = j.source==="lead" ? "apb_leads" : "apb_jobs";
@@ -864,7 +880,8 @@ async function deleteJobRow(id,skipConfirm){
 async function deleteProjectGroup(name){
   const jobs=pjobs(name);
   if(!jobs.length) return;
-  if(!confirm(`Delete "${name}" and all ${jobs.length} job${jobs.length>1?'s':''} under it? This cannot be undone.`)) return;
+  const _r=askDeleteReason(`"${name}" and all ${jobs.length} job${jobs.length>1?'s':''} under it`); if(!_r) return;
+  logDeletion({type:"project",label:name,count:jobs.length,reason:_r});
   for(const j of jobs){ await deleteJobRow(j.id,true); }
   const m=lsGet("apb_proj_meta",{}); delete m[name]; lsSet("apb_proj_meta",m);
   const pf=lsGet(PFAC_KEY,{}); delete pf[name]; lsSet(PFAC_KEY,pf);
@@ -1040,7 +1057,7 @@ function toggleRole(){
 G("roleChip").onclick=toggleRole;
 function renderLeads(){
   const leads=JOBS.filter(isLead), el=G("leadCards");
-  if(!leads.length){ el.innerHTML='<div class="leadsempty">No leads yet. Click <b>+ New Proposal</b> to start one.</div>'; return; }
+  if(!leads.length){ el.innerHTML='<div class="leadsempty">No leads yet. Click <b>+ New Lead</b> to start one.</div>'; return; }
   el.innerHTML=leads.map(j=>`
     <div class="leadcard" data-id="${esc(j.id)}">
       <div class="lc-main">
@@ -1173,7 +1190,6 @@ function render(){
         <button class="reportbtn openbtn" data-projopen="${esc(p)}" title="Open project — edit details, add a job">Open ›</button>
         <button class="reportbtn" data-projreport="${esc(p)}" data-rtype="status" title="Status report">Status</button>
         <button class="reportbtn" data-projreport="${esc(p)}" data-rtype="completion" title="Completion report">Completion</button>
-        <button class="reportbtn danger" data-projdel="${esc(p)}" title="Delete this project and all its jobs">✕</button>
       </div></td></tr>`;
     if(!isC){
       jobs.forEach(j=>{
@@ -1182,7 +1198,7 @@ function render(){
           <td><span class="chip ${chipClass(j.status)}"><i></i>${esc(j.status)}</span></td>
           <td>${meterHTML(j.job_status_pct)}</td>
           <td class="hide-sm"><span class="updated">${j.updated_at?fmtAgo(j.updated_at):'—'}</span></td>
-          <td><button class="jobdel" data-jobdel="${esc(j.id)}" title="Delete job">✕</button><span class="chev">›</span></td>
+          <td><span class="chev">›</span></td>
         </tr>`;
       });
     }
@@ -1513,6 +1529,7 @@ function closeProject(){ G("scrim").classList.remove("open"); G("projDrawer").cl
 G("pdx").onclick=closeProject;
 G("pdSaveMeta").onclick=saveProjectMeta;
 G("pdAddJob").onclick=addJobToProject;
+G("pdDeleteProject").onclick=async function(){ if(!curProj) return; const n=curProj; await deleteProjectGroup(n); if(!pjobs(n).length) closeProject(); };
 G("pdReportStatus").onclick=()=>{ if(curProj) buildProjectReport(curProj, pjobs(curProj), "status"); };
 G("pdReportDone").onclick=()=>{ if(curProj) buildProjectReport(curProj, pjobs(curProj), "completion"); };
 
