@@ -3,484 +3,364 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>APB · Proposal Builder</title>
+<title>APB · Partner Portals</title>
 <script src="apb-roles.js"></script>
 <script src="apb-demo.js"></script>
-<script>APBRoles.guard('pm','Proposal Builder');</script>
+<script>APBRoles.guard(['admin','pm','purchasing'],'Partner Portals');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#F4F6F9;--panel:#fff;--ink:#0E131B;--ink-2:#454F60;--ink-3:#8A93A3;--ink-4:#AEB6C2;
-  --line:#E7EAF0;--line-2:#F0F2F6;--accent:#2457E6;--accent-2:#1B45B8;--accent-soft:#EAF0FE;--green:#0E9F6E;
-  --shadow-sm:0 1px 2px rgba(16,24,40,.06);--shadow:0 8px 28px -12px rgba(16,24,40,.20);--mono:"DM Mono",ui-monospace,monospace;
+  --bg:#EDEEF2;--panel:#FFFFFF;--panel-2:#F5F6FA;--ink:#0D1626;--ink-2:#3A4559;--ink-3:#6B7A92;--ink-4:#9BA9BE;
+  --navy:#0D1626;--line:#DDE1E8;--line-2:#E8EBF0;
+  --accent:#2457E6;--accent-2:#1B45B8;--accent-soft:#EAF0FE;
+  --green:#0B9E6A;--green-soft:#E4F5EE;--amber:#B86A00;--amber-soft:#FBF0E2;--slate:#50616F;--slate-soft:#ECF0F3;
+  --shadow-sm:0 1px 3px rgba(13,22,38,.07);--shadow:0 8px 28px -12px rgba(13,22,38,.14);--shadow-lg:0 30px 70px -24px rgba(13,22,38,.22);
+  --r:12px;--r-sm:9px;--mono:"DM Mono",ui-monospace,monospace;
 }
 *{box-sizing:border-box}html,body{margin:0}
-body{font-family:Inter,-apple-system,"Segoe UI",sans-serif;background:radial-gradient(1200px 600px at 80% -10%,#EEF3FF 0,rgba(238,243,255,0) 60%),var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+body{font-family:Inter,-apple-system,"Segoe UI",sans-serif;background:radial-gradient(1200px 600px at 80% -10%,rgba(36,87,230,.05) 0%,transparent 60%),var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
 .mono{font-family:var(--mono)}
 .topbar{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.88);backdrop-filter:saturate(180%) blur(12px);display:flex;align-items:center;gap:14px;padding:0 26px;height:62px;border-bottom:1px solid var(--line)}
-.topbar img.logo{height:40px;width:auto;display:block}
+.topbar img.logo{height:38px;width:auto;display:block}
 .topbar .t{border-left:1px solid var(--line);padding-left:14px}.topbar .t b{font-size:15px;color:var(--ink)}.topbar .t span{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
 .topbar .sp{flex:1}
-.btn{cursor:pointer;border:none;border-radius:9px;padding:10px 17px;font:inherit;font-size:14px;font-weight:700;font-family:inherit}
-.btn.primary{background:var(--accent);color:#fff}.btn.primary:hover{background:var(--accent-2)}
-.btn.ghost{background:#fff;border:1px solid var(--line);color:var(--ink-2)}.btn.ghost:hover{border-color:var(--ink-4)}
-.wrap{max-width:920px;margin:0 auto;padding:24px 20px 90px}
-.lead{margin:4px 0 18px;color:var(--ink-2);font-size:14px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm);padding:20px 22px;margin-bottom:16px}
-.card h2{margin:0 0 14px;font-size:13px;text-transform:uppercase;letter-spacing:.09em;color:var(--accent-2)}
-label{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);font-weight:600;margin:0 0 6px}
-input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font:inherit;font-size:14px;color:var(--ink);background:#fff}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
-textarea{resize:vertical;min-height:74px;line-height:1.5}
-.grid{display:grid;gap:13px}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr 1fr}.g4{grid-template-columns:1fr 1fr 1fr 1fr}
-.field{margin-bottom:13px}.field:last-child{margin-bottom:0}
-.hint{font-size:11.5px;color:var(--ink-3);margin-top:5px}
-.job{border:1px solid var(--line);border-radius:11px;padding:15px;margin-bottom:12px;background:#FBFCFD;position:relative}
-.job .jh{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.job .jh .num{font-family:var(--mono);font-weight:600;color:var(--accent)}
-.job .rm{margin-left:auto;border:1px solid #f3c9c9;background:#fff;color:#d14343;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer}
-.addbtn{width:100%;border:1.5px dashed #C7CED9;background:#FAFBFD;color:var(--ink-2);border-radius:10px;padding:12px;font:inherit;font-weight:600;cursor:pointer}
-.addbtn:hover{border-color:var(--accent);color:var(--accent)}
-.totbar{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;background:#0E131B;color:#fff;border-radius:11px;margin-top:4px}
-.totbar .v{font-family:var(--mono);font-size:20px;font-weight:500}
-.adv summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--ink-2)}
-.footbar{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.9);backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:12px 20px;display:flex;justify-content:center;gap:12px;z-index:20}
-.footbar .info{align-self:center;color:var(--ink-3);font-size:12.5px;margin-right:auto}
-.pill{display:inline-flex;gap:6px;align-items:center;font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-soft);padding:3px 10px;border-radius:99px}
-.depctl{display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:9px;padding:8px 11px;background:#fff}
-.depctl input[type=number]{width:60px;padding:6px 8px}
-.depctl .chk{display:flex;align-items:center;gap:6px;margin:0;font-size:12.5px;text-transform:none;letter-spacing:0;color:var(--ink-2);white-space:nowrap;font-weight:600}
-.depctl .chk input{width:auto}
-.depctl .pctsign{font-size:12px;color:var(--ink-3);white-space:nowrap}
-.depctl .depamt{margin-left:auto;font-weight:600;font-size:15px}
-.depctl.off{opacity:.5}
-.jobadd{display:flex;gap:8px;align-items:stretch;margin-top:2px}
-.jobadd .addbtn{flex:1;margin:0}
-.tmplsel{width:230px;border:1px solid var(--line);border-radius:10px;padding:0 12px;font:inherit;font-size:13.5px;color:var(--accent-2);font-weight:600;background:#fff;cursor:pointer}
-.jobwarn{margin-top:10px;font-size:12.5px;color:#92600a;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:9px 12px;display:none}
-.jobwarn.show{display:block}
-.topbar .tbtn{display:inline-flex;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--line);color:var(--ink-2);border-radius:9px;padding:8px 13px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;box-shadow:var(--shadow-sm)}
-.topbar .tbtn:hover{border-color:var(--accent);color:var(--accent)}
-.modal{position:fixed;inset:0;background:rgba(16,22,34,.4);backdrop-filter:blur(3px);display:none;align-items:flex-start;justify-content:center;z-index:60;padding:80px 20px}
-.modal.open{display:flex}
-.modal .sheet{background:#fff;border-radius:14px;box-shadow:0 30px 70px -20px rgba(16,24,40,.4);width:520px;max-width:100%;overflow:hidden}
-.modal .mh{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
-.modal .mh b{font-size:15px}.modal .x{border:none;background:none;font-size:18px;color:var(--ink-3);cursor:pointer}
-.modal .mb{padding:8px 12px;max-height:46vh;overflow:auto}
-.modal .mf{padding:13px 20px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink-3)}.modal .mf span{color:var(--ink-4)}
-.draft{display:flex;align-items:center;gap:12px;padding:11px 8px;border-radius:9px}
-.draft:hover{background:#F7F9FF}.draft .dn{font-weight:600;font-size:14px}.draft .dd{font-size:11.5px;color:var(--ink-3);font-family:var(--mono)}
-.draft .sp{flex:1}.draft button{border:1px solid var(--line);background:#fff;border-radius:7px;padding:6px 11px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
-.draft .load{color:var(--accent);border-color:#cdddff}.draft .del{color:#d14343}
-.emptyd{padding:30px;text-align:center;color:var(--ink-3);font-size:13.5px}
-.toast{position:fixed;bottom:78px;left:50%;transform:translateX(-50%) translateY(16px);opacity:0;background:#11151C;color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;box-shadow:var(--shadow);transition:.25s;z-index:70;pointer-events:none}
-.toast.show{opacity:1;transform:translateX(-50%)}
-@media(max-width:680px){.g2,.g3,.g4{grid-template-columns:1fr}}
+.tbtn{display:inline-flex;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--line);color:var(--ink-2);border-radius:9px;padding:7px 12px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;box-shadow:var(--shadow-sm)}
+.tbtn:hover{border-color:var(--accent);color:var(--accent)}
+.wrap{max-width:1080px;margin:0 auto;padding:26px 20px 80px}
+.page-h h1{margin:0;font-size:23px;letter-spacing:-.025em}
+.page-h p{margin:5px 0 0;color:var(--ink-2);font-size:13.5px}
+.search{position:relative;margin:20px 0 18px;max-width:420px}
+.search input{width:100%;height:40px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:0 14px 0 38px;font:inherit;font-size:14px}
+.search input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.search svg{position:absolute;left:12px;top:11px;color:var(--ink-3)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px;cursor:pointer;transition:transform .12s,border-color .12s;display:flex;flex-direction:column;gap:8px}
+.card:hover{transform:translateY(-2px);border-color:var(--accent)}
+.card .nm{font-weight:700;font-size:16px;letter-spacing:-.01em}
+.card .cat{font-size:12.5px;color:var(--ink-3)}
+.card .sp{flex:1}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px;width:fit-content}
+.pill i{width:6px;height:6px;border-radius:50%;background:currentColor}
+.p-full{color:var(--green);background:var(--green-soft)}
+.p-mid{color:var(--amber);background:var(--amber-soft)}
+.p-none{color:var(--slate);background:var(--slate-soft)}
+.p-soon{color:var(--ink-3);background:var(--line-2)}
+.card .go{font-size:13px;font-weight:600;color:var(--accent);margin-top:4px}
+.sec-h{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin:26px 0 12px}
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(16,22,34,.34);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:.22s;z-index:40}
+.scrim.open{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;height:100%;width:520px;max-width:94vw;background:#fff;box-shadow:var(--shadow-lg);transform:translateX(100%);transition:transform .26s cubic-bezier(.4,0,.2,1);z-index:50;display:flex;flex-direction:column}
+.drawer.open{transform:none}
+.dh{padding:22px 24px 18px;border-bottom:1px solid var(--line);position:relative}
+.dh .x{position:absolute;right:16px;top:16px;width:32px;height:32px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;color:var(--ink-2);display:grid;place-items:center}
+.dh h2{margin:0 0 4px;font-size:21px;letter-spacing:-.02em}
+.dh .cat{font-size:13px;color:var(--ink-3)}
+.db{padding:8px 24px 28px;overflow:auto;flex:1}
+.block{margin-top:22px}
+.block h3{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin:0 0 10px;border-bottom:1px solid var(--line-2);padding-bottom:7px}
+.lnk{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;margin-bottom:7px;text-decoration:none;color:var(--ink);font-size:13.5px;font-weight:500}
+.lnk:hover{border-color:var(--accent);background:#FAFBFF}
+.lnk .ar{margin-left:auto;color:var(--ink-4)}
+.contact{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:9px}
+.contact .role{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-2);font-weight:700}
+.contact .nm{font-weight:600;font-size:14px;margin-top:3px}
+.contact .meta{font-size:13px;color:var(--ink-2);margin-top:4px;display:flex;flex-direction:column;gap:2px}
+.contact .meta a{color:var(--accent);text-decoration:none}
+.contact .note{font-size:12px;color:var(--ink-3);margin-top:5px}
+ul.bul{margin:0;padding-left:18px}ul.bul li{font-size:13.5px;line-height:1.55;margin:4px 0;color:var(--ink-2)}
+.proc{font-size:13.5px;line-height:1.6;color:var(--ink-2);background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.tbd{color:var(--amber)}
+.hours{font-size:13.5px;color:var(--ink-2);background:var(--amber-soft);border:1px solid #fde9c8;border-radius:10px;padding:11px 13px;line-height:1.5}
+.followup{font-size:13.5px;color:#92600a;background:var(--amber-soft);border:1px solid #fde9c8;border-radius:10px;padding:12px 14px;line-height:1.5}
+.subbrand{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:9px;background:var(--panel-2)}
+.subbrand .sb-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.subbrand .sb-nm{font-weight:700;font-size:14px}
+.subbrand .sb-cat{font-size:12px;color:var(--ink-3)}
+.subbrand .sb-rows{margin-top:7px;display:flex;flex-direction:column;gap:4px}
+.subbrand .sb-row{font-size:13px;color:var(--ink-2)} .subbrand .sb-row b{color:var(--ink)}
+.subbrand .sb-row a{color:var(--accent);text-decoration:none}
+.card .brands{font-size:11.5px;color:var(--accent-2);font-weight:600}
+/* ── featured portal hero card ── */
+.plink-hero{display:flex;align-items:center;gap:15px;padding:17px 18px;border:1.5px solid var(--accent);border-radius:12px;text-decoration:none;color:var(--ink);background:linear-gradient(135deg,#FAFBFF,#EEF3FF);box-shadow:0 2px 14px rgba(36,87,230,.1);transition:.14s}
+.plink-hero:hover{border-color:var(--accent-2);background:linear-gradient(135deg,#EEF3FF,#E0EBFF);box-shadow:0 5px 22px rgba(36,87,230,.18);transform:translateY(-1px)}
+.ph-ic{width:44px;height:44px;border-radius:12px;background:var(--accent);color:#fff;display:grid;place-items:center;flex-shrink:0;box-shadow:0 4px 12px rgba(36,87,230,.3)}
+.ph-body{flex:1;min-width:0}
+.ph-name{font-weight:800;font-size:15px;color:var(--ink);letter-spacing:-.01em}
+.ph-desc{font-size:12px;color:var(--ink-3);margin-top:3px;line-height:1.5}
+.ph-btn{flex-shrink:0;background:var(--accent);color:#fff;border-radius:9px;padding:9px 16px;font:inherit;font-size:13px;font-weight:700;white-space:nowrap;box-shadow:0 2px 8px rgba(36,87,230,.28)}
+/* ── standard portal link cards (multiple portals) ── */
+.plink-card{display:flex;align-items:flex-start;gap:13px;padding:13px 14px;border:1px solid var(--line);border-radius:var(--r-sm);margin-bottom:8px;text-decoration:none;color:var(--ink);background:var(--panel);transition:.12s;box-shadow:var(--shadow-sm)}
+.plink-card:hover{border-color:var(--accent);background:var(--accent-soft);box-shadow:var(--shadow)}
+.plink-card .pc-ic{width:36px;height:36px;border-radius:9px;background:var(--accent-soft);color:var(--accent-2);display:grid;place-items:center;flex-shrink:0}
+.plink-card:hover .pc-ic{background:var(--accent);color:#fff}
+.plink-card .pc-body{flex:1;min-width:0}
+.plink-card .pc-nm{font-weight:700;font-size:13.5px;color:var(--ink);letter-spacing:-.01em}
+.plink-card .pc-desc{font-size:12px;color:var(--ink-3);margin-top:2px;line-height:1.45}
+.plink-card .pc-go{font-size:12px;font-weight:600;color:var(--accent);margin-top:6px}
+/* ── contact card grid ── */
+.ccard-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ccard-grid .ccard{margin-bottom:0}
+.ccard-grid .ccard.ccard-full{grid-column:1/-1}
+.ccard{border:1px solid var(--line);border-radius:var(--r-sm);padding:11px 13px;margin-bottom:7px;background:var(--panel)}
+.ccard-h{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;flex-wrap:wrap}
+.ccard-nm{font-weight:700;font-size:12.5px;color:var(--ink);letter-spacing:-.01em;line-height:1.3}
+.ccard-role{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:99px;padding:2px 7px;line-height:1.7;flex-shrink:0;background:var(--accent-soft);color:var(--accent-2);white-space:nowrap}
+.ccard-acts{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap}
+.ccard-act{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--ink-2);text-decoration:none;background:var(--panel-2);border:1px solid var(--line);border-radius:7px;padding:4px 9px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.ccard-act:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.ccard-note{font-size:11px;color:var(--ink-3);margin-top:5px;line-height:1.4}
+/* ── form chips ── */
+.form-chips{display:flex;flex-wrap:wrap;gap:7px}
+.form-chip{display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--ink-2);font-size:12.5px;font-weight:500;text-decoration:none;box-shadow:var(--shadow-sm);transition:.12s}
+.form-chip:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.form-chip svg{color:var(--ink-4);flex-shrink:0}
+/* ── numbered steps ── */
+.steps{display:flex;flex-direction:column}
+.step{display:flex;gap:11px;padding:10px 0;border-bottom:1px solid var(--line-2)}
+.step:last-child{border-bottom:none}
+.step-n{width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent-2);font-size:11px;font-weight:800;display:grid;place-items:center;flex-shrink:0;margin-top:1px}
+.step-t{font-size:13px;color:var(--ink-2);line-height:1.5}
+/* ── proc / hours ── */
+.proc{font-size:13px;line-height:1.6;color:var(--ink-2);background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-sm);padding:12px 14px}
+.hours{font-size:13px;color:var(--ink-2);background:var(--amber-soft);border:1px solid #fde9c8;border-radius:var(--r-sm);padding:11px 13px;line-height:1.5}
+.followup{font-size:13px;color:#92600a;background:var(--amber-soft);border:1px solid #fde9c8;border-radius:var(--r-sm);padding:12px 14px;line-height:1.5}
+.tbd{color:var(--amber)}
+.block h3{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin:0 0 10px;border-bottom:1px solid var(--line-2);padding-bottom:6px}
+@media(max-width:820px){.grid{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.grid{grid-template-columns:1fr}}
 </style>
 <link rel="stylesheet" href="apb-theme.css">
 </head>
 <body>
 <header class="topbar">
   <img class="logo" src="apb-logo.png" alt="APB">
-  <div class="t"><b>Proposal Builder</b><span>All Points Boats</span></div>
+  <div class="t"><b>Partner Portals</b><span>Tech Resource Hub</span></div>
+  <div class="sp"></div>
+  <a class="tbtn" href="https://www.apb1.com" target="_blank" rel="noopener">apb1.com ↗</a>
   <button class="tbtn" onclick="if(document.referrer&&new URL(document.referrer).host===location.host){history.back()}else{location.href='index.html'}">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button>
-  <a class="tbtn" href="index.html" title="Home">
+  <a class="tbtn" href="index.html">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg>Home</a>
-  <div class="sp"></div>
-  <button class="tbtn" id="drafts">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Drafts</button>
-  <button class="tbtn" id="save">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>Save for later</button>
-  <button class="btn primary" id="gen">Generate Proposal →</button>
 </header>
 
 <main class="wrap">
-  <p class="lead">Fill in the client, the work, and the numbers — the legal terms, warranty &amp; assumptions are built in. Generate a clean, send-ready proposal in one click. <span class="pill">No fine-print editing</span></p>
-
-  <div class="card">
-    <h2>Proposal &amp; Client</h2>
-    <div class="grid g3">
-      <div class="field"><label>Project type</label>
-        <select id="ptype">
-          <option value="marine">Marine / Vessel</option>
-          <option value="construction">Construction</option>
-          <option value="manufacturing">Manufacturing</option>
-          <option value="machinery">Machinery / Equipment</option>
-          <option value="general">General</option>
-        </select><div class="hint">Tunes the legal language &amp; assumptions.</div></div>
-      <div class="field"><label>Prepared by</label>
-        <select id="preparer">
-          <option value="Christopher Collins|Christopher@APB1.com|Director of Business Operations &amp; Development">Christopher Collins</option>
-          <option value="Bryce Sander|bryce@apb1.com|All Points Boats, Inc.">Bryce Sander</option>
-          <option value="Christina Daglia|christina@apb1.com|All Points Boats, Inc.">Christina Daglia</option>
-          <option value="Chelsea Goodwin|chelsea@apb1.com|All Points Boats, Inc.">Chelsea Goodwin</option>
-          <option value="Nate Goodwin|nate@apb1.com|All Points Boats, Inc.">Nate Goodwin</option>
-          <option value="Jerry Clark|jerry@apb1.com|All Points Boats, Inc.">Jerry Clark</option>
-          <option value="|info@apb1.com|All Points Boats, Inc.">Other / APB</option>
-        </select></div>
-      <div class="field"><label>Date</label><input id="date" type="date"></div>
-    </div>
-    <div class="grid g3">
-      <div class="field"><label>Revision</label><input id="rev" value="0"></div>
-      <div class="field"><label>Proposal #</label><input id="pnum" placeholder="optional"></div>
-      <div class="field"><label>Location / Site</label><input id="loc" placeholder="Marina, yard, address…"></div>
-    </div>
-    <div class="grid g2">
-      <div class="field"><label>Client / Company</label><input id="client" placeholder="Company or owner"></div>
-      <div class="field"><label>Project / Job title</label><input id="ptitle" placeholder="e.g. Strut Repair / Vessel name"></div>
-    </div>
-    <div class="grid g3">
-      <div class="field"><label>Attention</label><input id="attn" placeholder="Contact name"></div>
-      <div class="field"><label>Phone</label><input id="cphone"></div>
-      <div class="field"><label>Email</label><input id="cemail"></div>
-    </div>
+  <div class="page-h">
+    <h1>Partner Portals</h1>
+    <p>Quick access to our manufacturers &amp; partners — links, who to call, forms, hours, and how we order parts &amp; service.</p>
   </div>
-
-  <div class="card">
-    <h2>Scope of Work</h2>
-    <textarea id="scope" placeholder="One or two sentences describing the overall work…"></textarea>
+  <div class="search">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    <input id="q" type="search" placeholder="Search a partner…">
   </div>
-
-  <div class="card">
-    <h2>Jobs</h2>
-    <p class="hint" style="margin:-4px 0 13px">Keep it to <b>1–2 jobs</b> — list the individual steps as <b>tasks</b> under each job, not as separate job numbers. One deliverable = one job.</p>
-    <div id="jobs"></div>
-    <div class="jobadd">
-      <button class="addbtn" id="addJob">+ Add blank job</button>
-      <select id="tmpl" class="tmplsel"><option value="">✨ Suggest a common job…</option></select>
-    </div>
-    <div id="jobwarn"></div>
-    <div class="totbar"><span>Subtotal (excl. tax)</span><span class="v" id="subtotal">$0.00</span></div>
-  </div>
-
-  <div class="card">
-    <h2>Options, Cost &amp; Deposit</h2>
-    <div class="field"><label>Options — billed additionally (optional)</label>
-      <textarea id="options" placeholder="One per line — e.g. Powder coat finish ($300–$500); Installation with new 316L hardware (T&amp;M)…"></textarea></div>
-    <div class="grid g3">
-      <div class="field"><label>Tax line</label><input id="taxline" value="Plus applicable Florida sales tax where required."></div>
-      <div class="field"><label>Deposit</label>
-        <div class="depctl">
-          <label class="chk"><input type="checkbox" id="depOn" checked> Require</label>
-          <input id="depPct" type="number" value="60" min="0" max="100" step="5">
-          <span class="pctsign">% of subtotal</span>
-          <span id="depAmt" class="depamt mono">$0.00</span>
-        </div></div>
-      <div class="field"><label>Labor rate (extra hours)</label><input id="rate" value="$150 / technician-hour"></div>
-    </div>
-  </div>
-
-  <details class="card adv">
-    <summary>Advanced — terms settings</summary>
-    <div class="grid g3" style="margin-top:14px">
-      <div class="field"><label>Validity (days)</label><input id="validity" value="5"></div>
-      <div class="field"><label>Interest (%/mo past due)</label><input id="interest" value="1.5"></div>
-      <div class="field"><label>Travel / freight markup</label><input id="markup" value="cost plus 20%"></div>
-    </div>
-  </details>
+  <div class="grid" id="cards"></div>
 </main>
 
-<div class="footbar">
-  <span class="info">All legal terms, warranty &amp; signature block are added automatically.</span>
-  <button class="btn ghost" id="addJob2">+ Add job</button>
-  <button class="btn primary" id="gen2">Generate Proposal →</button>
-</div>
-
-<div class="modal" id="draftsModal">
-  <div class="sheet">
-    <div class="mh"><b>Saved drafts</b><button class="x" id="draftsClose">✕</button></div>
-    <div class="mb" id="draftsList"></div>
-    <div class="mf">Drafts are saved on this computer. <span>Connect Supabase to share team-wide so Brandon can pick one up &amp; finish it.</span></div>
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer">
+  <div class="dh">
+    <button class="x" id="dx"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    <h2 id="dName">—</h2><div class="cat" id="dCat">—</div>
+    <div id="dStatus" style="margin-top:10px"></div>
   </div>
-</div>
-<div class="toast" id="toast"></div>
+  <div class="db" id="dBody"></div>
+</aside>
 
 <script>
 const $=id=>document.getElementById(id);
-$("date").value=new Date().toISOString().slice(0,10);
-
-/* ---------- jobs repeater ---------- */
-let jobs=[];
-function addJob(j){ jobs.push(j||{title:"",tasks:"",labor:"",materials:"",total:""}); renderJobs(); }
-function jobNumber(i){ return (i+1)+".0"; }
-function num(v){ const n=parseFloat(String(v).replace(/[^0-9.\-]/g,"")); return isNaN(n)?null:n; }
-function money(n){ return "$"+n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); }
-function calcTotal(j){ const l=num(j.labor),m=num(j.materials); if(j.total&&num(j.total)!==null) return num(j.total); if(l!==null||m!==null) return (l||0)+(m||0); return null; }
-function renderJobs(){
-  $("jobs").innerHTML=jobs.map((j,i)=>`
-    <div class="job">
-      <div class="jh"><span class="num">Job ${jobNumber(i)}</span>
-        <input data-i="${i}" data-f="title" value="${esc(j.title)}" placeholder="Job title" style="max-width:340px">
-        ${jobs.length>1?`<button class="rm" data-rm="${i}">Remove</button>`:""}</div>
-      <div class="field"><label>Tasks (one per line → bullets)</label>
-        <textarea data-i="${i}" data-f="tasks" placeholder="Inspect area&#10;Grind and prepare&#10;Apply epoxy & reinforcement…">${esc(j.tasks)}</textarea></div>
-      <div class="grid g3">
-        <div class="field"><label>Labor ($)</label><input data-i="${i}" data-f="labor" value="${esc(j.labor)}" placeholder="3600"></div>
-        <div class="field"><label>Materials ($)</label><input data-i="${i}" data-f="materials" value="${esc(j.materials)}" placeholder="850 or TBD / T&amp;M"></div>
-        <div class="field"><label>Job total (auto)</label><input data-i="${i}" data-f="total" value="${esc(j.total)}" placeholder="${(calcTotal(j)!==null)?money(calcTotal(j)):"auto"}"></div>
-      </div>
-    </div>`).join("");
-  $("jobs").querySelectorAll("[data-i]").forEach(el=>el.addEventListener("input",e=>{ jobs[+el.dataset.i][el.dataset.f]=el.value; updateSub(); }));
-  $("jobs").querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{ jobs.splice(+b.dataset.rm,1); renderJobs(); });
-  updateSub(); warnJobs();
-}
-function warnJobs(){ const w=$("jobwarn"); if(jobs.length>3){ w.textContent="That's "+jobs.length+" job numbers — most APB proposals are 1–2. Consider folding related steps into a single job's task list."; w.className="jobwarn show"; } else { w.className="jobwarn"; } }
-function updateSub(){
-  const s=jobs.reduce((a,j)=>a+(calcTotal(j)||0),0); $("subtotal").textContent=money(s);
-  const on=$("depOn").checked, pct=parseFloat($("depPct").value)||0;
-  $("depAmt").textContent=money(s*pct/100);
-  document.querySelector(".depctl").classList.toggle("off",!on);
-}
-$("depPct").addEventListener("input",updateSub);
-$("depOn").addEventListener("change",updateSub);
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
-$("addJob").onclick=()=>addJob(); $("addJob2").onclick=()=>addJob();
-addJob();
 
-/* ---------- suggested-jobs library (seeded from APB's real proposals) ---------- */
-const JOB_TEMPLATES=[
- {label:"Fiberglass / FRP repair",key:"frp",type:"marine",title:"Fiberglass Repair",tasks:"Inspect affected repair area\nGrind and prepare damaged area for bonding\nApply epoxy resin and fiberglass reinforcement material\nBuild up repair area as required\nFair repair area to a serviceable finish\nClean and restore immediate work area"},
- {label:"Backing plate / bracket fabrication",key:"plate",type:"marine",title:"Plate / Bracket Fabrication",tasks:"Visit site to gather dimensions for engineering\nDesign part to spread load / fit the application\nWater jet from marine-grade plate to thickness\nChamfer edges and DA sand for coating prep\nDeliver part (coating / install by others unless requested)"},
- {label:"Equipment / battery mounts",key:"mounts",type:"marine",title:"Equipment Mounts",tasks:"Fabricate aluminum frames / brackets to hold equipment\nWeld tabs, risers and isolated supports as required\nPrep for paint (paint by vessel unless requested)\nInstall with 316L stainless hardware and isolators"},
- {label:"Tank / drip pan fabrication",key:"pan",type:"marine",title:"Drip Pan / Tank Fabrication",tasks:"Remove existing pumps / lines as required\nJet and bend pan from marine-grade material\nInstall isolation mounts and drain plug\nFasten hanger brackets to structure with stainless hardware"},
- {label:"Surface prep, paint & coatings",key:"paint",type:"marine",title:"Surface Prep & Coatings",tasks:"Surface preparation, sanding, cleaning and degreasing\nApply high-build filler primer; block sand\nMask and protect adjacent components\nApply marine topcoat finish\nFinal inspection and cleanup"},
- {label:"Welding / sea-fastening support",key:"welding",type:"marine",title:"Welding & Operational Support",tasks:"Provide welding manpower and field supervision\nVessel loading / unloading and sea-fastening support\nFabrication, structural modifications and cargo securing\nOperational support as directed by the client"},
- {label:"Machining service",key:"machining",type:"manufacturing",title:"Machining",tasks:"Review drawing / part and confirm tolerances\nMachine component to specification\nDeburr, inspect and verify dimensions\nClean and package for delivery"},
- {label:"General repair / service",key:"general",type:"general",title:"Repair & Service",tasks:"Inspect and assess the work area\nPerform the required repair / service\nVerify function and finish\nClean and restore the work area"}
+/* =================== PARTNER DATA ===================
+   SmartGyro is filled from APB's dealer-portal research.
+   AdvanTec / Power-Pole have the structure with (add …)
+   placeholders for the contacts you haven't given yet.
+   ==================================================== */
+const PORTALS=[
+{
+  id:"smartgyro", name:"SmartGyro", category:"Gyro Stabilizers", status:"full",
+  links:[
+    {label:"SmartGyro Dealer Portal", desc:"Manuals · install drawings · service bulletins · price list · commissioning wizard · roll-period & roll-reduction tools — organized by model (SG20–SG150)", url:"https://support.smartgyro.com/dealerslogin", featured:true},
+    {label:"Marketing Assets", desc:"Brand guidelines · logos (color & white, vertical & horizontal) · ad templates (full & half page) · corporate & commercial brochures · product videos (overview + Rising Sons Viking 58 + SG20 Diamond 50 case studies) · social media archive 2024–2026 · corporate presentation", url:"https://support.smartgyro.com/dealerslogin/marketing"}
+  ],
+  contacts:[
+    {role:"US Sales & Support", name:"Bob Walker — Sales Manager USA", email:"r.walker@smartgyro.com", phone:"+1 443-776-3237 · cell +1 410-353-1781", note:"US-based, primary day-to-day contact — cables, software & diagnostics"},
+    {role:"Commissioning & Training", name:"Pieter Feenstra — Sales Director N-Europe / APAC / America", email:"p.feenstra@smartgyro.com", phone:"+39 0187 1859146 · mobile +31 6 20611959", note:"Runs remote commissioning + technical training with the Italy engineers"},
+    {role:"Engineering (Italy)", name:"Carlo Gazerro · Fabrizio Stifani", email:"c.gazerro@smartgyro.com", phone:"", note:"f.stifani@smartgyro.com — technical / engineering, La Spezia (CET)"},
+    {role:"Marketing (Italy)", name:"(add — TBD)", email:"(add marketing contact email)", phone:"", note:"SmartGyro marketing team, La Spezia — for co-branding, co-op ads, social asset requests"},
+    {role:"General / HQ", name:"SmartGyro s.r.l.", email:"info@smartgyro.com", phone:"+39 0187 1859146", note:"Via Privata O.T.O. 11, 19136 La Spezia, Italy"}
+  ],
+  forms:[
+    {label:"Vessel Information Form", url:"https://support.smartgyro.com/dealerslogin/documents"},
+    {label:"Commissioning Form", url:"https://support.smartgyro.com/dealerslogin/documents"},
+    {label:"Service & Maintenance Forms", url:"https://support.smartgyro.com/dealerslogin/documents"}
+  ],
+  hours:"Italy technical team runs on CET (≈6 hrs ahead of US Eastern) — best reached mornings US time. Bob (US contact) on US business hours.",
+  howto:[
+    "Manuals, installation drawings & service bulletins are in the Dealer Portal under the model (SG20–SG150).",
+    "Commissioning wizard: general info → gyro serial data → photos → tech + customer signatures → PDF → email — all inside the Dealer Portal.",
+    "Sea-trial roll-period & roll-reduction tools are phone-based (motion sensor) and also accessed through the Dealer Portal."
+  ],
+  parts:"Order through Bob Walker (US). Key diagnostic / software cables: 500KI014 — required for software updates, diagnostics & operational tests (most important); 500KI121 — SG20 software updates.",
+  service:"Service docs & bulletins in the Dealer Support Portal. Warranty repairs per SmartGyro warranty handbook."
+},
+{
+  id:"advantec", name:"AdvanTec Marine Group", category:"Parent group — Freeman, Diamond Sea Glaze, Pacific Coast, Steelhead", status:"mid",
+  links:[ {label:"AdvanTec Marine website", url:"https://advantecmarine.com"} ],
+  contacts:[
+    {role:"Parts & Customer Service — Steelhead (go-to)", name:"Buffy Light", email:"blight@advantecmarine.com", phone:"Office: 1-604-607-0091 ext 3917 · Cell: 1-604-340-9639", note:"Primary contact for all Steelhead parts, remotes & controllers — per Jason, 'she is our go-to' for SH brand products"},
+    {role:"Parts inbox (when Buffy is OOO)", name:"AdvanTec Parts Team", email:"nsichting@advantecmarine.com", phone:"", note:"Use this email for parts orders when Buffy is unavailable"},
+    {role:"Support inbox", name:"AdvanTec Support Team", email:"support@advantecmarine.com", phone:"", note:"General support / service requests"},
+    {role:"Business Development — Military & Govt", name:"Jason Setzer", email:"jsetzer@advantecmarine.com", phone:"Cell: +1.541.373.0823", note:"Initial contact for new business / government work — routes parts & service needs to Buffy"},
+    {role:"Service — Steelhead (Magna Marine Services)", name:"Leo Du Plessis", email:"", phone:"(954) 661-7311", note:"Go-to for Steelhead service calls — Magna Marine Services"}
+  ],
+  forms:[],
+  hours:"Buffy Light is Canada-based (Pacific time). Parts inbox and support inbox are monitored during regular business hours.",
+  howto:[
+    "Parts (Steelhead brand): email Buffy Light directly — she is AdvanTec's go-to for all Steelhead parts, remotes, and controllers.",
+    "If Buffy is OOO: email nsichting@advantecmarine.com for parts or support@advantecmarine.com for service/support.",
+    "New business / government inquiries: contact Jason Setzer — he'll loop in the right people.",
+    "Catalog & email driven — no full self-service dealer portal like SmartGyro."
+  ],
+  parts:"Email Buffy Light (blight@advantecmarine.com) with the model, part description, and any serial numbers. If OOO, use nsichting@advantecmarine.com.",
+  service:"Email support@advantecmarine.com or contact Buffy. (Add sub-contractor info if APB subs out the on-site service work.)",
+  install:"(Add install process notes for AdvanTec-brand products.)",
+  subBrands:[
+    {name:"Freeman Marine", category:"Watertight Doors & Hatches", parts:"(add parts contact)", service:"(add service contact)", catalog:"", note:""},
+    {name:"Diamond Sea Glaze", category:"Doors & Windows", parts:"(add)", service:"(add)", catalog:"", note:""},
+    {name:"Pacific Coast Marine", category:"Watertight Doors", parts:"(add)", service:"(add)", catalog:"", note:""},
+    {name:"Steelhead Marine", category:"Cranes & Davits", parts:"Buffy Light — blight@advantecmarine.com", service:"Leo Du Plessis (Magna Marine Services) — (954) 661-7311", catalog:"", note:"Service calls: Leo Du Plessis at Magna Marine Services, (954) 661-7311. Parts: Buffy is the direct contact for remotes, controllers, lift lines & davit parts"}
+  ]
+},
+{
+  id:"powerpole", name:"Power-Pole", category:"Anchors / Shallow-water", status:"none",
+  followup:"We don't have dealer-portal access yet. Action: follow up with Power-Pole to get APB set up with portal access + a parts/service contact.",
+  links:[], contacts:[], forms:[], howto:[]
+},
+{
+  id:"cmc", name:"CMC Marine", category:"Stabilizers, Thrusters & Steering", status:"mid",
+  links:[],
+  contacts:[
+    {role:"US Sales (Ft. Lauderdale)", name:"Ben Royston — Sales Manager", email:"b.royston@cmcmarine.com", phone:"cell (954) 669-3656", note:"CMC Marine Corporation · 240 SW 30th St, Unit #1, Ft. Lauderdale, FL 33315"},
+    {role:"Application / Engineering (Italy)", name:"Raffa Invrea", email:"r.invrea@cmcmarine.com", phone:"", note:"CMC HQ, Italy (CET)"}
+  ],
+  forms:[
+    {label:"Data Collection Form — to spec a system (PDF)", url:"CMC-Data-Collection-Form.pdf"}
+  ],
+  hours:"US office in Ft. Lauderdale (Ben Royston) on US Eastern; engineering / HQ in Italy (CET, ~6 hrs ahead).",
+  howto:[
+    "To spec a CMC stabilizer / thruster / steering system, complete the Data Collection Form with the vessel's data in FULL LOAD condition.",
+    "Core vessel data: LOA, LWL, max beam (BMAX) & beam at waterline (BWL), midship draft (TM), displacement (Δ), gross tonnage, cruising & max speed, onboard power supply.",
+    "Stabilizers also need GMT (transversal metacentric height) & block coefficient; thrusters need lateral wet surface, windage area & tunnel position; steering needs rudder area, balance ratio & max torque @35°.",
+    "Attach if available: Hull 3D, appendage plan, rudder drawing. Any missing * values → CMC estimates them and flags it in the proposal."
+  ],
+  parts:"(add CMC parts contact / ordering process)",
+  service:"(add CMC service / commissioning process)"
+},
+{ id:"fci", name:"FCI Watermakers", category:"Watermakers / RO", status:"soon" },
+{ id:"seavision", name:"Sea Vision", category:"Underwater Lighting", status:"soon" }
 ];
-(function(){
-  const sel=$("tmpl");
-  JOB_TEMPLATES.forEach((t,i)=>{ const o=document.createElement("option"); o.value=i; o.textContent=t.label; sel.appendChild(o); });
-  sel.addEventListener("change",()=>{
-    const t=JOB_TEMPLATES[+sel.value];
-    if(t){ const blank=jobs.length===1&&!jobs[0].title&&!jobs[0].tasks;
-      const nj={title:t.title,tasks:t.tasks,labor:"",materials:"",total:""};
-      if(blank) jobs[0]=nj; else jobs.push(nj); renderJobs(); }
-    sel.value="";
-  });
-})();
+const STATUS={
+  full:["p-full","Full dealer portal"], mid:["p-mid","Catalog + email"],
+  none:["p-none","No portal yet — follow up"], soon:["p-soon","Details coming"]
+};
 
-/* ---------- pre-fill when launched from a lead (PM Console hands off via localStorage) ---------- */
-(function prefill(){
-  let p=null; try{ p=JSON.parse(localStorage.getItem("apb_new_proposal")||"null"); }catch(e){}
-  if(!p) return; localStorage.removeItem("apb_new_proposal");
-  const setIf=(id,v)=>{ if(v!=null&&v!=="") $(id).value=v; };
-  setIf("client",p.client); setIf("ptitle",p.ptitle); setIf("scope",p.scope);
-  setIf("attn",p.attn); setIf("cemail",p.cemail); setIf("cphone",p.cphone); setIf("loc",p.loc);
-  if(p.ptype) $("ptype").value=p.ptype;
-  const t=p.category?JOB_TEMPLATES.find(x=>x.key===p.category):null;   // website form category → suggested job
-  if(t){ jobs=[{title:t.title,tasks:t.tasks,labor:"",materials:"",total:""}]; if(t.type) $("ptype").value=t.type; }
-  else if(p.jobHint){ jobs[0].title=p.jobHint; }
-  renderJobs();
-  const note=document.querySelector(".lead .pill"); if(note) note.textContent="Pre-filled from lead";
-})();
-
-/* ===================================================================
-   STANDARD LEGAL LANGUAGE (generic, APB approved) — single source.
-   Marine-only clauses are tagged and included only for marine jobs.
-   =================================================================== */
-function L(d){ // d = collected data
-  const marine=d.ptype==="marine";
-  const siteWord = marine ? "vessel and work areas" : "project site and designated work areas";
-  const assumptions=[
-    `APB assumes safe and unrestricted access to the ${siteWord}.`,
-    `The Client shall remove personal equipment, stored items, and obstructions from the work areas prior to commencement of work.`,
-    `Work may be performed at APB's facility or at a third-party yard, marina, facility, or job site as required by the project scope.`,
-    `This proposal assumes no concealed damage, corrosion, structural deficiencies, or conditions beyond the visible scope at the time of proposal. Any additional findings will be communicated and addressed under a separate work authorization or on a time-and-materials basis.`,
-    `Additional labor or materials beyond the stated scope will be invoiced additionally on a time-and-materials basis.`,
-    `APB is not responsible for pre-existing cosmetic conditions including, but not limited to, paint, coatings, gelcoat, finishes, or surrounding surfaces that may be affected during normal disassembly or repair processes.`,
-    `Environmental fees, disposal charges, yard, marina, or facility fees, permits, or other third-party imposed costs (if applicable) will be invoiced separately.`,
-    `APB reserves the right to substitute materials of equal or greater quality when required due to availability, supply constraints, or manufacturer changes.`
-  ];
-  if(marine){
-    assumptions.push(`If a Certified Marine Chemist hot-work certificate is required per 29 CFR Part 1915 Subpart B to perform any services on the vessel, the services of the Marine Chemist will be invoiced additionally.`);
-    assumptions.push(`Where applicable, all metal shall be class type-approved and all welding procedures shall be class compliant. All contact with the class society shall be handled by the vessel/owner; any class society costs will be invoiced separately by others or directly with class.`);
-    assumptions.push(`The shipyard is providing moorage, haul-out, blocking and launching, crane or forklift service, lay days, electrical, and any other yard services, which will be invoiced separately by the shipyard.`);
-  }
-  const govLaw = `This Agreement shall be governed by the laws of the State of Florida.` + (marine ? ` To the extent the work involves a vessel or maritime activity, applicable United States Federal Maritime Law shall also apply.` : ``);
-  const terms=[
-    ["Validity", `This proposal is valid for ${d.validity} calendar days from the date above due to potential changes in material pricing, availability, and scheduling.`],
-    ["Acceptance", `Work will not commence and materials will not be ordered until receipt of a signed proposal and the required deposit.`],
-    ["Payment", `Payment is due upon invoicing unless otherwise stated in writing. Any unpaid balance exceeding ten (10) days from the invoice date may accrue interest at a rate of ${d.interest}% per month (simple interest) until paid in full.`],
-    ["Collection", `In the event collection efforts or legal action are required, the Client shall be responsible for all related collection costs, including reasonable attorney's fees.`],
-    ["Governing Law", govLaw],
-    ["Title", `Title to materials, equipment, fabricated components, and supplied goods shall remain with All Points Boats, Inc. until full and final payment has been received.`],
-    ["Authorized Agent", `The individual signing this Proposal represents and warrants that they are authorized to enter into this Agreement on behalf of the Client and to bind the Client to payment for the work described herein.`],
-    ["Change Orders", `Any work requested beyond the scope of this proposal shall require written authorization and will be billed on a time-and-materials basis unless otherwise agreed in writing.`],
-    ["Suspension of Work", `APB reserves the right to suspend work in the event of non-payment, unsafe working conditions, lack of access to the work area, or failure by the Client to meet agreed project requirements. Any resulting schedule delays or additional costs shall be the responsibility of the Client.`],
-    ["Existing Conditions", `APB is not responsible for damage or failure resulting from pre-existing conditions, corrosion, fatigue, hidden damage, or structural deficiencies discovered during disassembly or performance of the work. If such conditions are discovered, APB will notify the Client and provide recommendations or additional scope as required.`],
-    ["Third-Party Facilities", `When work is performed at a marina, shipyard, client facility, or other third-party location, the Client is responsible for ensuring compliance with all facility rules, safety requirements, permits, and access arrangements. Any facility fees, environmental charges, permits, or other third-party imposed costs shall be the responsibility of the Client unless otherwise specified.`],
-    ["Storage and Abandonment", `Materials, equipment, fabricated components, or project items remaining in APB's possession for more than thirty (30) days after completion or notice of completion may be subject to reasonable storage fees. APB reserves the right to dispose of or sell abandoned materials in accordance with applicable law to recover unpaid balances and storage costs.`],
-    ["Force Majeure", `APB shall not be deemed in default or liable for delays caused by events beyond its reasonable control, including but not limited to weather, supply-chain disruption, labor shortages, yard or facility restrictions, governmental action, or other force majeure events. Any schedule or delivery dates shall be adjusted accordingly.`]
-  ];
-  const warranty=[
-    `APB warrants workmanship performed by its employees and subcontractors for a period of thirty (30) days from completion of the work.`,
-    `Machinery, equipment, and components supplied by APB carry manufacturer warranties only, which pass through to the Owner or Client.`,
-    `This warranty applies only to the specific work performed by APB and does not cover pre-existing construction methods, previously installed materials or equipment, corrosion, fatigue, hidden damage, environmental conditions, misuse, or previously applied coatings or repairs.`,
-    `Warranty repairs must be performed by All Points Boats, Inc. unless otherwise agreed to in writing. APB reserves the right to inspect and verify any warranty claim prior to performing corrective work.`,
-    `This warranty does not cover normal wear and tear, damage caused by third parties, ${marine?"vessel operation, ":""}improper use, lack of maintenance, or modifications performed by others after completion of APB's work.`,
-    `Any warranty service requiring travel, haul-out, access equipment, or third-party facility costs may be billed to the Client unless otherwise agreed in writing.`
-  ];
-  return {assumptions,terms,warranty};
-}
-
-/* ---------- save for later / drafts (local now; Supabase seam for team sharing) ---------- */
-const FIELD_IDS=["ptype","preparer","date","rev","pnum","loc","client","ptitle","attn","cphone","cemail","scope","options","taxline","rate","validity","interest","markup","depPct"];
-function formState(){
-  const s={}; FIELD_IDS.forEach(id=>s[id]=$(id).value); s.depOn=$("depOn").checked;
-  s.jobs=jobs.map(j=>({title:j.title,tasks:j.tasks,labor:j.labor,materials:j.materials,total:j.total}));
-  return s;
-}
-function restoreState(s){
-  FIELD_IDS.forEach(id=>{ if(s[id]!=null) $(id).value=s[id]; });
-  $("depOn").checked = s.depOn!==false;
-  jobs = (s.jobs&&s.jobs.length)?s.jobs.map(j=>({title:j.title||"",tasks:j.tasks||"",labor:j.labor||"",materials:j.materials||"",total:j.total||""})):[{title:"",tasks:"",labor:"",materials:"",total:""}];
-  renderJobs();
-}
-const DKEY="apb_proposal_drafts";
-function getDrafts(){ try{ return JSON.parse(localStorage.getItem(DKEY)||"[]"); }catch(e){ return []; } }
-function setDrafts(a){ localStorage.setItem(DKEY, JSON.stringify(a)); }
-/* SEAM: swap getDrafts/setDrafts for a Supabase `apb_proposal_drafts` table to share drafts team-wide. */
-function saveDraft(){
-  const dflt=$("client").value||$("ptitle").value||"Untitled proposal";
-  const name=prompt("Name this draft:", dflt); if(name===null) return;
-  const drafts=getDrafts();
-  drafts.unshift({ id:"d"+Date.now(), name:name||dflt, savedAt:new Date().toISOString(), by:($("preparer").value.split("|")[0]||"APB"), state:formState() });
-  setDrafts(drafts); toast("Draft saved — “"+(name||dflt)+"”");
-}
-function openDrafts(){
-  const drafts=getDrafts(), list=$("draftsList");
-  list.innerHTML = drafts.length ? drafts.map(d=>`
-    <div class="draft" data-id="${d.id}">
-      <div><div class="dn">${esc(d.name)}</div><div class="dd">${new Date(d.savedAt).toLocaleString()} · ${esc(d.by)}</div></div>
+function renderCards(q){
+  q=(q||"").toLowerCase();
+  $("cards").innerHTML=PORTALS.filter(p=>!q||(p.name+" "+p.category).toLowerCase().includes(q)).map(p=>{
+    const st=STATUS[p.status]||STATUS.soon;
+    return `<div class="card" data-id="${esc(p.id)}">
+      <div class="nm">${esc(p.name)}</div>
+      <div class="cat">${esc(p.category)}</div>
+      ${p.subBrands?`<div class="brands">+${p.subBrands.length} brands inside</div>`:""}
       <div class="sp"></div>
-      <button class="load" data-load="${d.id}">Load</button>
-      <button class="del" data-del="${d.id}">Delete</button>
-    </div>`).join("") : '<div class="emptyd">No saved drafts yet. Use “Save for later” to start one.</div>';
-  list.querySelectorAll("[data-load]").forEach(b=>b.onclick=()=>{ const d=getDrafts().find(x=>x.id===b.dataset.load); if(d){ restoreState(d.state); closeDrafts(); toast("Loaded “"+d.name+"”"); } });
-  list.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{ setDrafts(getDrafts().filter(x=>x.id!==b.dataset.del)); openDrafts(); });
-  $("draftsModal").classList.add("open");
-}
-function closeDrafts(){ $("draftsModal").classList.remove("open"); }
-let toastT=null; function toast(m){ const t=$("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2400); }
-$("save").onclick=saveDraft; $("drafts").onclick=openDrafts; $("draftsClose").onclick=closeDrafts;
-$("draftsModal").addEventListener("click",e=>{ if(e.target.id==="draftsModal") closeDrafts(); });
-document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeDrafts(); });
-
-/* ---------- collect + generate ---------- */
-function collect(){
-  const [pName,pEmail,pTitle]=$("preparer").value.split("|");
-  const subtotal=jobs.reduce((a,j)=>a+(calcTotal(j)||0),0);
-  const depOn=$("depOn").checked, depPct=parseFloat($("depPct").value)||0;
-  const depAmt=depOn?subtotal*depPct/100:null;
-  return {
-    ptype:$("ptype").value, date:new Date($("date").value+"T12:00:00").toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"}),
-    rev:$("rev").value, pnum:$("pnum").value, loc:$("loc").value,
-    client:$("client").value, ptitle:$("ptitle").value, attn:$("attn").value, cphone:$("cphone").value, cemail:$("cemail").value,
-    scope:$("scope").value, options:$("options").value, taxline:$("taxline").value, deposit:depAmt!==null?money(depAmt):"", depositPct:depOn?depPct:null, rate:$("rate").value,
-    validity:$("validity").value||"5", interest:$("interest").value||"1.5", markup:$("markup").value||"cost plus 20%",
-    preparer:pName, preparerEmail:pEmail, preparerTitle:pTitle,
-    jobs:jobs.map((j,i)=>({num:jobNumber(i),title:j.title,tasks:j.tasks,labor:j.labor,materials:j.materials,total:calcTotal(j)})),
-    subtotal:subtotal
-  };
+      <span class="pill ${st[0]}"><i></i>${st[1]}</span>
+      <div class="go">Open →</div>
+    </div>`;
+  }).join("");
+  $("cards").querySelectorAll(".card").forEach(c=>c.onclick=()=>openDrawer(c.dataset.id));
 }
 
-function generate(){
-  const d=collect();
-  // log this proposal into the admin pipeline (shows up in the PM Console)
-  try{ const pl=JSON.parse(localStorage.getItem("apb_pipeline")||"[]");
-    pl.unshift({project:d.ptitle||d.client||"Untitled", client:d.client, rep:d.preparer, value:d.subtotal, stage:"Proposal Created", date:new Date().toISOString().slice(0,10)});
-    localStorage.setItem("apb_pipeline", JSON.stringify(pl.slice(0,200))); }catch(e){}
-  const w=window.open("","_blank"); if(!w){alert("Allow pop-ups to generate the proposal.");return;}
-  const legal=L(d);
-  const ul=arr=>"<ul>"+arr.map(x=>"<li>"+x+"</li>").join("")+"</ul>";
-  const tasksUl=t=>{ const lines=String(t).split("\n").map(x=>x.trim()).filter(Boolean); return lines.length?"<ul>"+lines.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>":""; };
-  const jobsHtml=d.jobs.map(j=>`
-    <div class="job">
-      <div class="jt"><span class="jn">Job ${esc(j.num)}</span> ${esc(j.title)||""}</div>
-      ${tasksUl(j.tasks)}
-      <div class="jcost">${j.total!==null?("Job "+esc(j.num)+" total: <b>"+money(j.total)+"</b>"):(j.materials&&!num(j.materials)?'Materials: <b>'+esc(j.materials)+'</b>':"")}</div>
-    </div>`).join("");
-  const optionsHtml=d.options.trim()?`<h2>Options <span class="muted">(billed additionally)</span></h2>${tasksUl(d.options)}`:"";
-  const termsHtml=legal.terms.map(t=>`<p><b>${t[0]}</b> — ${t[1]}</p>`).join("");
+const PORTAL_IC=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+const FORM_IC=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>`;
 
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(d.client||"APB")} — Proposal</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <style>
-    *{box-sizing:border-box} body{font-family:Inter,Arial,sans-serif;color:#0E131B;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-    .bar{position:sticky;top:0;background:#0E131B;color:#fff;display:flex;gap:12px;justify-content:center;align-items:center;padding:11px}
-    .bar span{font-size:12.5px;opacity:.78} .bar button{font:inherit;font-size:12.5px;font-weight:600;background:#2457E6;color:#fff;border:none;border-radius:8px;padding:8px 18px;cursor:pointer}
-    .sheet{max-width:800px;margin:0 auto;padding:46px 56px}
-    .hd{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0E131B;padding-bottom:16px}
-    .hd img{height:58px} .addr{font-size:11px;color:#6B7480;line-height:1.5;text-align:right}
-    .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#2457E6;font-weight:700;margin-top:26px}
-    h1{font-size:24px;letter-spacing:-.03em;margin:6px 0 0}
-    .parties{display:flex;gap:30px;margin:18px 0 6px}
-    .parties>div{flex:1} .parties .k{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#8A93A3;font-weight:600;margin-bottom:6px}
-    .parties .line{font-size:13px;line-height:1.55} .parties .line b{font-weight:600}
-    h2{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#8A93A3;margin:28px 0 9px;border-bottom:1px solid #E7EAF0;padding-bottom:7px}
-    h2 .muted{text-transform:none;letter-spacing:0;color:#AEB6C2;font-weight:500}
-    p{font-size:13.5px;line-height:1.6;margin:0 0 9px} .scope{font-size:14px;line-height:1.65}
-    ul{margin:6px 0 10px;padding-left:20px} li{font-size:13px;line-height:1.55;margin:3px 0}
-    .job{margin:0 0 16px} .jt{font-weight:600;font-size:14px;margin-bottom:4px} .jn{font-family:"DM Mono",monospace;color:#2457E6;margin-right:6px}
-    .jcost{font-size:13px;margin-top:4px}
-    .costbox{border:1px solid #E7EAF0;border-radius:12px;padding:16px 18px;margin-top:6px}
-    .costrow{display:flex;justify-content:space-between;font-size:14px;padding:5px 0} .costrow.tot{border-top:1px solid #E7EAF0;margin-top:6px;padding-top:11px;font-weight:700;font-size:16px}
-    .costrow .v{font-family:"DM Mono",monospace}
-    .muted{color:#8A93A3}
-    .terms p{font-size:12px;line-height:1.55;margin:0 0 8px} .terms b{color:#0E131B}
-    .sign{display:flex;gap:48px;margin-top:44px} .sign>div{flex:1}
-    .sigline{border-bottom:1.5px solid #0E131B;height:46px} .siglbl{font-size:11px;color:#8A93A3;margin-top:6px}
-    .apbsig{margin-top:40px;font-size:13px} .apbsig b{display:block;font-size:15px}
-    .foot{margin-top:30px;border-top:1px solid #E7EAF0;padding-top:12px;font-size:10.5px;color:#8A93A3;text-align:center}
-    @page{margin:16mm 18mm;size:letter portrait}
-    @media print{.bar{display:none}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.sheet{padding:0;width:100%;max-width:100%}h2,.job,.terms p,.costbox{page-break-inside:avoid}table tr{page-break-inside:avoid}.signoff{page-break-inside:avoid}.foot{page-break-inside:avoid}}
-  </style></head><body>
-    <div class="bar"><span>Review, then</span><button onclick="window.print()">Print / Save as PDF &amp; send</button></div>
-    <div class="sheet">
-    <div class="hd"><img src="${new URL('apb-logo.png',window.location.href).href}" alt="APB">
-      <div class="addr">ALL POINTS BOATS, INC.<br>900 SW 21st Terrace, Fort Lauderdale, FL 33312<br>(954) 767-8255 · info@apb1.com · www.apb1.com</div></div>
-    <div class="eyebrow">Proposal${d.pnum?" · "+esc(d.pnum):""} · Rev ${esc(d.rev)} · ${esc(d.date)}</div>
-    <h1>${esc(d.ptitle)||esc(d.client)||"Project Proposal"}</h1>
-    <div class="parties">
-      <div><div class="k">Presented To</div><div class="line"><b>${esc(d.client)||"—"}</b><br>${d.attn?"Attn: "+esc(d.attn)+"<br>":""}${d.loc?esc(d.loc)+"<br>":""}${d.cphone?esc(d.cphone)+"<br>":""}${esc(d.cemail)}</div></div>
-      <div><div class="k">Presented By</div><div class="line"><b>All Points Boats, Inc.</b><br>${esc(d.preparer)||"APB"}<br>${esc(d.preparerEmail)}</div></div>
+function contactHTML(c){
+  if(!c.name&&!c.email&&!c.phone) return "";
+  const phone=c.phone?c.phone.split("·")[0].trim():"";
+  const phoneRaw=phone.replace(/[^+0-9]/g,"");
+  return `<div class="ccard">
+    <div class="ccard-h">
+      <div class="ccard-nm">${esc(c.name||"—")}</div>
+      ${c.role?`<span class="ccard-role">${esc(c.role)}</span>`:""}
     </div>
-    <h2>Scope of Work</h2>
-    <p class="scope">${esc(d.scope)||"—"}</p>
-    <h2>Job Descriptions</h2>
-    ${jobsHtml||'<p class="muted">No jobs entered.</p>'}
-    ${optionsHtml}
-    <h2>Assumptions</h2>${ul(legal.assumptions)}
-    <h2>Timeline</h2>
-    <ul><li>Work may commence upon receipt of a signed proposal and the required deposit.</li>
-      <li>Project scheduling is subject to material availability, facility access, weather conditions, and coordination with third-party vendors or facilities if applicable.</li>
-      <li>Standard work hours: Monday – Friday, 8:00 AM – 4:30 PM unless otherwise agreed.</li></ul>
-    <h2>Overtime &amp; Other Costs</h2>
-    <ul><li>Overtime is billed at 1.5× the standard rate for work exceeding 8 hours per day, 1.5× on Saturdays, and 2.0× on Sundays and holidays.</li>
-      <li>Additional hours beyond those included: ${esc(d.rate)}.</li>
-      <li>Out-of-town lodging, travel, freight, and shipping: ${esc(d.markup)}.</li></ul>
-    <h2>Proposed Cost</h2>
-    <div class="costbox">
-      <div class="costrow"><span>Subtotal (excluding tax)</span><span class="v">${money(d.subtotal)}</span></div>
-      <div class="costrow"><span class="muted">${esc(d.taxline)}</span><span></span></div>
-      ${d.deposit?`<div class="costrow tot"><span>Deposit required prior to commencement${d.depositPct?` <span class="muted" style="font-weight:400">(${d.depositPct}%)</span>`:""}</span><span class="v">${esc(d.deposit)}</span></div>`:""}
+    <div class="ccard-acts">
+      ${c.email?`<a class="ccard-act" href="mailto:${esc(c.email)}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> ${esc(c.email)}</a>`:""}
+      ${phoneRaw?`<a class="ccard-act" href="tel:${phoneRaw}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6.08 6.08l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16.92z"/></svg> ${esc(phone)}</a>`:""}
     </div>
-    <p class="muted" style="font-size:12px;margin-top:8px">All Points Boats accepts payment by check, wire transfer, and ACH electronic debit. Credit card payments may be accepted (administrative processing fees may apply). Payment instructions will be provided by APB accounting upon request.</p>
-    <h2>Terms</h2><div class="terms">${termsHtml}</div>
-    <h2>Warranty</h2>${ul(legal.warranty)}
-    <div class="sign">
-      <div><div class="sigline"></div><div class="siglbl">Signature of Authorized Agent &nbsp;·&nbsp; Date</div>
-        <div class="sigline" style="margin-top:26px"></div><div class="siglbl">Printed Name of Authorized Agent</div></div>
-    </div>
-    <div class="apbsig"><b>${esc(d.preparer)||"All Points Boats, Inc."}</b>${d.preparerTitle?esc(d.preparerTitle)+"<br>":""}All Points Boats, Inc.</div>
-    <div class="foot">This Proposal-Agreement is confidential and intended solely for the named Client.</div>
-  </div></body></html>`);
-  w.document.close();
+    ${c.note?`<div class="ccard-note">${esc(c.note)}</div>`:""}
+  </div>`;
 }
-$("gen").onclick=generate; $("gen2").onclick=generate;
+function linkHTML(l, isForm){
+  const href=l.url||"#"; const ext=l.url?` target="_blank" rel="noopener"`:"";
+  if(l.featured){
+    return `<a class="plink-hero" href="${esc(href)}"${ext}>
+      <div class="ph-ic">${PORTAL_IC}</div>
+      <div class="ph-body">
+        <div class="ph-name">${esc(l.label)}</div>
+        <div class="ph-desc">${esc(l.desc)}</div>
+      </div>
+      <div class="ph-btn">Sign in →</div>
+    </a>`;
+  }
+  if(l.desc){
+    return `<a class="plink-card" href="${esc(href)}"${ext}>
+      <div class="pc-ic">${isForm?FORM_IC:PORTAL_IC}</div>
+      <div class="pc-body">
+        <div class="pc-nm">${esc(l.label)}</div>
+        <div class="pc-desc">${esc(l.desc)}</div>
+        <div class="pc-go">Sign in →</div>
+      </div>
+    </a>`;
+  }
+  return `<a class="lnk" href="${esc(href)}"${ext}><span>${esc(l.label)}</span><span class="ar">↗</span></a>`;
+}
+function block(title,html){ return html?`<div class="block"><h3>${title}</h3>${html}</div>`:""; }
+
+function openDrawer(id){
+  const p=PORTALS.find(x=>x.id===id); if(!p) return;
+  const st=STATUS[p.status]||STATUS.soon;
+  $("dName").textContent=p.name; $("dCat").textContent=p.category;
+  $("dStatus").innerHTML=`<span class="pill ${st[0]}"><i></i>${st[1]}</span>`;
+  let h="";
+  if(p.followup) h+=`<div class="block"><div class="followup">⚑ ${esc(p.followup)}</div></div>`;
+  h+=block("Dealer Portals", (p.links&&p.links.length)?p.links.map(l=>linkHTML(l,false)).join(""):"");
+  if(p.subBrands&&p.subBrands.length){
+    h+=`<div class="block"><h3>Brands under ${esc(p.name)}</h3>`+p.subBrands.map(s=>`
+      <div class="ccard">
+        <div class="ccard-h"><div class="ccard-nm">${esc(s.name)}</div><span class="ccard-role">${esc(s.category)}</span></div>
+        <div class="ccard-acts" style="margin-top:8px;flex-direction:column;gap:3px">
+          ${s.parts?`<div style="font-size:12.5px;color:var(--ink-2)"><b style="color:var(--ink)">Parts:</b> ${esc(s.parts)}</div>`:""}
+          ${s.service?`<div style="font-size:12.5px;color:var(--ink-2)"><b style="color:var(--ink)">Service:</b> ${esc(s.service)}</div>`:""}
+          ${s.catalog?`<div style="font-size:12.5px"><b style="color:var(--ink)">Catalog:</b> <a href="${esc(s.catalog)}" target="_blank" rel="noopener" style="color:var(--accent)">open ↗</a></div>`:""}
+        </div>
+      </div>`).join("")+`</div>`;
+  }
+  h+=block("Points of Contact", (p.contacts&&p.contacts.length)?`<div class="ccard-grid">${p.contacts.map(contactHTML).filter(Boolean).join("")}</div>`:"");
+  h+=block("Forms", (p.forms&&p.forms.length)?`<div class="form-chips">${p.forms.map(l=>`<a class="form-chip" href="${esc(l.url||'#')}" target="_blank" rel="noopener">${FORM_IC}${esc(l.label)}</a>`).join("")}</div>`:"");
+  h+=block("Hours", p.hours?`<div class="hours">${esc(p.hours)}</div>`:"");
+  h+=block("How It Works", (p.howto&&p.howto.length)?`<div class="steps">${p.howto.map((x,i)=>`<div class="step"><span class="step-n">${i+1}</span><span class="step-t">${esc(x)}</span></div>`).join("")}</div>`:"");
+  h+=block("Parts Ordering", p.parts?`<div class="proc ${/TBD|add /i.test(p.parts)?'tbd':''}">${esc(p.parts)}</div>`:"");
+  h+=block("Service", p.service?`<div class="proc">${esc(p.service)}</div>`:"");
+  h+=block("Install Notes", p.install?`<div class="proc ${/TBD|add /i.test(p.install)?'tbd':''}">${esc(p.install)}</div>`:"");
+  if(p.status==="soon" && !h.trim()) h=`<div class="block"><div class="proc tbd">Details coming — add links, contacts & process notes for ${esc(p.name)}.</div></div>`;
+  $("dBody").innerHTML=h;
+  $("scrim").classList.add("open"); $("drawer").classList.add("open");
+}
+function closeDrawer(){ $("scrim").classList.remove("open"); $("drawer").classList.remove("open"); }
+$("dx").onclick=closeDrawer; $("scrim").onclick=closeDrawer;
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeDrawer();});
+$("q").addEventListener("input",e=>renderCards(e.target.value));
+renderCards("");
 </script>
 </body>
 </html>
