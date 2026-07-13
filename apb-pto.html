@@ -6,6 +6,7 @@
 <title>Time Off · APB</title>
 <script src="apb-roles.js"></script>
 <script src="apb-demo.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -291,6 +292,26 @@ function me(){ return localStorage.getItem(LS_ME)||''; }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
+// ── Shared store (Supabase) — PTO requests sync to apb_pto so every computer sees them ──
+const SUPABASE_URL='https://aanrxyiocxxndkvkeocv.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU';
+let sb=null; try{ sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY); }catch(e){}
+async function ptoUpsert(r){ if(!sb||!r||!r.id) return; try{ await sb.from('apb_pto').upsert({id:r.id,status:r.status,data:r,updated_at:new Date().toISOString()}); }catch(e){} }
+async function ptoDelete(id){ if(!sb||!id) return; try{ await sb.from('apb_pto').delete().eq('id',id); }catch(e){} }
+async function syncPull(){
+  if(!sb) return;
+  try{
+    const {data,error}=await sb.from('apb_pto').select('id,data');
+    if(error) return;
+    const byId={};
+    (data||[]).forEach(x=>{ if(x&&x.data&&x.data.id) byId[x.data.id]=x.data; });
+    // migrate any browser-only requests up to the shared table (remote wins on conflicts)
+    reqs().forEach(r=>{ if(r&&r.id&&!byId[r.id]){ byId[r.id]=r; ptoUpsert(r); } });
+    save(LS_PTO, Object.values(byId));
+    render();
+  }catch(e){}
+}
+
 // date helpers (string-keyed, TZ-safe)
 function pad(n){ return (n<10?'0':'')+n; }
 function ymd(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
@@ -319,6 +340,7 @@ let viewY=new Date().getFullYear(), viewM=new Date().getMonth();
 document.getElementById('rolePill').textContent = window.APBRoles?APBRoles.label():'Admin';
 renderWhoAmI();
 render();
+syncPull();
 
 function renderWhoAmI(){
   const el=document.getElementById('whoami');
@@ -492,7 +514,7 @@ function saveReq(){
     status:'pending', submittedBy:(window.APBRoles?APBRoles.label():'')||name, submittedAt:Date.now() };
   // auto-add unknown name to roster so they show up next time
   if(!team().some(m=>m.name.toLowerCase()===name.toLowerCase())){ const t=team(); t.push({name,role:'tech'}); save(LS_TEAM,t); renderWhoAmI(); }
-  const all=reqs(); all.push(r); save(LS_PTO,all);
+  const all=reqs(); all.push(r); save(LS_PTO,all); ptoUpsert(r);
   closeMod('reqModal'); render(); toast('Request submitted for approval ✓','green');
 }
 
@@ -503,13 +525,13 @@ function decide(id,status,ev){
   let note='';
   if(status==='denied'){ note=prompt('Reason for denying (optional):')||''; }
   r.status=status; r.decidedBy=(window.APBRoles?APBRoles.label():'Manager'); r.decidedAt=Date.now(); if(note) r.decisionNote=note;
-  save(LS_PTO,all); closeMod('detModal'); render();
+  save(LS_PTO,all); ptoUpsert(r); closeMod('detModal'); render();
   toast(status==='approved'?'Approved ✓ — enjoy!':'Request denied', status==='approved'?'green':'red');
 }
 function cancelReq(id,ev){
   if(ev) ev.stopPropagation();
   if(!confirm('Cancel / delete this request?')) return;
-  save(LS_PTO, reqs().filter(r=>r.id!==id)); closeMod('detModal'); render(); toast('Request removed','red');
+  save(LS_PTO, reqs().filter(r=>r.id!==id)); ptoDelete(id); closeMod('detModal'); render(); toast('Request removed','red');
 }
 
 // ── Detail modal ────────────────────────────────────────
@@ -537,7 +559,7 @@ function openDetail(id){
   document.getElementById('detActions').innerHTML=acts;
   document.getElementById('detModal').classList.add('open');
 }
-function reopen(id){ const all=reqs(); const r=all.find(x=>x.id===id); if(!r) return; r.status='pending'; delete r.decidedBy; delete r.decisionNote; save(LS_PTO,all); closeMod('detModal'); render(); toast('Reopened'); }
+function reopen(id){ const all=reqs(); const r=all.find(x=>x.id===id); if(!r) return; r.status='pending'; delete r.decidedBy; delete r.decisionNote; save(LS_PTO,all); ptoUpsert(r); closeMod('detModal'); render(); toast('Reopened'); }
 
 // ── Day modal ───────────────────────────────────────────
 function openDay(key){
