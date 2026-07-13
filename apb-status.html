@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <script src="apb-roles.js"></script>
 <script src="apb-demo.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Field Updates · APB</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -158,6 +159,25 @@ function team(){ let t=load(LS_TEAM,'null'); if(!t){ t=SEED_TEAM.slice(); save(L
 function me(){ return localStorage.getItem(LS_ME)||''; }
 function setMe(n){ localStorage.setItem(LS_ME,n); renderFeed(); }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+// ── Shared store (Supabase) — field updates sync to apb_field_reports so every computer sees them ──
+const SUPABASE_URL='https://aanrxyiocxxndkvkeocv.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU';
+let sb=null; try{ sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY); }catch(e){}
+async function reportUpsert(r){ if(!sb||!r||!r.id) return; try{ await sb.from('apb_field_reports').upsert({id:r.id,data:r,updated_at:new Date().toISOString()}); }catch(e){} }
+async function reportDelete(id){ if(!sb||!id) return; try{ await sb.from('apb_field_reports').delete().eq('id',id); }catch(e){} }
+async function syncPull(){
+  if(!sb) return;
+  try{
+    const {data,error}=await sb.from('apb_field_reports').select('id,data');
+    if(error) return;
+    const byId={};
+    (data||[]).forEach(x=>{ if(x&&x.data&&x.data.id) byId[x.data.id]=x.data; });
+    reports().forEach(r=>{ if(r&&r.id&&!byId[r.id]){ byId[r.id]=r; reportUpsert(r); } });
+    save(LS_RPT, Object.values(byId).sort((a,b)=>(b.at||0)-(a.at||0)));
+    renderFeed();
+  }catch(e){}
+}
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function initials(n){ const p=(n||'?').trim().split(/\s+/); return ((p[0]||'?')[0]+(p[1]?p[1][0]:'')).toUpperCase(); }
 function timeAgo(ts){ const s=(Date.now()-ts)/1000; if(s<60)return'just now'; if(s<3600)return Math.floor(s/60)+'m ago'; if(s<86400)return Math.floor(s/3600)+'h ago'; const d=Math.floor(s/86400); if(d<7)return d+'d ago'; return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
@@ -224,6 +244,7 @@ function submitReport(){
     text, photos:pending.slice(), at:Date.now() };
   const all=reports(); all.unshift(r);
   try{ save(LS_RPT,all); }catch(e){ toast('Storage full — remove some photos','red'); return; }
+  reportUpsert(r);
   pending=[]; renderThumbs();
   document.getElementById('fText').value='';
   fillProjects(); renderFeed();
@@ -260,7 +281,7 @@ function renderFeed(){
     </div>`;
   }).join('');
 }
-function delReport(id){ if(!confirm('Delete this update?')) return; save(LS_RPT, reports().filter(r=>r.id!==id)); renderFeed(); toast('Deleted','red'); }
+function delReport(id){ if(!confirm('Delete this update?')) return; save(LS_RPT, reports().filter(r=>r.id!==id)); reportDelete(id); renderFeed(); toast('Deleted','red'); }
 
 let lbList=[],lbIdx=0;
 function openLb(rid,idx){ const r=reports().find(x=>x.id===rid); if(!r) return; lbList=r.photos; lbIdx=idx; document.getElementById('lbImg').src=lbList[idx]; document.getElementById('lb').classList.add('open'); }
@@ -271,6 +292,7 @@ function toast(msg,cls){ const el=document.getElementById('toast'); el.textConte
 
 // init (after all declarations exist)
 renderWhoAmI(); fillProjects(); renderFeed();
+syncPull();
 </script>
 </body>
 </html>
