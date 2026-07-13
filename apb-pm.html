@@ -872,6 +872,7 @@ async function deleteJobRow(id,skipConfirm){
   }
   JOBS=JOBS.filter(x=>x.id!==id);
   const lj=lsGet("apb_local_jobs",[]); lsSet("apb_local_jobs",lj.filter(x=>x.id!==id));
+  const ll=lsGet("apb_local_leads",[]); lsSet("apb_local_leads",ll.filter(x=>x.id!==id));
   const ed=lsGet("apb_local_edits",{}); delete ed[id]; lsSet("apb_local_edits",ed);
   const ov=lsGet("apb_local_status",{}); delete ov[id]; lsSet("apb_local_status",ov);
   writeJobsCache();
