@@ -557,6 +557,7 @@ function renderCard(v){
               </div>
             </div>
             ${l.edited_by?`<div class="edited-tag">✎ edited by ${l.edited_by}${l.original_hours?' · was '+l.original_hours+'h':''}</div>`:`<div id="audit-${l.id}"></div>`}
+            ${finalInvoiceDesc(l,v)?`<div style="font-size:11px;color:var(--ink-2);margin-top:6px;font-family:var(--mono,ui-monospace,monospace);background:var(--panel-2,#f4f6f9);padding:5px 8px;border-radius:6px;line-height:1.4"><span style="opacity:.6;text-transform:uppercase;letter-spacing:.05em;font-size:9px;display:block;margin-bottom:2px">Final invoice description</span>${finalInvoiceDesc(l,v)}</div>`:''}
           </td>
           <td style="white-space:nowrap">
             <span class="hours-cell" id="hrs-${l.id}">${parseFloat(l.hours||0).toFixed(1)}h</span>
@@ -817,6 +818,11 @@ function exportCSV(){
   a.download=`apb-timesheets-${new Date().toISOString().split('T')[0]}.csv`;a.click();
   showToast('CSV downloaded');
 }
+
+// ── Final invoice description (Chelsea's format: MM-DD-YY TECHCODE: description) ──
+function techCode(name){ name=(name||'').trim(); if(!name) return ''; const p=name.split(/\s+/); return ((p[0][0]||'')+(p[p.length-1]||'')).toUpperCase().replace(/[^A-Z]/g,''); }
+function fmtInvDate(d){ if(!d) return ''; const p=String(d).slice(0,10).split('-'); return p.length<3?String(d):p[1]+'-'+p[2]+'-'+p[0].slice(2); }
+function finalInvoiceDesc(l,v){ const desc=l.work_description||l.description||''; if(!desc) return ''; const date=fmtInvDate(v&&v.visit_date?v.visit_date:(l.created_at?l.created_at.split('T')[0]:'')); const code=techCode(l.tech_name||(v&&v.tech_name)||''); return (date?date+' ':'')+(code?code+': ':'')+desc; }
 
 // ── Export for QuickBooks (Chelsea's format: MM-DD-YY TECHCODE: description) ──
 async function exportQuickBooks(){
