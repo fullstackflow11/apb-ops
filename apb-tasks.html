@@ -6,6 +6,7 @@
 <title>Task Board · APB</title>
 <script src="apb-roles.js"></script>
 <script src="apb-demo.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -194,6 +195,25 @@ function team(){ let t=load(LS_TEAM,'null'); if(!t){ t=SEED_TEAM.slice(); save(L
 function me(){ return localStorage.getItem(LS_ME)||''; }
 function setMe(n){ localStorage.setItem(LS_ME,n); }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+// ── Shared store (Supabase) — tasks sync to apb_tasks so every computer sees them ──
+const SUPABASE_URL='https://aanrxyiocxxndkvkeocv.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU';
+let sb=null; try{ sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY); }catch(e){}
+async function taskUpsert(t){ if(!sb||!t||!t.id) return; try{ await sb.from('apb_tasks').upsert({id:t.id,status:t.status,data:t,updated_at:new Date().toISOString()}); }catch(e){} }
+async function taskDelete(id){ if(!sb||!id) return; try{ await sb.from('apb_tasks').delete().eq('id',id); }catch(e){} }
+async function syncPull(){
+  if(!sb) return;
+  try{
+    const {data,error}=await sb.from('apb_tasks').select('id,data');
+    if(error) return;
+    const byId={};
+    (data||[]).forEach(x=>{ if(x&&x.data&&x.data.id) byId[x.data.id]=x.data; });
+    tasks().forEach(t=>{ if(t&&t.id&&!byId[t.id]){ byId[t.id]=t; taskUpsert(t); } });
+    save(LS_TASKS, Object.values(byId));
+    try{ isAdmin?renderAdmin():renderMine(); }catch(e){}
+  }catch(e){}
+}
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function pdate(s){ return s? new Date(s+'T00:00:00') : null; }
 function fmtDue(s){ if(!s) return null; const d=pdate(s); return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
@@ -208,6 +228,7 @@ boot();
 function boot(){
   if(isAdmin){ document.getElementById('subTitle').textContent='Who is working on what'; renderWhoAmI(true); renderAdmin(); }
   else { document.getElementById('subTitle').textContent='My assigned work'; renderWhoAmI(false); renderMine(); }
+  syncPull();
 }
 
 // ── Identity ("viewing as") ─────────────────────────────────────────────────
@@ -315,7 +336,7 @@ function renderMine(){
 // ── Mutations ───────────────────────────────────────────────────────────────
 function setStatus(id,st){
   const all=tasks(); const t=all.find(x=>x.id===id); if(!t) return;
-  t.status=st; t.updatedAt=Date.now(); save(LS_TASKS,all);
+  t.status=st; t.updatedAt=Date.now(); save(LS_TASKS,all); taskUpsert(t);
   isAdmin?renderAdmin():renderMine();
   toast(st==='done'?'Marked done ✓':'Updated','green');
 }
@@ -323,11 +344,11 @@ function addNote(id){
   const text=prompt('Add a note / update:'); if(!text) return;
   const all=tasks(); const t=all.find(x=>x.id===id); if(!t) return;
   t.notes=t.notes||[]; t.notes.push({by:me()||APBRoles.label(),at:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),text});
-  t.updatedAt=Date.now(); save(LS_TASKS,all); renderMine();
+  t.updatedAt=Date.now(); save(LS_TASKS,all); taskUpsert(t); renderMine();
 }
 function delTask(id){
   if(!confirm('Delete this task?')) return;
-  save(LS_TASKS, tasks().filter(t=>t.id!==id)); renderAdmin(); toast('Deleted','red');
+  save(LS_TASKS, tasks().filter(t=>t.id!==id)); taskDelete(id); renderAdmin(); toast('Deleted','red');
 }
 
 // ── Task modal (admin) ──────────────────────────────────────────────────────
@@ -368,9 +389,10 @@ function saveTask(){
     due:document.getElementById('tDue').value,
     desc:document.getElementById('tDesc').value.trim() };
   const all=tasks();
-  if(editingId){ const t=all.find(x=>x.id===editingId); Object.assign(t,data); t.updatedAt=Date.now(); toast('Updated','green'); }
-  else { all.push({ id:uid(), ...data, status:'todo', notes:[], createdBy:APBRoles.label(), createdAt:Date.now(), updatedAt:Date.now() }); toast((assignee.split(' ')[0])+' assigned to '+job,'green'); }
-  save(LS_TASKS,all); closeTaskModal(); renderAdmin();
+  let saved;
+  if(editingId){ const t=all.find(x=>x.id===editingId); Object.assign(t,data); t.updatedAt=Date.now(); saved=t; toast('Updated','green'); }
+  else { saved={ id:uid(), ...data, status:'todo', notes:[], createdBy:APBRoles.label(), createdAt:Date.now(), updatedAt:Date.now() }; all.push(saved); toast((assignee.split(' ')[0])+' assigned to '+job,'green'); }
+  save(LS_TASKS,all); taskUpsert(saved); closeTaskModal(); renderAdmin();
 }
 
 // ── Team modal ──────────────────────────────────────────────────────────────
