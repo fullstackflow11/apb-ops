@@ -601,8 +601,9 @@ body.theme-light .foot b{color:#48597a}
     if(!email||!pin){errEl.textContent='Enter your email and PIN.';errEl.style.display='block';return;}
     if(ADMINS[email] && ADMINS[email]===pin){
       localStorage.setItem(AUTH_KEY,email);
+      try{ localStorage.setItem('apb_role','admin'); sessionStorage.removeItem('apb_preview'); }catch(e){}
       errEl.style.display='none';
-      apbHideGate();
+      location.reload();
     } else {
       errEl.textContent='Incorrect email or PIN.';errEl.style.display='block';
       document.getElementById('authPin').value='';document.getElementById('authPin').focus();
