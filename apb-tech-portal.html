@@ -245,6 +245,9 @@ html,body{height:100%;background:var(--bg);color:var(--ink);font-family:Inter,-a
           <button class="hq-btn" onclick="setHours(8)">8h</button>
           <button class="hq-btn" onclick="setHours(9)">9h</button>
           <button class="hq-btn" onclick="setHours(10)">10h</button>
+          <button class="hq-btn" onclick="setHours(11)">11h</button>
+          <button class="hq-btn" onclick="setHours(12)">12h</button>
+          <button class="hq-btn" onclick="setHours(13)">13h</button>
         </div>
         <div class="ot-notice" id="otNotice">⚡ Over 8 hours — overtime applies to extra time</div>
       </div>
@@ -478,7 +481,7 @@ function removePhoto(i){uploadedPhotos.splice(i,1);renderPhotos();document.getEl
 // ── Submit ──
 async function submitTimesheet(){
   const date=document.getElementById('dateInput').value;
-  const totalHours=parseFloat(document.getElementById('totalHoursInput').value);
+  let totalHours=parseFloat(document.getElementById('totalHoursInput').value);
   const cin=document.getElementById('clockIn').value;
   const cout=document.getElementById('clockOut').value;
 
@@ -508,7 +511,8 @@ async function submitTimesheet(){
   }
 
   const lineTotal=lines.reduce((s,l)=>s+l.hours,0);
-  if(lineTotal>totalHours+0.05)return showMsg('error',`Job hours total (${lineTotal.toFixed(1)}h) exceeds your time on site (${totalHours.toFixed(1)}h). Please correct.`);
+  // Long days shouldn't be blocked: if itemized job hours exceed the entered total, trust the itemized hours and raise the total to match.
+  if(lineTotal>totalHours){ totalHours=lineTotal; document.getElementById('totalHoursInput').value=lineTotal.toFixed(1); }
 
   const primaryLine=lines.find(l=>l.vessel_id)||lines[0];
   const btn=document.getElementById('submitBtn');btn.disabled=true;btn.textContent='Saving…';
