@@ -152,6 +152,13 @@ body{font-family:Inter,-apple-system,"Segoe UI",sans-serif;background:var(--bg);
 .view-btn{font-size:12px;font-weight:700;letter-spacing:.03em;padding:5px 14px;border-radius:20px;border:1px solid transparent;background:transparent;color:var(--ink-3);cursor:pointer;transition:all .13s;line-height:1}
 .view-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
 .view-btn:not(.active):hover{background:var(--accent-soft);color:var(--accent)}
+.view-who{margin:2px 0 14px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--accent-soft);font-size:12.5px;line-height:1.5;color:var(--ink-2)}
+.view-who b{color:var(--ink-1)}
+.view-who .vw-type{font-weight:700;color:var(--accent)}
+.view-who .vw-all{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);display:none}
+.view-who.vw-open .vw-all{display:block}
+.view-who .vw-more{background:none;border:none;color:var(--accent);font:inherit;font-weight:600;cursor:pointer;padding:0;margin-left:6px;text-decoration:underline}
+.view-who .vw-grp{margin-top:5px}
 
 /* ── Field hero overrides ── */
 .field-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:0;position:relative;z-index:1;margin-top:30px;border-top:1px solid rgba(255,255,255,.08)}
@@ -730,6 +737,8 @@ body.theme-light .foot b{color:#48597a}
           <div class="ov-actions" id="ovActions"></div>
         </div>
 
+        <div class="view-who" id="viewWho" style="display:none"></div>
+
         <div class="attn" id="attnStrip"></div>
 
         <div class="ov-grid" id="ovGrid"></div>
@@ -858,6 +867,16 @@ var WORLD = {
   "apb-status.html":["pm","tech","purchasing"],
   "apb-dashboard.html":["pm","purchasing","accounting"], "apb-tech-portal.html":["pm","purchasing"], "apb1.com":["pm","purchasing","accounting"]
 };
+// ── Account-type roster — single source of truth (from the APB account-type table).
+// Controls the preview banner: switching the view names exactly who has that account type.
+var ACCOUNT_TYPES = {
+  "Admin":      ["Brandon W","Chelsea Goodwin","Christina","Christopher Collins","Jerry Clark","Jhuber Vasquez","Nate Goodwin"],
+  "PM":         ["Bryce Sanders","Joey Z.","John Warren","Jordan Moreno","Skylar Ell"],
+  "Purchasing": ["Jason Garcia"],
+  "Tech":       ["Christian Yancey","Clinton Wasteney","Javier Sandoval","Jesus Lopez Sanchez","Juan Santana","Kristopher Horn","Luis Sanchez","Michael Corbett","Robert Ferreira","Steve DeJacomo","Tommy Borden","Trace Colson"]
+};
+// role (used by WORLD/nav gating) ↔ account-type label
+var ROLE_TYPE = { admin:"Admin", pm:"PM", tech:"Tech", purchasing:"Purchasing" };
 var SEARCH = "", ROLE = "admin";
 var NAV_KW = {
   "apb-pto.html":"pto vacation sick leave holiday time off",
@@ -1159,7 +1178,45 @@ function setRole(r){
   var preview = false; try { preview = sessionStorage.getItem("apb_preview") === "1"; } catch(e){}
   var vt = document.getElementById("viewToggle");
   if (vt) vt.style.display = (r === "admin" || preview) ? "" : "none";
+  if (staff) renderViewWho(r);
 }
+// Preview banner — names exactly who has the account type behind the current view.
+function renderViewWho(r){
+  var el = document.getElementById("viewWho"); if(!el) return;
+  var type = ROLE_TYPE[r];
+  if(!type){
+    // Accounting / Fleet are functional views, not account types in the roster.
+    el.style.display = "";
+    el.classList.remove("vw-open");
+    el.innerHTML = '<span class="vw-type">'+esc(r.charAt(0).toUpperCase()+r.slice(1))+' view</span> · a functional workspace — no account-type members. '
+      + '<button class="vw-more" onclick="toggleViewWhoAll()">Show all account types</button>'
+      + buildAllTypes();
+    return;
+  }
+  var people = ACCOUNT_TYPES[type] || [];
+  el.style.display = "";
+  el.classList.remove("vw-open");
+  if(r === "admin"){
+    // The admin's own home — keep it slim; the full roster is one click away.
+    el.innerHTML = '<span class="vw-type">Admin view</span> · you see every tool. '
+      + '<button class="vw-more" onclick="toggleViewWhoAll()">Show all account types</button>'
+      + buildAllTypes();
+    return;
+  }
+  el.innerHTML = 'Previewing the <span class="vw-type">'+esc(type)+'</span> view — what these '+people.length+' '
+    + (people.length===1?'person sees':'people see')+': <b>'+people.map(esc).join(", ")+'</b>. '
+    + '<button class="vw-more" onclick="toggleViewWhoAll()">Show all account types</button>'
+    + buildAllTypes();
+}
+function buildAllTypes(){
+  var order = ["Admin","PM","Purchasing","Tech"], out = '<div class="vw-all">';
+  order.forEach(function(t){
+    var ppl = ACCOUNT_TYPES[t] || [];
+    out += '<div class="vw-grp"><span class="vw-type">'+esc(t)+'</span> ('+ppl.length+'): '+ppl.map(esc).join(", ")+'</div>';
+  });
+  return out + '</div>';
+}
+function toggleViewWhoAll(){ var el=document.getElementById("viewWho"); if(el) el.classList.toggle("vw-open"); }
 // Only reachable from the toggle, which only admins (or an admin mid-preview) can see.
 function pickRole(r){
   try { if (r === "admin") sessionStorage.removeItem("apb_preview"); else sessionStorage.setItem("apb_preview", "1"); } catch(e){}
