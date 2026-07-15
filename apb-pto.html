@@ -311,6 +311,17 @@ async function syncPull(){
     render();
   }catch(e){}
 }
+// Pull the real employee roster from apb_techs so "Who's it for" / "You" show everyone, synced across computers.
+async function loadTeam(){
+  if(!sb) return;
+  try{
+    const {data,error}=await sb.from('apb_techs').select('name,active').eq('active',true).order('name');
+    if(error||!Array.isArray(data)||!data.length) return;
+    save(LS_TEAM, data.map(t=>({name:t.name, role:'tech'})));
+    renderWhoAmI();
+    const rl=document.getElementById('rosterList'); if(rl) rl.innerHTML=team().map(m=>`<option value="${esc(m.name)}">`).join('');
+  }catch(e){}
+}
 
 // date helpers (string-keyed, TZ-safe)
 function pad(n){ return (n<10?'0':'')+n; }
@@ -341,6 +352,7 @@ document.getElementById('rolePill').textContent = window.APBRoles?APBRoles.label
 renderWhoAmI();
 render();
 syncPull();
+loadTeam();
 
 function renderWhoAmI(){
   const el=document.getElementById('whoami');
