@@ -212,6 +212,8 @@ tbody tr:last-child td{border-bottom:none}
 .c-hold{color:var(--red); background:var(--red-soft)}
 .c-paid{color:#0a7d4f; background:#dff3e8}
 .c-cxl{color:#7c828c; background:#eceef1}
+.c-rnd{color:#7A3EA1; background:#f1e6f8}
+.c-po{color:#0B6E8C; background:#ddf0f6}
 
 /* progress meter */
 .meter{display:flex; align-items:center; gap:10px; min-width:130px}
@@ -477,7 +479,7 @@ textarea:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 4px va
           <option>Invoice In Review</option><option>Invoice Sent</option><option>Paid</option>
         </select>
       </div>
-      <div class="pfield"><label>Rep</label><input id="pmRep" placeholder="BW / CC / JC…" maxlength="8"></div>
+      <div class="pfield"><label>Rep</label><input id="pmRep" list="repList" placeholder="Brandon W / Chris C…" maxlength="20" autocomplete="off"></div>
     </div>
     <div class="cmf">
       <button class="btn ghost" id="pipeCancel">Cancel</button>
@@ -596,7 +598,7 @@ textarea:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 4px va
     <div class="pd-main">
       <div class="field"><label>Project / vessel name</label><input type="text" id="pdName" class="tin"></div>
       <div class="field two">
-        <div><label>Rep</label><input type="text" id="pdRep" class="tin" placeholder="e.g. BW"></div>
+        <div><label>Rep</label><input type="text" id="pdRep" class="tin" list="repList" placeholder="Brandon W / Chris C…" autocomplete="off"></div>
         <div><label>Customer</label><input type="text" id="pdCustomer" class="tin" placeholder="Client name"></div>
       </div>
       <div class="field"><label>Project notes</label><textarea id="pdNotes" placeholder="Internal project notes…"></textarea></div>
@@ -703,16 +705,19 @@ const CONFIG = {
 // True when the current job/lead id is a real Supabase row (not a local-only placeholder).
 function isRealId(id){ return typeof id==="string" && !/^(lead_|job_|demo-)/.test(id); }
 
-/* status vocabulary (matches the Active List pipeline) */
+/* status vocabulary — matches the tracker spec (Project/Job Status list) */
 const STATUSES = [
   ["Lead","c-lead","var(--slate)"],
+  ["R&D","c-rnd","#7A3EA1"],
   ["Estimating","c-est","var(--violet)"],
+  ["Proposal Created","c-rev","var(--amber)"],
+  ["Proposal Sent","c-sent","var(--cyan)"],
+  ["Approved","c-appr","var(--green)"],
   ["In Progress","c-prog","var(--accent)"],
   ["Ready To Be Billed","c-bill","var(--green)"],
+  ["PO Sent","c-po","#0B6E8C"],
   ["Invoice In Review","c-rev","var(--amber)"],
   ["Invoice Sent","c-sent","var(--cyan)"],
-  ["Approved","c-appr","var(--green)"],
-  ["On Hold","c-hold","var(--red)"],
   ["Paid","c-paid","#0a7d4f"],
   ["Canceled","c-cxl","#7c828c"]
 ];
@@ -729,6 +734,14 @@ const LEAD_STATUSES = [
 const SMAP = Object.fromEntries(STATUSES.map(s=>[s[0],s]));
 function chipClass(s){return (SMAP[s]||["","c-lead"])[1];}
 function statusColor(s){return (SMAP[s]||["","","var(--slate)"])[2];}
+// Rep roster from the tracker — the Rep picker offers these, plus any rep already on a job.
+const REPS = ["Chris C","Brandon W","Jordan M","Jerry C","Bryce S","Nate G","Skylar E","Joey Z"];
+function fillRepList(){
+  const rl=document.getElementById("repList"); if(!rl) return;
+  const used=(typeof JOBS!=="undefined"?JOBS:[]).map(j=>(j.rep||"").trim()).filter(Boolean);
+  const all=[...new Set([...REPS, ...used])];
+  rl.innerHTML=all.map(r=>`<option value="${esc(r)}">`).join("");
+}
 
 /* ---------- demo data (real-shaped) — shared source in apb-jobs.js so the
    Command Center home shows the same projects; inline copy is the fallback ---------- */
@@ -808,7 +821,7 @@ async function load(){
   dt.innerHTML = LIVE
     ? `<span class="dot"></span><span>Live</span>`
     : `<span class="dot demo"></span><span>Demo data — connect live →</span>`;
-  buildFilters(); refreshViews();
+  buildFilters(); refreshViews(); fillRepList();
 }
 
 /* ---------- write seam: resolve/create the engagement a lead or job belongs to ---------- */
@@ -1257,9 +1270,7 @@ function openDrawer(id){
   const dRep=document.getElementById("dRep");
   if(dRep){
     dRep.value=draft.rep;
-    const reps=[...new Set(JOBS.map(j=>(j.rep||"").trim()).filter(Boolean))].sort();
-    const rl=document.getElementById("repList");
-    if(rl) rl.innerHTML=reps.map(r=>`<option value="${esc(r)}">`).join("");
+    fillRepList();
     dRep.oninput=()=>{ draft.rep=dRep.value.trim(); };
   }
   setPct(draft.pct);
