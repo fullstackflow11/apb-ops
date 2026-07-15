@@ -210,6 +210,8 @@ tbody tr:last-child td{border-bottom:none}
 .c-sent{color:var(--cyan); background:var(--cyan-soft)}
 .c-appr{color:var(--green); background:var(--green-soft)}
 .c-hold{color:var(--red); background:var(--red-soft)}
+.c-paid{color:#0a7d4f; background:#dff3e8}
+.c-cxl{color:#7c828c; background:#eceef1}
 
 /* progress meter */
 .meter{display:flex; align-items:center; gap:10px; min-width:130px}
@@ -270,6 +272,8 @@ tr.jobrow td:first-child::before{content:""; position:absolute; left:26px; top:0
   font:inherit; font-size:12.5px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px; color:var(--ink-2)}
 .statusgrid button i{width:8px; height:8px; border-radius:50%}
 .statusgrid button.sel{border-color:var(--accent); background:var(--accent-soft); color:var(--accent-2); box-shadow:0 0 0 3px var(--accent-soft)}
+.field input.dtin{width:100%; box-sizing:border-box; padding:9px 11px; border:1px solid var(--line); border-radius:9px; font:inherit; font-size:14px; color:var(--ink-1); background:var(--panel)}
+.field input.dtin:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft)}
 .pctwrap{display:flex; align-items:center; gap:14px}
 .pctwrap input[type=range]{flex:1; accent-color:var(--accent); height:5px}
 .pctbig{font-family:var(--mono); font-size:26px; font-weight:500; width:64px; text-align:right}
@@ -505,6 +509,11 @@ textarea:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 4px va
       <div class="statusgrid" id="dStatus"></div>
     </div>
     <div class="field">
+      <label>Rep</label>
+      <input type="text" id="dRep" class="dtin" list="repList" placeholder="e.g. BW" maxlength="12" autocomplete="off">
+      <datalist id="repList"></datalist>
+    </div>
+    <div class="field">
       <label>Progress</label>
       <div class="pctwrap">
         <input type="range" id="dRange" min="0" max="100" step="5">
@@ -703,7 +712,9 @@ const STATUSES = [
   ["Invoice In Review","c-rev","var(--amber)"],
   ["Invoice Sent","c-sent","var(--cyan)"],
   ["Approved","c-appr","var(--green)"],
-  ["On Hold","c-hold","var(--red)"]
+  ["On Hold","c-hold","var(--red)"],
+  ["Paid","c-paid","#0a7d4f"],
+  ["Canceled","c-cxl","#7c828c"]
 ];
 // apb_leads has its own DB check constraint — a different, smaller set of
 // valid values than apb_jobs. Showing the wrong list here means the save
@@ -826,12 +837,12 @@ function applyLocalData(){
   lsGet("apb_local_leads",[]).forEach(l=>{ if(!JOBS.some(j=>j.id===l.id)){ if(!l.source) l.source="lead"; JOBS.unshift(l); } });
   lsGet("apb_local_jobs",[]).forEach(l=>{ if(!JOBS.some(j=>j.id===l.id)){ if(!l.source) l.source="job"; JOBS.unshift(l); } });
   const ov=lsGet("apb_local_status",{});
-  JOBS.forEach(j=>{ if(ov[j.id]){ j.status=ov[j.id].status; if(ov[j.id].pct!=null) j.job_status_pct=ov[j.id].pct; } });
+  JOBS.forEach(j=>{ if(ov[j.id]){ j.status=ov[j.id].status; if(ov[j.id].pct!=null) j.job_status_pct=ov[j.id].pct; if(ov[j.id].rep!=null&&ov[j.id].rep!=="") j.rep=ov[j.id].rep; } });
   // Full-field edits (job #/name/rep/engagement) made in the Project drawer.
   const ed=lsGet("apb_local_edits",{});
   JOBS.forEach(j=>{ const e=ed[j.id]; if(e){ ["job_number","job_name","engagement","rep","status"].forEach(k=>{ if(e[k]!=null) j[k]=e[k]; }); if(e.pct!=null) j.job_status_pct=e.pct; } });
 }
-function persistStatus(job){ const ov=lsGet("apb_local_status",{}); ov[job.id]={status:job.status,pct:job.job_status_pct}; lsSet("apb_local_status",ov); }
+function persistStatus(job){ const ov=lsGet("apb_local_status",{}); ov[job.id]={status:job.status,pct:job.job_status_pct,rep:job.rep}; lsSet("apb_local_status",ov); }
 // Cache the job list so the home Command Center shows the same projects (it can't re-run the Supabase load).
 function writeJobsCache(){
   try{
@@ -1229,7 +1240,7 @@ function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","
 let current=null, draft=null;
 function openDrawer(id){
   current=JOBS.find(j=>j.id===id); if(!current) return;
-  draft={status:current.status, pct:+current.job_status_pct||0, notes:current.pm_notes||""};
+  draft={status:current.status, pct:+current.job_status_pct||0, notes:current.pm_notes||"", rep:current.rep||""};
   document.getElementById("dEyebrow").textContent = current.job_number? "JOB "+current.job_number : "JOB";
   document.getElementById("dTitle").textContent = current.job_name||"—";
   document.getElementById("dMeta").innerHTML = `${esc(current.engagement)}${current.rep?` &nbsp;·&nbsp; Rep ${esc(current.rep)}`:""}`;
@@ -1242,6 +1253,15 @@ function openDrawer(id){
     draft.status=b.dataset.s;
     document.querySelectorAll("#dStatus button").forEach(x=>x.classList.toggle("sel",x===b));
   });
+  // Rep picker — free text with a datalist of reps already used across jobs
+  const dRep=document.getElementById("dRep");
+  if(dRep){
+    dRep.value=draft.rep;
+    const reps=[...new Set(JOBS.map(j=>(j.rep||"").trim()).filter(Boolean))].sort();
+    const rl=document.getElementById("repList");
+    if(rl) rl.innerHTML=reps.map(r=>`<option value="${esc(r)}">`).join("");
+    dRep.oninput=()=>{ draft.rep=dRep.value.trim(); };
+  }
   setPct(draft.pct);
   document.getElementById("dNotes").value=draft.notes;
   // lead → project conversion offer
@@ -1263,7 +1283,16 @@ document.getElementById("scrim").onclick=function(){ closeDrawer(); if(typeof cl
 /* ---------- save (the write-back seam) ---------- */
 async function save(){
   if(!current) return;
+  // Canceling a job/lead requires a reason (like a delete) — captured to the audit log.
+  if(draft.status==="Canceled" && current.status!=="Canceled"){
+    const _lbl=`${current.job_number?current.job_number+' — ':''}${current.job_name||current.engagement||'(no scope)'}`;
+    const reason=(prompt(`Cancel ${_lbl}?\n\nType a reason to confirm (required):`)||"").trim();
+    if(!reason){ toast("Cancel not saved — a reason is required"); return; }
+    logDeletion({type:"cancel",id:current.id,label:_lbl,project:current.engagement||"",reason:reason});
+    draft.notes=(draft.notes?draft.notes+"\n":"")+`[Canceled ${new Date().toLocaleDateString()}] ${reason}`;
+  }
   current.status=draft.status; current.job_status_pct=draft.pct; current.pm_notes=draft.notes;
+  if(draft.rep!==undefined) current.rep=draft.rep;
   current.updated_at=new Date().toISOString();
   await pushToActiveList(current, draft);   // Phase-2 seam
   persistStatus(current); refreshViews(); closeDrawer(); toast(`Saved · ${current.engagement} ${current.job_number}`);
@@ -1283,8 +1312,8 @@ async function pushToActiveList(job, changes){
     try{
       const table = job.source==="lead" ? "apb_leads" : "apb_jobs";
       const body = job.source==="lead"
-        ? {status:changes.status, notes:changes.notes, updated_at:new Date().toISOString()}
-        : {status:changes.status, job_status_pct:changes.pct, pm_notes:changes.notes, updated_at:new Date().toISOString()};
+        ? {status:changes.status, notes:changes.notes, rep:job.rep, updated_at:new Date().toISOString()}
+        : {status:changes.status, job_status_pct:changes.pct, pm_notes:changes.notes, rep:job.rep, updated_at:new Date().toISOString()};
       const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/${table}?id=eq.${job.id}`,{
         method:"PATCH",
         headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+CONFIG.SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"return=minimal"},
