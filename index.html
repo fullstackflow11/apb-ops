@@ -598,8 +598,11 @@ body.theme-light .foot b{color:#48597a}
   var ADMINS = {
     'christina@apb1.com':'1234','jerry@apb1.com':'0123','nate@apb1.com':'1122',
     'christopher@apb1.com':'2233','chelsea@apb1.com':'3344','brandonw@apb1.com':'2211','bryce@apb1.com':'1100',
-    'randall_kline@outlook.com':'4400','joetoscano4@gmail.com':'5500'
+    'randall_kline@outlook.com':'4400','joetoscano4@gmail.com':'5500',
+    'jordan@apb1.com':'5566'
   };
+  // Per-account dashboard role — anyone not listed here signs in as 'admin'.
+  var ACCT_ROLE = { 'jordan@apb1.com':'pm' };
   var AUTH_KEY = 'apb_hub_auth_v2';
   window.apbCheckLogin = function(){
     var email=(document.getElementById('authEmail').value||'').trim().toLowerCase();
@@ -608,7 +611,7 @@ body.theme-light .foot b{color:#48597a}
     if(!email||!pin){errEl.textContent='Enter your email and PIN.';errEl.style.display='block';return;}
     if(ADMINS[email] && ADMINS[email]===pin){
       localStorage.setItem(AUTH_KEY,email);
-      try{ localStorage.setItem('apb_role','admin'); sessionStorage.removeItem('apb_preview'); }catch(e){}
+      try{ localStorage.setItem('apb_role', ACCT_ROLE[email]||'admin'); sessionStorage.removeItem('apb_preview'); }catch(e){}
       errEl.style.display='none';
       location.reload();
     } else {
@@ -624,6 +627,9 @@ body.theme-light .foot b{color:#48597a}
   }
   var saved = localStorage.getItem(AUTH_KEY);
   if(saved && ADMINS[saved]){
+    // Re-assert each account's role on every load (admins stay admin; Jordan stays PM),
+    // unless an admin is mid-preview of another role.
+    try{ if(sessionStorage.getItem('apb_preview')!=='1') localStorage.setItem('apb_role', ACCT_ROLE[saved]||'admin'); }catch(e){}
     apbHideGate();
   } else {
     document.body.style.overflow='hidden';
