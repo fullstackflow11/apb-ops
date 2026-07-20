@@ -487,14 +487,15 @@ function getWeekLabel(dateStr){
   return 'Week of '+mon.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+sun.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 }
 
-function renderVisits(){
+// Shared filter — the on-screen tech / vessel / date-range / status filters.
+// The visit list AND both export buttons use this, so an export always matches
+// exactly what's currently on screen instead of dumping the whole database.
+function getFilteredVisits(){
   const techF=document.getElementById('techFilter').value;
   const vesselF=document.getElementById('vesselFilter').value;
   const dateFrom=document.getElementById('dateFrom').value;
   const dateTo=document.getElementById('dateTo').value;
-  const grouped=document.getElementById('groupByWeek').checked;
-
-  let filtered=visits.filter(v=>{
+  return visits.filter(v=>{
     if(techF&&v.tech_name!==techF)return false;
     const vName=v.apb_engagements?.name||v.vessel_name||'';
     if(vesselF&&vName!==vesselF)return false;
@@ -506,6 +507,23 @@ function renderVisits(){
     if(currentFilter==='nonbillable')return vLines.some(l=>!isBillable(l));
     return true;
   });
+}
+
+// The line items inside the filtered visits, with the status chip applied at the
+// line level too (Pending → only unreviewed lines, etc.) so the export is precise.
+function getFilteredLines(){
+  const fvIds=new Set(getFilteredVisits().map(v=>v.id));
+  let out=lines.filter(l=>fvIds.has(l.timesheet_id));
+  if(currentFilter==='pending') out=out.filter(l=>!l.reviewed);
+  else if(currentFilter==='reviewed') out=out.filter(l=>l.reviewed);
+  else if(currentFilter==='nonbillable') out=out.filter(l=>!isBillable(l));
+  return out;
+}
+
+function renderVisits(){
+  const grouped=document.getElementById('groupByWeek').checked;
+
+  let filtered=getFilteredVisits();
 
   if(!filtered.length){document.getElementById('visitList').innerHTML='<div class="empty-state">No entries match this filter.</div>';return;}
 
@@ -803,7 +821,9 @@ function isBillable(l){if(l.billable===true)return true;if(l.billable===false)re
 function exportCSV(){
   const header=['Date','Tech','Vessel/Project','Job','Description','Hours','OT','Billable','Reviewed'];
   const visitById={}; visits.forEach(v=>{ visitById[v.id]=v; });
-  const body=lines.map(l=>{
+  const filteredLines=getFilteredLines();            // only what the current filters show
+  if(!filteredLines.length){ showToast('No rows match the current filters'); return; }
+  const body=filteredLines.map(l=>{
     const v=visitById[l.timesheet_id]||null;
     const vessel=l.vessel_name||v?.apb_engagements?.name||v?.vessel_name||'—';
     const tech=l.tech_name||v?.tech_name||'';
@@ -816,7 +836,7 @@ function exportCSV(){
   const blob=new Blob([csv],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download=`apb-timesheets-${new Date().toISOString().split('T')[0]}.csv`;a.click();
-  showToast('CSV downloaded');
+  showToast(`CSV downloaded · ${body.length} row${body.length!==1?'s':''}`);
 }
 
 // ── Final invoice description (Chelsea's format: MM-DD-YY TECHCODE: description) ──
@@ -829,8 +849,21 @@ async function exportQuickBooks(){
   const {data,error} = await sb.from('apb_invoice_lines_ready').select('*').order('work_date',{ascending:false});
   if(error){ showToast('Error: '+error.message); return; }
   if(!data || !data.length){ showToast('No reviewed, billable lines ready to invoice'); return; }
+  // Apply the same on-screen tech / vessel / date-range filters to the export.
+  const techF=document.getElementById('techFilter').value;
+  const vesselF=document.getElementById('vesselFilter').value;
+  const dateFrom=document.getElementById('dateFrom').value;
+  const dateTo=document.getElementById('dateTo').value;
+  const filtered=data.filter(r=>{
+    if(techF && (r.tech_name||'')!==techF) return false;
+    if(vesselF && (r.vessel_name||'')!==vesselF) return false;
+    if(dateFrom && (r.work_date||'')<dateFrom) return false;
+    if(dateTo && (r.work_date||'')>dateTo) return false;
+    return true;
+  });
+  if(!filtered.length){ showToast('No reviewed, billable lines match the current filters'); return; }
   const header=['Date','Tech','Vessel/Project','Job','Hours','Invoice Line'];
-  const rows=[header, ...data.map(r=>[
+  const rows=[header, ...filtered.map(r=>[
     r.work_date||'', r.tech_name||'', r.vessel_name||'—',
     (r.job_name && r.job_number && !r.job_name.startsWith(r.job_number)) ? `${r.job_number} ${r.job_name}` : (r.job_name||r.job_number||''),
     (+r.hours||0).toFixed(2), r.invoice_line||''
@@ -839,7 +872,7 @@ async function exportQuickBooks(){
   const blob=new Blob([csv],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download=`apb-quickbooks-${new Date().toISOString().split('T')[0]}.csv`;a.click();
-  showToast(`QuickBooks export downloaded · ${data.length} line${data.length!==1?'s':''}`);
+  showToast(`QuickBooks export downloaded · ${filtered.length} line${filtered.length!==1?'s':''}`);
 }
 
 // ── Toast ──
