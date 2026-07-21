@@ -213,6 +213,7 @@ html,body{height:100%;background:var(--bg);color:var(--ink);font-family:Inter,-a
   <div class="tabs">
     <div class="tab active" onclick="switchTab('log')">Log Time</div>
     <div class="tab" onclick="switchTab('tasks')">My Tasks <span class="tk-badge" id="tasksBadge" style="display:none">0</span></div>
+    <div class="tab" onclick="switchTab('team')">Team</div>
     <div class="tab" onclick="switchTab('history')">My Hours</div>
   </div>
 
@@ -230,6 +231,20 @@ html,body{height:100%;background:var(--bg);color:var(--ink);font-family:Inter,-a
     .task-pri{font-size:10.5px;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:20px;background:#FBF0E2;color:#B86A00}
     .task-pri.high,.task-pri.urgent{background:#FDEAEA;color:#C43030}
     .task-kind{font-size:10.5px;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:20px;background:#EEF1F5;color:#3A4559}
+    #teamBoard .empty-state{padding:28px 10px;text-align:center;color:#8A93A3;font-size:13.5px}
+    .tm-card{background:#fff;border:1px solid #DDE1E8;border-radius:12px;padding:12px 14px;margin-bottom:10px}
+    .tm-card.me{border-color:#2457E6;box-shadow:0 0 0 3px #EAF0FE}
+    .tm-name{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:#0D1626;margin-bottom:6px}
+    .tm-you{font-size:10px;font-weight:700;text-transform:uppercase;color:#1B45B8;background:#EAF0FE;padding:1px 7px;border-radius:20px}
+    .tm-count{margin-left:auto;font-size:11.5px;font-weight:700;color:#6B7A92;background:#F0F2F6;border-radius:20px;padding:1px 9px}
+    .tm-task{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid #F0F2F6;font-size:13.5px;color:#0D1626}
+    .tm-dot{width:8px;height:8px;border-radius:50%;background:#C7CED9;flex-shrink:0}
+    .tm-dot.doing{background:#2457E6}
+    .tm-loc{flex:1;font-weight:500}
+    .tm-due{font-size:11.5px;font-weight:600;color:#6B7A92;white-space:nowrap}
+    .tm-due.today{color:#1B45B8}
+    .tm-due.late{color:#C43030}
+    .tm-none{font-size:12.5px;color:#8A93A3;padding:5px 0}
     .task-due{font-size:11.5px;color:#6B7A92;font-weight:600;margin-left:auto}
     .task-due.late{color:#C43030}
     .task-title{font-size:15px;font-weight:600;color:#0D1626;line-height:1.35}
@@ -246,6 +261,14 @@ html,body{height:100%;background:var(--bg);color:var(--ink);font-family:Inter,-a
     <div class="form-section">
       <div class="form-section-title">Assigned to you</div>
       <div id="myTasksList"><div class="empty-state">Loading…</div></div>
+    </div>
+  </div>
+
+  <!-- Team Tab -->
+  <div class="tab-content" id="tabTeam">
+    <div class="form-section">
+      <div class="form-section-title">Who's assigned where</div>
+      <div id="teamBoard"><div class="empty-state">Loading…</div></div>
     </div>
   </div>
 
@@ -434,8 +457,47 @@ async function techSetTask(id,status){
   renderMyTasks();
   try{ await sb.from('apb_tasks').upsert({id:t.id,status:t.status,data:t,updated_at:new Date().toISOString()}); }catch(e){}
 }
+
+/* ── Team view — where everyone is assigned (read-only) ── */
+function tkToday(){ var d=new Date(); function p(n){return(n<10?'0':'')+n;} return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+var TEAM_TASKS=[], TEAM_ROSTER=[];
+async function loadTeamBoard(){
+  var el=document.getElementById('teamBoard'); if(!el) return;
+  try{
+    var tRes=await sb.from('apb_tasks').select('id,data');
+    if(tRes.error) throw tRes.error;
+    TEAM_TASKS=(tRes.data||[]).map(function(x){return x&&x.data;}).filter(Boolean);
+    var rRes=await sb.from('apb_techs').select('name,active').eq('active',true).order('name');
+    TEAM_ROSTER=((rRes&&rRes.data)||[]).map(function(t){return t.name;});
+    renderTeamBoard();
+  }catch(e){ el.innerHTML='<div class="empty-state">Couldn\'t load the team view right now.</div>'; }
+}
+function renderTeamBoard(){
+  var el=document.getElementById('teamBoard'); if(!el) return;
+  var today=tkToday(), byTech={};
+  TEAM_TASKS.forEach(function(t){
+    if(!t||!t.assignee||t.status==='done') return;
+    var k=String(t.assignee).trim().toLowerCase();
+    (byTech[k]=byTech[k]||{name:String(t.assignee).trim(),tasks:[]}).tasks.push(t);
+  });
+  TEAM_ROSTER.forEach(function(n){ var k=String(n).trim().toLowerCase(); if(k&&!byTech[k]) byTech[k]={name:n,tasks:[]}; });
+  var names=Object.keys(byTech).sort(function(a,b){ return byTech[a].name.localeCompare(byTech[b].name); });
+  if(!names.length){ el.innerHTML='<div class="empty-state">No one is assigned yet.</div>'; return; }
+  var meName=String((currentTech&&currentTech.name)||'').trim().toLowerCase();
+  el.innerHTML=names.map(function(k){
+    var g=byTech[k], isMe=(k===meName);
+    var open=g.tasks.slice().sort(function(a,b){ return String(a.due||'9999').localeCompare(String(b.due||'9999')); });
+    var rows= open.length ? open.map(function(t){
+      var late=tkLate(t), isToday=(t.due===today);
+      var loc=(t.kind&&t.kind!=='job')?({shop:'Shop',admin:'Admin',misc:'Misc'}[t.kind]||t.kind):(t.job||t.title||'—');
+      var due=t.due?('<span class="tm-due'+(late?' late':(isToday?' today':''))+'">'+(late?'late · ':(isToday?'today · ':''))+tkDue(t.due)+'</span>'):'';
+      return '<div class="tm-task"><span class="tm-dot'+(t.status==='doing'?' doing':'')+'"></span><span class="tm-loc">'+tkEsc(loc)+'</span>'+due+'</div>';
+    }).join('') : '<div class="tm-none">No open assignments</div>';
+    return '<div class="tm-card'+(isMe?' me':'')+'"><div class="tm-name">'+tkEsc(g.name)+(isMe?' <span class="tm-you">You</span>':'')+'<span class="tm-count">'+open.length+'</span></div>'+rows+'</div>';
+  }).join('');
+}
 function logout(){currentTech=null;selectedPin='';document.getElementById('appScreen').classList.remove('active');document.getElementById('loginScreen').classList.add('active');document.querySelectorAll('.tech-btn').forEach(b=>b.classList.remove('selected'));updatePinDots();document.getElementById('loginError').textContent='';resetForm();}
-function switchTab(tab){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');document.getElementById('tab'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active');if(tab==='history')loadHistory();if(tab==='log')loadEngagements();if(tab==='tasks')loadMyTasks();}
+function switchTab(tab){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');document.getElementById('tab'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active');if(tab==='history')loadHistory();if(tab==='log')loadEngagements();if(tab==='tasks')loadMyTasks();if(tab==='team')loadTeamBoard();}
 
 // ── Hours ──
 function setHours(h){
