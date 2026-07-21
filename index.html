@@ -1079,6 +1079,23 @@ function moneyGlanceCard(pipeOpen,bill){  // admin only — secondary glance, NO
 // This pulls the real count straight from Supabase every time the Hub loads,
 // using the same public anon key already baked into every other page, and
 // overwrites the local cache so it's never stale or device-specific again.
+// Derive a rough completion % from the workflow status, used when a job has
+// no manual job_status_pct set — so the dashboard bars aren't all 0%.
+function jobStagePct(status){
+  switch(status){
+    case "R&D": return 10;
+    case "Proposal Created": return 15;
+    case "Proposal Sent": return 20;
+    case "Approved": return 30;
+    case "PO Sent": return 45;
+    case "In Progress": return 55;
+    case "Ready To Be Billed":
+    case "Invoice In Review":
+    case "Invoice Sent":
+    case "Paid": return 100;
+    default: return 40;
+  }
+}
 async function refreshJobsCacheLive(){
   try{
     var SB_URL="https://aanrxyiocxxndkvkeocv.supabase.co";
@@ -1087,12 +1104,14 @@ async function refreshJobsCacheLive(){
     if(!r.ok) return false;
     var rows = await r.json();
     var freshCache = rows.map(function(j){
+      var status = j.status || "Active";
+      var manual = +j.job_status_pct || 0;
       return {
         name: j.job_name || j.job_number || "Job",
         project: (j.apb_engagements && j.apb_engagements.name) || "(no project)",
-        status: j.status || "Active",
-        pct: +j.job_status_pct || 0,
-        lead: (j.status === "Lead" || j.status === "Estimating")
+        status: status,
+        pct: manual > 0 ? manual : jobStagePct(status),
+        lead: (status === "Lead" || status === "Estimating" || status === "Canceled")
       };
     });
     localStorage.setItem("apb_jobs_cache", JSON.stringify(freshCache));
