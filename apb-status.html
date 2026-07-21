@@ -107,6 +107,7 @@ body{font-family:Inter,-apple-system,"Segoe UI",sans-serif;background:var(--bg);
   <div class="sp"></div>
   <div class="whoami" id="whoami"></div>
   <span class="role-pill" id="rolePill">—</span>
+  <button class="navbtn" onclick="exportBackup()" title="Download every field update (incl. photos) as a backup file">⬇ Backup</button>
   <a class="navbtn" href="index.html">⌂ Home</a>
 </header>
 
@@ -289,6 +290,19 @@ function closeLb(){ document.getElementById('lb').classList.remove('open'); }
 
 let toastT;
 function toast(msg,cls){ const el=document.getElementById('toast'); el.textContent=msg; el.className='toast show'+(cls?' '+cls:''); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),2600); }
+
+// Download every synced field update (incl. photos) as a JSON backup file.
+function exportBackup(){
+  const all=reports();
+  const payload={ table:'apb_field_reports', exported_at:new Date().toISOString(), count:all.length, reports:all };
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url;
+  a.download='apb-field-updates-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); },1500);
+  toast('Backup downloaded — '+all.length+' update'+(all.length===1?'':'s'),'green');
+}
 
 // init (after all declarations exist)
 renderWhoAmI(); fillProjects(); renderFeed();
