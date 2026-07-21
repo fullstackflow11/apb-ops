@@ -142,9 +142,17 @@ body{font-family:Inter,-apple-system,"Segoe UI",sans-serif;background:var(--bg);
   <div class="modal">
     <h3 id="taskModalTitle">Assign work</h3>
     <div class="f2">
-      <div class="fg"><label>Project / vessel *</label><input id="tJob" type="text" placeholder="e.g. Redundansea 2.0"></div>
+      <div class="fg"><label>Type</label>
+        <select id="tKind" onchange="updateKindUI()">
+          <option value="job">Job / Vessel</option>
+          <option value="shop">Shop work</option>
+          <option value="admin">Admin</option>
+          <option value="misc">Misc / other</option>
+        </select>
+      </div>
       <div class="fg"><label>Assign to *</label><select id="tAssignee"></select></div>
     </div>
+    <div class="fg"><label id="tJobLabel">Project / vessel *</label><input id="tJob" type="text" placeholder="e.g. Redundansea 2.0"></div>
     <div class="fg"><label>Message <span style="color:var(--ink-3);font-weight:400;text-transform:none;letter-spacing:0">— optional</span></label><textarea id="tDesc" placeholder="Anything they need to know — scope, where on the boat, parts, deadline…"></textarea></div>
     <div class="fg" style="max-width:220px"><label>Target date — optional</label><input id="tDue" type="date"></div>
     <input type="hidden" id="tTitle"><input type="hidden" id="tPriority" value="normal">
@@ -179,7 +187,7 @@ body{font-family:Inter,-apple-system,"Segoe UI",sans-serif;background:var(--bg);
 const LS_TASKS='apb_tasks', LS_TEAM='apb_team', LS_ME='apb_me';
 const DAY=86400000;
 const role = (window.APBRoles ? APBRoles.role() : 'admin');
-const isAdmin = role==='admin';
+const isAdmin = role==='admin' || role==='pm';   // PMs dispatch/assign too
 
 const SEED_TEAM=[
   {name:'Jerry Clark',role:'tech'},{name:'Tommy Borden',role:'tech'},
@@ -225,10 +233,25 @@ let editingId=null;
 document.getElementById('rolePill').textContent = window.APBRoles?APBRoles.label():'Admin';
 boot();
 
+// Pull the live roster from apb_techs so work is assigned to real techs and the
+// names match exactly what the tech portal logs in as.
+async function loadTeam(){
+  if(!sb) return;
+  try{
+    const {data,error}=await sb.from('apb_techs').select('name,active').eq('active',true).order('name');
+    if(error||!Array.isArray(data)||!data.length) return;
+    save(LS_TEAM, data.map(t=>({name:t.name, role:'tech'})));
+    const tm=document.getElementById('taskModal');
+    if(tm && tm.classList.contains('open')) fillAssignees(document.getElementById('tAssignee'));
+    try{ isAdmin?renderAdmin():renderMine(); }catch(e){}
+  }catch(e){}
+}
+
 function boot(){
   if(isAdmin){ document.getElementById('subTitle').textContent='Who is working on what'; renderWhoAmI(true); renderAdmin(); }
   else { document.getElementById('subTitle').textContent='My assigned work'; renderWhoAmI(false); renderMine(); }
   syncPull();
+  loadTeam();
 }
 
 // ── Identity ("viewing as") ─────────────────────────────────────────────────
@@ -283,7 +306,9 @@ function col(status,label,all){
 function card(t,admin){
   const late=isOverdue(t);
   const due=t.due?`<span class="tag due ${late?'late':''}">⏱ ${fmtDue(t.due)}${late?' · late':''}</span>`:'';
-  const job=t.job?`<span class="tag job">⚓ ${esc(t.job)}</span>`:'';
+  const kd=t.kind||'job';
+  const kicon={job:'⚓',shop:'🛠',admin:'📋',misc:'📌'}[kd]||'⚓';
+  const cat=kd!=='job'?`<span class="tag job">${({shop:'Shop',admin:'Admin',misc:'Misc'}[kd]||kd)}</span>`:'';
   const who=admin?`<span class="tag who">${esc(t.assignee||'Unassigned')}</span>`:'';
   let actions='';
   if(t.status==='todo') actions=`<button class="ca go" onclick="setStatus('${t.id}','doing')">▸ Start</button><button class="ca done" onclick="setStatus('${t.id}','done')">✓ Done</button>`;
@@ -293,9 +318,9 @@ function card(t,admin){
   else actions+=`<button class="ca" onclick="addNote('${t.id}')">+ Note</button>`;
   const notes=(t.notes&&t.notes.length)?`<div class="notes">${t.notes.slice(-3).map(n=>`<div class="note"><b>${esc(n.by)} · ${n.at}</b> — ${esc(n.text)}</div>`).join('')}</div>`:'';
   return `<div class="card ${late?'overdue':''}">
-    <p class="ttl">⚓ ${esc(t.job||t.title||'—')}</p>
+    <p class="ttl">${kicon} ${esc(t.title||t.job||'—')}</p>
     ${t.desc?`<p class="desc">${esc(t.desc)}</p>`:''}
-    <div class="meta">${who}${due}</div>
+    <div class="meta">${cat}${who}${due}</div>
     ${notes}
     <div class="card-actions">${actions}</div>
   </div>`;
@@ -355,12 +380,19 @@ function delTask(id){
 function fillAssignees(sel){
   sel.innerHTML = team().map(m=>`<option value="${esc(m.name)}">${esc(m.name)} · ${m.role.toUpperCase()}</option>`).join('');
 }
+function updateKindUI(){
+  const k=document.getElementById('tKind').value;
+  const lbl=document.getElementById('tJobLabel'), inp=document.getElementById('tJob');
+  if(k==='job'){ lbl.textContent='Project / vessel *'; inp.placeholder='e.g. Redundansea 2.0'; }
+  else { lbl.textContent='What needs doing *'; inp.placeholder={shop:'e.g. Organize the fastener bins',admin:'e.g. Update the safety binder',misc:'e.g. Pick up parts from the supplier'}[k]||'Describe the task'; }
+}
 function openTaskModal(){
   editingId=null;
   document.getElementById('taskModalTitle').textContent='Assign work';
   fillAssignees(document.getElementById('tAssignee'));
   ['tTitle','tJob','tDue','tDesc'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('tPriority').value='normal';
+  document.getElementById('tKind').value='job'; updateKindUI();
   document.getElementById('taskModal').classList.add('open');
   document.getElementById('tJob').focus();
 }
@@ -371,7 +403,8 @@ function editTask(id){
   fillAssignees(document.getElementById('tAssignee'));
   document.getElementById('tTitle').value=t.title||'';
   document.getElementById('tAssignee').value=t.assignee||'';
-  document.getElementById('tJob').value=t.job||'';
+  document.getElementById('tKind').value=t.kind||'job'; updateKindUI();
+  document.getElementById('tJob').value=t.job||t.title||'';
   document.getElementById('tPriority').value=t.priority||'normal';
   document.getElementById('tDue').value=t.due||'';
   document.getElementById('tDesc').value=t.desc||'';
@@ -379,19 +412,20 @@ function editTask(id){
 }
 function closeTaskModal(){ document.getElementById('taskModal').classList.remove('open'); }
 function saveTask(){
-  const job=document.getElementById('tJob').value.trim();
-  if(!job){ toast('Add a project / vessel','red'); return; }
+  const kind=document.getElementById('tKind').value||'job';
+  const main=document.getElementById('tJob').value.trim();
+  if(!main){ toast(kind==='job'?'Add a project / vessel':'Add what needs doing','red'); return; }
   const assignee=document.getElementById('tAssignee').value;
   if(!assignee){ toast('Pick who to assign','red'); return; }
   const m=team().find(x=>x.name===assignee);
-  const data={ title:job, assignee, assigneeRole:m?m.role:'tech',
-    job:job, priority:'normal',
+  const data={ title:main, assignee, assigneeRole:m?m.role:'tech', kind:kind,
+    job:(kind==='job'?main:''), priority:'normal',
     due:document.getElementById('tDue').value,
     desc:document.getElementById('tDesc').value.trim() };
   const all=tasks();
   let saved;
   if(editingId){ const t=all.find(x=>x.id===editingId); Object.assign(t,data); t.updatedAt=Date.now(); saved=t; toast('Updated','green'); }
-  else { saved={ id:uid(), ...data, status:'todo', notes:[], createdBy:APBRoles.label(), createdAt:Date.now(), updatedAt:Date.now() }; all.push(saved); toast((assignee.split(' ')[0])+' assigned to '+job,'green'); }
+  else { saved={ id:uid(), ...data, status:'todo', notes:[], createdBy:APBRoles.label(), createdAt:Date.now(), updatedAt:Date.now() }; all.push(saved); toast(assignee.split(' ')[0]+' assigned'+(kind==='job'?' to '+main:' — '+main),'green'); }
   save(LS_TASKS,all); taskUpsert(saved); closeTaskModal(); renderAdmin();
 }
 
