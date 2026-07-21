@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>APB — Time & Billing Reports</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="apb-people.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -232,7 +233,10 @@ const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
   const AL=['christina@apb1.com','jerry@apb1.com','nate@apb1.com','christopher@apb1.com','chelsea@apb1.com','brandon@apb1.com','jhuber@apb1.com'];
   try{
     const{data:{session}}=await sb.auth.getSession();
-    if(!session||!AL.includes(session.user?.email)){window.location.replace('index.html');return;}
+    if(!session){window.location.replace('index.html');return;}
+    const _em=(session.user&&session.user.email)||'';
+    const _mgr = window.APBPeople ? await APBPeople.isManager(_em) : null;   // apb_people is the source of truth
+    if(!AL.includes(_em) && _mgr!==true){window.location.replace('index.html');return;}
     const hdr=document.querySelector('header,.topbar');
     if(hdr){
       const sp=document.createElement('span');sp.style.cssText='font-size:12px;color:#6B7A92;font-weight:500;padding:0 4px;margin-left:auto';sp.textContent=session.user.email.split('@')[0];hdr.appendChild(sp);
