@@ -229,7 +229,7 @@ const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 (async()=>{
   await new Promise(r=>setTimeout(r,500));
-  const AL=['christina@apb1.com','jerry@apb1.com','nate@apb1.com','christopher@apb1.com','chelsea@apb1.com','brandon@apb1.com'];
+  const AL=['christina@apb1.com','jerry@apb1.com','nate@apb1.com','christopher@apb1.com','chelsea@apb1.com','brandon@apb1.com','jhuber@apb1.com'];
   try{
     const{data:{session}}=await sb.auth.getSession();
     if(!session||!AL.includes(session.user?.email)){window.location.replace('index.html');return;}
