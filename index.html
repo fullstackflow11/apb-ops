@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <script src="apb-demo.js"></script>
 <script src="apb-jobs.js"></script>
+<script src="apb-people.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>APB Operations Hub</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -604,37 +605,66 @@ body.theme-light .foot b{color:#48597a}
   // Per-account dashboard role — anyone not listed here signs in as 'admin'.
   var ACCT_ROLE = { 'jordan@apb1.com':'pm' };
   var AUTH_KEY = 'apb_hub_auth_v2';
-  window.apbCheckLogin = function(){
+
+  function _grant(email, role){
+    localStorage.setItem(AUTH_KEY, email);
+    try{ localStorage.setItem('apb_role', role||'admin'); sessionStorage.removeItem('apb_preview'); }catch(e){}
+  }
+  function _fail(errEl){
+    errEl.textContent='Incorrect email or PIN.'; errEl.style.display='block';
+    document.getElementById('authPin').value=''; document.getElementById('authPin').focus();
+  }
+
+  // Login: check apb_people (source of truth) first, then the hardcoded map as a fallback.
+  window.apbCheckLogin = async function(){
     var email=(document.getElementById('authEmail').value||'').trim().toLowerCase();
     var pin=(document.getElementById('authPin').value||'').trim();
     var errEl=document.getElementById('authError');
     if(!email||!pin){errEl.textContent='Enter your email and PIN.';errEl.style.display='block';return;}
+
+    try{
+      if(window.APBPeople){
+        var res=await APBPeople.checkLogin(email,pin);
+        if(res && res.found){
+          if(res.ok){ errEl.style.display='none'; _grant(email,res.role); location.reload(); return; }
+          _fail(errEl); return;                       // in the table, wrong PIN
+        }
+      }
+    }catch(e){}
+
+    // Fallback: person not in the table yet, or the DB was unreachable.
     if(ADMINS[email] && ADMINS[email]===pin){
-      localStorage.setItem(AUTH_KEY,email);
-      try{ localStorage.setItem('apb_role', ACCT_ROLE[email]||'admin'); sessionStorage.removeItem('apb_preview'); }catch(e){}
-      errEl.style.display='none';
-      location.reload();
-    } else {
-      errEl.textContent='Incorrect email or PIN.';errEl.style.display='block';
-      document.getElementById('authPin').value='';document.getElementById('authPin').focus();
+      errEl.style.display='none'; _grant(email, ACCT_ROLE[email]||'admin'); location.reload(); return;
     }
+    _fail(errEl);
   };
+
   window.apbSignOut = function(){ localStorage.removeItem(AUTH_KEY); location.reload(); };
   function apbHideGate(){
     var g=document.getElementById('authGate');
     if(g) g.style.display='none';
     document.body.style.overflow='';
   }
+  function apbShowGate(){
+    document.body.style.overflow='hidden';
+    setTimeout(function(){var e=document.getElementById('authEmail'); if(e)e.focus();},100);
+  }
+  function _reassert(role){ try{ if(sessionStorage.getItem('apb_preview')!=='1') localStorage.setItem('apb_role', role);}catch(e){} }
+
   var saved = localStorage.getItem(AUTH_KEY);
   if(saved && ADMINS[saved]){
-    // Re-assert each account's role on every load (admins stay admin; Jordan stays PM),
-    // unless an admin is mid-preview of another role.
-    try{ if(sessionStorage.getItem('apb_preview')!=='1') localStorage.setItem('apb_role', ACCT_ROLE[saved]||'admin'); }catch(e){}
-    apbHideGate();
-  } else {
+    // Known account — fast path, no network needed.
+    _reassert(ACCT_ROLE[saved]||'admin'); apbHideGate();
+  } else if(saved && window.APBPeople){
+    // Account created only in apb_people — verify it's still active, re-assert its role.
     document.body.style.overflow='hidden';
-    localStorage.removeItem(AUTH_KEY);
-    setTimeout(function(){var e=document.getElementById('authEmail'); if(e)e.focus();},100);
+    APBPeople.getRole(saved).then(function(role){
+      if(role){ _reassert(role); apbHideGate(); }            // still valid
+      else if(role===null){ localStorage.removeItem(AUTH_KEY); apbShowGate(); } // removed/deactivated
+      else { apbHideGate(); }                                 // undefined = DB down, trust prior session
+    }).catch(function(){ apbHideGate(); });
+  } else {
+    localStorage.removeItem(AUTH_KEY); apbShowGate();
   }
 })();
 </script>
@@ -1531,4 +1561,4 @@ setTimeout(function() {
 })();
 </script>
 </body>
-</html> 
+</html>
