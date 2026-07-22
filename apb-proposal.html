@@ -266,6 +266,7 @@ const JOB_TEMPLATES=[
 (function prefill(){
   let p=null; try{ p=JSON.parse(localStorage.getItem("apb_new_proposal")||"null"); }catch(e){}
   if(!p) return; localStorage.removeItem("apb_new_proposal");
+  window.__leadId = p.leadId || p.lead_id || null;   // link the proposal back to its lead/job
   const setIf=(id,v)=>{ if(v!=null&&v!=="") $(id).value=v; };
   setIf("client",p.client); setIf("ptitle",p.ptitle); setIf("scope",p.scope);
   setIf("attn",p.attn); setIf("cemail",p.cemail); setIf("cphone",p.cphone); setIf("loc",p.loc);
@@ -339,29 +340,64 @@ function restoreState(s){
   jobs = (s.jobs&&s.jobs.length)?s.jobs.map(j=>({title:j.title||"",tasks:j.tasks||"",labor:j.labor||"",materials:j.materials||"",total:j.total||""})):[{title:"",tasks:"",labor:"",materials:"",total:""}];
   renderJobs();
 }
+/* Shared, team-wide proposal drafts (Supabase apb_proposal_drafts).
+   Each save is its OWN row (unique id) so two people on the same job never
+   overwrite each other. localStorage is kept only as an offline fallback. */
 const DKEY="apb_proposal_drafts";
-function getDrafts(){ try{ return JSON.parse(localStorage.getItem(DKEY)||"[]"); }catch(e){ return []; } }
-function setDrafts(a){ localStorage.setItem(DKEY, JSON.stringify(a)); }
-/* SEAM: swap getDrafts/setDrafts for a Supabase `apb_proposal_drafts` table to share drafts team-wide. */
-function saveDraft(){
+const PD_URL="https://aanrxyiocxxndkvkeocv.supabase.co";
+const PD_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU";
+let DRAFTS=[];
+function localDrafts(){ try{ return JSON.parse(localStorage.getItem(DKEY)||"[]"); }catch(e){ return []; } }
+function mirrorLocal(){ try{ localStorage.setItem(DKEY, JSON.stringify(DRAFTS.slice(0,200))); }catch(e){} }
+async function loadDraftsFromCloud(){
+  try{
+    const r=await fetch(`${PD_URL}/rest/v1/apb_proposal_drafts?select=id,name,by,lead_id,saved_at,data&order=saved_at.desc`,{headers:{apikey:PD_KEY,Authorization:"Bearer "+PD_KEY}});
+    if(!r.ok) throw new Error("http "+r.status);
+    const rows=await r.json();
+    DRAFTS=rows.map(d=>({id:d.id,name:d.name,by:d.by,lead_id:d.lead_id,savedAt:d.saved_at,state:d.data}));
+    mirrorLocal();
+  }catch(e){ DRAFTS=localDrafts(); }   // offline fallback
+  return DRAFTS;
+}
+async function saveDraft(){
   const dflt=$("client").value||$("ptitle").value||"Untitled proposal";
   const name=prompt("Name this draft:", dflt); if(name===null) return;
-  const drafts=getDrafts();
-  drafts.unshift({ id:"d"+Date.now(), name:name||dflt, savedAt:new Date().toISOString(), by:($("preparer").value.split("|")[0]||"APB"), state:formState() });
-  setDrafts(drafts); toast("Draft saved — “"+(name||dflt)+"”");
+  const draft={ id:"d"+Date.now()+Math.random().toString(36).slice(2,6), name:name||dflt,
+    by:($("preparer").value.split("|")[0]||"APB"), lead_id:(window.__leadId||null),
+    savedAt:new Date().toISOString(), state:formState() };
+  DRAFTS.unshift(draft); mirrorLocal();              // optimistic
+  try{
+    const r=await fetch(`${PD_URL}/rest/v1/apb_proposal_drafts`,{
+      method:"POST",
+      headers:{apikey:PD_KEY,Authorization:"Bearer "+PD_KEY,"Content-Type":"application/json",Prefer:"return=minimal"},
+      body: JSON.stringify({ id:draft.id, name:draft.name, by:draft.by, lead_id:draft.lead_id, saved_at:draft.savedAt, data:draft.state })
+    });
+    if(!r.ok) throw new Error("http "+r.status);
+    toast("Draft saved & shared — “"+draft.name+"”");
+  }catch(e){ toast("Saved locally — will share when back online"); }
 }
-function openDrafts(){
-  const drafts=getDrafts(), list=$("draftsList");
-  list.innerHTML = drafts.length ? drafts.map(d=>`
+async function openDrafts(){
+  const list=$("draftsList");
+  list.innerHTML='<div class="emptyd">Loading team drafts…</div>';
+  $("draftsModal").classList.add("open");
+  await loadDraftsFromCloud();
+  renderDraftsList();
+}
+function renderDraftsList(){
+  const list=$("draftsList");
+  list.innerHTML = DRAFTS.length ? DRAFTS.map(d=>`
     <div class="draft" data-id="${d.id}">
-      <div><div class="dn">${esc(d.name)}</div><div class="dd">${new Date(d.savedAt).toLocaleString()} · ${esc(d.by)}</div></div>
+      <div><div class="dn">${esc(d.name)}</div><div class="dd">${d.savedAt?new Date(d.savedAt).toLocaleString():""} · ${esc(d.by||"APB")}</div></div>
       <div class="sp"></div>
       <button class="load" data-load="${d.id}">Load</button>
       <button class="del" data-del="${d.id}">Delete</button>
     </div>`).join("") : '<div class="emptyd">No saved drafts yet. Use “Save for later” to start one.</div>';
-  list.querySelectorAll("[data-load]").forEach(b=>b.onclick=()=>{ const d=getDrafts().find(x=>x.id===b.dataset.load); if(d){ restoreState(d.state); closeDrafts(); toast("Loaded “"+d.name+"”"); } });
-  list.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{ setDrafts(getDrafts().filter(x=>x.id!==b.dataset.del)); openDrafts(); });
-  $("draftsModal").classList.add("open");
+  list.querySelectorAll("[data-load]").forEach(b=>b.onclick=()=>{ const d=DRAFTS.find(x=>x.id===b.dataset.load); if(d){ restoreState(d.state); closeDrafts(); toast("Loaded “"+d.name+"”"); } });
+  list.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>deleteDraft(b.dataset.del));
+}
+async function deleteDraft(id){
+  DRAFTS=DRAFTS.filter(x=>x.id!==id); mirrorLocal(); renderDraftsList();
+  try{ await fetch(`${PD_URL}/rest/v1/apb_proposal_drafts?id=eq.${encodeURIComponent(id)}`,{method:"DELETE",headers:{apikey:PD_KEY,Authorization:"Bearer "+PD_KEY}}); }catch(e){}
 }
 function closeDrafts(){ $("draftsModal").classList.remove("open"); }
 let toastT=null; function toast(m){ const t=$("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2400); }
