@@ -398,6 +398,7 @@ textarea:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 4px va
   <div class="tabs">
     <button class="tab active" data-view="active">Active List <span class="cnt" id="cntActive">0</span></button>
     <button class="tab" data-view="leads">Leads <span class="cnt" id="cntLeads">0</span></button>
+    <button class="tab" data-view="archive">Archive <span class="cnt" id="cntArchive">0</span></button>
     <button class="tab" data-view="pipeline" id="tabPipeline" style="display:none">Pipeline <span class="cnt" id="cntPipeline">$0</span></button>
   </div>
 
@@ -537,6 +538,7 @@ textarea:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 4px va
   </div>
   <div class="df" style="flex-direction:column; align-items:stretch">
     <button class="btn primary" id="dSave" style="width:100%">Save to Active List</button>
+    <button class="btn" id="dArchive" style="width:100%; margin-top:8px; display:none">Archive job</button>
     <div style="display:flex; gap:8px; margin-top:8px">
       <button class="btn report" id="dReportStatus" style="flex:1">Status Report</button>
       <button class="btn report" id="dReportDone" style="flex:1">Completion Report</button>
@@ -792,13 +794,13 @@ async function load(){
   const {SUPABASE_URL:u, SUPABASE_ANON_KEY:k} = CONFIG;
   if(k){
     try{
-      const sel = "select=id,engagement_id,job_number,job_name,status,job_status_pct,pm_notes,ms_list_item_id,updated_at,apb_engagements(name,rep)&order=updated_at.desc";
+      const sel = "select=id,engagement_id,job_number,job_name,status,job_status_pct,archived,pm_notes,ms_list_item_id,updated_at,apb_engagements(name,rep)&order=updated_at.desc";
       const r = await fetch(`${u}/rest/v1/apb_jobs?${sel}`,{headers:{apikey:k,Authorization:"Bearer "+k}});
       const data = await r.json();
       JOBS = data.map(j=>({
         id:j.id, source:"job", engagement_id:j.engagement_id, engagement:(j.apb_engagements&&j.apb_engagements.name)||"—",
         rep:(j.apb_engagements&&j.apb_engagements.rep)||"", job_number:j.job_number||"",
-        job_name:j.job_name||"", status:j.status||"Lead", job_status_pct:j.job_status_pct||0,
+        job_name:j.job_name||"", status:j.status||"Lead", job_status_pct:j.job_status_pct||0, archived:!!j.archived,
         pm_notes:j.pm_notes||"", ms_list_item_id:j.ms_list_item_id, updated_at:j.updated_at
       }));
       // Brand-new, not-yet-a-client prospects live in apb_leads until approved/converted.
@@ -939,15 +941,17 @@ function setProjMeta(name,meta){ const m=lsGet("apb_proj_meta",{}); m[name]=Obje
 let view="active";
 function switchView(v){
   view=v;
-  G("activeView").style.display = v==="active"?"":"none";
+  G("activeView").style.display = (v==="active"||v==="archive")?"":"none";
   G("leadsView").style.display = v==="leads"?"":"none";
   G("pipelineView").style.display = v==="pipeline"?"":"none";
   document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.view===v));
   if(v==="pipeline") renderPipeline();
+  else if(v==="active"||v==="archive") render();
 }
 function updateCounts(){
   G("cntLeads").textContent=JOBS.filter(isLead).length;
-  G("cntActive").textContent=JOBS.filter(j=>!isLead(j)).length;
+  G("cntActive").textContent=JOBS.filter(j=>!isLead(j)&&!j.archived).length;
+  if(G("cntArchive")) G("cntArchive").textContent=JOBS.filter(j=>!isLead(j)&&j.archived).length;
   const open=getPipeline().filter(r=>!["Paid","Complete","Canceled","Lost"].includes(r.stage));
   G("cntPipeline").textContent=moneyShort(open.reduce((a,r)=>a+(+r.value||0),0));
 }
@@ -1204,6 +1208,7 @@ function render(){
   const fs=document.getElementById("fStatus").value, fp=document.getElementById("fProj").value;
   const list=JOBS.filter(j=>{
     if(isLead(j)) return false;                 // leads live in the Leads tab
+    if(view==="archive"){ if(!j.archived) return false; } else { if(j.archived) return false; }  // archived jobs live in the Archive tab
     if(fs&&j.status!==fs) return false;
     if(fp&&j.engagement!==fp) return false;
     if(q&&!(j.engagement+" "+j.job_name+" "+j.job_number+" "+j.rep).toLowerCase().includes(q)) return false;
@@ -1296,6 +1301,11 @@ function openDrawer(id){
   }
   const dScope=document.getElementById("dScope");
   if(dScope){ dScope.value=draft.job_name; dScope.oninput=()=>{ draft.job_name=dScope.value; }; }
+  const dArch=document.getElementById("dArchive");
+  if(dArch){
+    if(current.source==="lead"){ dArch.style.display="none"; }
+    else { dArch.style.display=""; dArch.textContent=current.archived?"↩ Restore from archive":"📦 Archive job"; dArch.onclick=()=>toggleArchive(current); }
+  }
   setPct(draft.pct);
   document.getElementById("dNotes").value=draft.notes;
   // lead → project conversion offer
@@ -1333,6 +1343,25 @@ async function save(){
   persistStatus(current); refreshViews(); closeDrawer(); toast(`Saved · ${current.engagement} ${current.job_number}`);
 }
 document.getElementById("dSave").onclick=save;
+
+/* Archive / restore a job — a completed job moves out of the Active List into
+   the Archive tab (kept + searchable), without inventing a new status. */
+async function toggleArchive(job){
+  const to=!job.archived;
+  if(LIVE && isRealId(job.id) && job.source!=="lead"){
+    try{
+      const r=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_jobs?id=eq.${job.id}`,{
+        method:"PATCH",
+        headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+CONFIG.SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"return=minimal"},
+        body: JSON.stringify({archived:to, updated_at:new Date().toISOString()})
+      });
+      if(!r.ok){ toast("Archive failed — check connection"); return; }
+    }catch(e){ toast("Archive failed — check connection"); return; }
+  }
+  job.archived=to; job.updated_at=new Date().toISOString();
+  buildFilters(); refreshViews(); closeDrawer();
+  toast(to ? ("Archived · "+job.engagement) : ("Restored · "+job.engagement));
+}
 
 /* =============================================================
    pushToActiveList — THE AUTOMATION SEAM (build now, wire later)
