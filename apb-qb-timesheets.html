@@ -133,7 +133,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   function detectEmp(){return findCol(/employee|tech|worker|staff|name/i);}
   function detectCust(){return findCol(/customer|project|job.?name|vessel|engagement|client/i);}
   function detectBill(){var n=findCol(/billable/i);if(n>=0)return n;for(var c=0;c<headers.length;c++){var ok=0,t=0;for(var r=0;r<Math.min(rows.length,40);r++){var v=rows[r][c];if(v==="")continue;t++;if(yesno(v))ok++;}if(t>=3&&ok/t>0.8)return c;}return -1;}
-  function detectDesc(){return findCol(/description|work.?desc|notes|detail|scope|task/i);}
+  function detectDesc(){return findCol(/description|work.?desc|work.?perf|performed|invoice.?line|narrative|comment|summary|notes|detail|scope|task/i);}
 
   function fillSel(sel,chosen){sel.innerHTML='<option value="-1">— none —</option>'+headers.map(function(h,i){return '<option value="'+i+'"'+(i===chosen?' selected':'')+'>'+esc(h)+'</option>';}).join("");}
   function setup(){
