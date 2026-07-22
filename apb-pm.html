@@ -499,6 +499,7 @@ textarea:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 4px va
     <div class="eyebrow" id="dEyebrow">—</div>
     <h2 id="dTitle">—</h2>
     <div class="meta" id="dMeta">—</div>
+    <div id="dEdited" style="font-size:11px;color:var(--ink-3);margin-top:3px"></div>
   </div>
   <div class="db">
     <div class="convert" id="dConvert" style="display:none">
@@ -794,13 +795,14 @@ async function load(){
   const {SUPABASE_URL:u, SUPABASE_ANON_KEY:k} = CONFIG;
   if(k){
     try{
-      const sel = "select=id,engagement_id,job_number,job_name,status,job_status_pct,archived,pm_notes,ms_list_item_id,updated_at,apb_engagements(name,rep)&order=updated_at.desc";
+      const sel = "select=id,engagement_id,job_number,job_name,status,job_status_pct,archived,edited_by,edited_at,pm_notes,ms_list_item_id,updated_at,apb_engagements(name,rep)&order=updated_at.desc";
       const r = await fetch(`${u}/rest/v1/apb_jobs?${sel}`,{headers:{apikey:k,Authorization:"Bearer "+k}});
       const data = await r.json();
       JOBS = data.map(j=>({
         id:j.id, source:"job", engagement_id:j.engagement_id, engagement:(j.apb_engagements&&j.apb_engagements.name)||"—",
         rep:(j.apb_engagements&&j.apb_engagements.rep)||"", job_number:j.job_number||"",
         job_name:j.job_name||"", status:j.status||"Lead", job_status_pct:j.job_status_pct||0, archived:!!j.archived,
+        edited_by:j.edited_by||"", edited_at:j.edited_at||null,
         pm_notes:j.pm_notes||"", ms_list_item_id:j.ms_list_item_id, updated_at:j.updated_at
       }));
       // Brand-new, not-yet-a-client prospects live in apb_leads until approved/converted.
@@ -1283,6 +1285,8 @@ function openDrawer(id){
   document.getElementById("dEyebrow").textContent = current.job_number? "JOB "+current.job_number : "JOB";
   document.getElementById("dTitle").textContent = current.job_name||"—";
   document.getElementById("dMeta").innerHTML = `${esc(current.engagement)}${current.rep?` &nbsp;·&nbsp; Rep ${esc(current.rep)}`:""}`;
+  const dEd=document.getElementById("dEdited");
+  if(dEd){ dEd.textContent = current.edited_by ? ("Last edited by "+current.edited_by+(current.edited_at?" · "+fmtAgo(current.edited_at):"")) : ""; }
   // status buttons
   const statusOptions = current.source==="lead" ? LEAD_STATUSES : STATUSES;
   document.getElementById("dStatus").innerHTML = statusOptions.map(s=>`
@@ -1338,6 +1342,8 @@ async function save(){
   current.status=draft.status; current.job_status_pct=draft.pct; current.pm_notes=draft.notes;
   if(draft.rep!==undefined) current.rep=draft.rep;
   if(draft.job_name!==undefined) current.job_name=draft.job_name;
+  current.edited_by=(function(){try{return (localStorage.getItem("apb_hub_auth_v2")||"").split("@")[0];}catch(e){return "";}})()||current.edited_by||"";
+  current.edited_at=new Date().toISOString();
   current.updated_at=new Date().toISOString();
   await pushToActiveList(current, draft);   // Phase-2 seam
   persistStatus(current); refreshViews(); closeDrawer(); toast(`Saved · ${current.engagement} ${current.job_number}`);
@@ -1376,8 +1382,8 @@ async function pushToActiveList(job, changes){
     try{
       const table = job.source==="lead" ? "apb_leads" : "apb_jobs";
       const body = job.source==="lead"
-        ? {status:changes.status, description:job.job_name, notes:changes.notes, rep:job.rep, updated_at:new Date().toISOString()}
-        : {status:changes.status, job_name:job.job_name, job_status_pct:changes.pct, pm_notes:changes.notes, rep:job.rep, updated_at:new Date().toISOString()};
+        ? {status:changes.status, description:job.job_name, notes:changes.notes, rep:job.rep, edited_by:job.edited_by||null, edited_at:job.edited_at||null, updated_at:new Date().toISOString()}
+        : {status:changes.status, job_name:job.job_name, job_status_pct:changes.pct, pm_notes:changes.notes, rep:job.rep, edited_by:job.edited_by||null, edited_at:job.edited_at||null, updated_at:new Date().toISOString()};
       const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/${table}?id=eq.${job.id}`,{
         method:"PATCH",
         headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+CONFIG.SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"return=minimal"},
@@ -1439,23 +1445,42 @@ function createProposalFromLead(job){
 }
 
 /* ---------- lead → project conversion (the automation seam) ---------- */
+// Pull the lead's most recent shared proposal (apb_proposal_drafts, linked by
+// lead_id) and return its line items, so approval can create a job per scope.
+async function fetchLeadProposalLines(leadId){
+  if(!LIVE || !leadId) return null;
+  try{
+    const r=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_proposal_drafts?lead_id=eq.${encodeURIComponent(leadId)}&select=data&order=saved_at.desc&limit=1`,{headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+CONFIG.SUPABASE_ANON_KEY}});
+    if(!r.ok) return null;
+    const rows=await r.json();
+    const d=rows&&rows[0]&&rows[0].data;
+    const lines=(d&&Array.isArray(d.jobs))?d.jobs.filter(j=>j&&String(j.title||"").trim()):null;
+    return (lines&&lines.length)?lines:null;
+  }catch(e){ return null; }
+}
 async function convertToProject(job){
   const ok = confirm('Approve “'+job.engagement+'” and convert it to an active project?\n\nThis will:\n  • set its status to In Progress on the Active List\n  • create the SharePoint project folders\n      (Proposals, Reports, Photos, Schedules, Correspondences, MTRs)\n  • set up MTR routing for the vessel\n  • announce it in the Projects channel');
   if(!ok) return;
   await runConvertFlow(job);
   if(job.source==="lead"){
     // Brand-new prospect: create the real engagement + first job, then mark the lead converted.
-    let engId = null, newJobId = null, leadMarked = false;
+    let engId = null, newJobId = null, leadMarked = false, createdCount = 1;
     if(LIVE){
       engId = await ensureEngagementId(job.engagement);
       if(engId){
+        // Create one job per proposal line item (scope pre-filled); else a single job.
+        const lines = await fetchLeadProposalLines(job.id);
+        const bodies = lines
+          ? lines.map((l,i)=>({engagement_id:engId, job_number:String(i+1)+".0", job_name:String(l.title||"").trim(), status:"In Progress", job_status_pct:0, pm_notes:(String(l.tasks||"").trim()||null)}))
+          : [{engagement_id:engId, job_name:job.job_name||"", status:"In Progress", job_status_pct:0, pm_notes:job.pm_notes||null}];
+        createdCount = bodies.length;
         try{
           const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_jobs`,{
             method:"POST",
             headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+CONFIG.SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"return=representation"},
-            body: JSON.stringify({engagement_id:engId, job_name:job.job_name||"", status:"In Progress", job_status_pct:0, pm_notes:job.pm_notes||null})
+            body: JSON.stringify(bodies)
           });
-          if(r.ok) newJobId = (await r.json())[0].id;
+          if(r.ok){ const c=await r.json(); newJobId = c[0] && c[0].id; }
         }catch(e){}
       }
       if(isRealId(job.id)){
@@ -1474,7 +1499,7 @@ async function convertToProject(job){
     const ll=lsGet("apb_local_leads",[]); lsSet("apb_local_leads", ll.filter(x=>x.id!==job.id));
     buildFilters(); refreshViews(); closeDrawer();
     if(newJobId && leadMarked){
-      toast("Approved · "+job.engagement+" → Active Projects");
+      toast("Approved · "+job.engagement+" → "+createdCount+" job"+(createdCount>1?"s":"")+" created");
     } else if(newJobId && !leadMarked){
       toast("Project created, but couldn't mark the lead converted — check the Leads tab for a leftover entry.");
     } else {
