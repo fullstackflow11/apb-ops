@@ -507,6 +507,10 @@ textarea:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 4px va
       <button class="btn ghost" id="dConvertBtn" style="width:100%">Approve &amp; Convert to Project →</button>
     </div>
     <div class="field">
+      <label>Scope / job name</label>
+      <input type="text" id="dScope" class="dtin" placeholder="e.g. Engine room shelving" autocomplete="off">
+    </div>
+    <div class="field">
       <label>Status</label>
       <div class="statusgrid" id="dStatus"></div>
     </div>
@@ -843,19 +847,23 @@ async function ensureEngagementId(name){
 
 /* ---------- tabs, leads view & local persistence ---------- */
 const G=document.getElementById.bind(document);
-function isLead(j){ return j.status==="Lead" || j.status==="Estimating"; }
+// A record stays in the Leads/pipeline (NOT the Active List) until it's approved:
+// any apb_leads record (source "lead") stays until converted, and any job still in
+// a pre-approval status (Lead / Estimating / Proposal Created / Proposal Sent) is
+// pipeline, not active.
+function isLead(j){ return j.source==="lead" || j.status==="Lead" || j.status==="Estimating" || j.status==="Proposal Created" || j.status==="Proposal Sent"; }
 function lsGet(k,d){ try{ const v=JSON.parse(localStorage.getItem(k)); return v==null?d:v; }catch(e){ return d; } }
 function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
 function applyLocalData(){
   lsGet("apb_local_leads",[]).forEach(l=>{ if(!JOBS.some(j=>j.id===l.id)){ if(!l.source) l.source="lead"; JOBS.unshift(l); } });
   lsGet("apb_local_jobs",[]).forEach(l=>{ if(!JOBS.some(j=>j.id===l.id)){ if(!l.source) l.source="job"; JOBS.unshift(l); } });
   const ov=lsGet("apb_local_status",{});
-  JOBS.forEach(j=>{ if(ov[j.id]){ j.status=ov[j.id].status; if(ov[j.id].pct!=null) j.job_status_pct=ov[j.id].pct; if(ov[j.id].rep!=null&&ov[j.id].rep!=="") j.rep=ov[j.id].rep; } });
+  JOBS.forEach(j=>{ if(ov[j.id]){ j.status=ov[j.id].status; if(ov[j.id].pct!=null) j.job_status_pct=ov[j.id].pct; if(ov[j.id].rep!=null&&ov[j.id].rep!=="") j.rep=ov[j.id].rep; if(ov[j.id].job_name!=null&&ov[j.id].job_name!=="") j.job_name=ov[j.id].job_name; } });
   // Full-field edits (job #/name/rep/engagement) made in the Project drawer.
   const ed=lsGet("apb_local_edits",{});
   JOBS.forEach(j=>{ const e=ed[j.id]; if(e){ ["job_number","job_name","engagement","rep","status"].forEach(k=>{ if(e[k]!=null) j[k]=e[k]; }); if(e.pct!=null) j.job_status_pct=e.pct; } });
 }
-function persistStatus(job){ const ov=lsGet("apb_local_status",{}); ov[job.id]={status:job.status,pct:job.job_status_pct,rep:job.rep}; lsSet("apb_local_status",ov); }
+function persistStatus(job){ const ov=lsGet("apb_local_status",{}); ov[job.id]={status:job.status,pct:job.job_status_pct,rep:job.rep,job_name:job.job_name}; lsSet("apb_local_status",ov); }
 // Cache the job list so the home Command Center shows the same projects (it can't re-run the Supabase load).
 function writeJobsCache(){
   try{
@@ -1253,7 +1261,7 @@ function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","
 let current=null, draft=null;
 function openDrawer(id){
   current=JOBS.find(j=>j.id===id); if(!current) return;
-  draft={status:current.status, pct:+current.job_status_pct||0, notes:current.pm_notes||"", rep:current.rep||""};
+  draft={status:current.status, pct:+current.job_status_pct||0, notes:current.pm_notes||"", rep:current.rep||"", job_name:current.job_name||""};
   document.getElementById("dEyebrow").textContent = current.job_number? "JOB "+current.job_number : "JOB";
   document.getElementById("dTitle").textContent = current.job_name||"—";
   document.getElementById("dMeta").innerHTML = `${esc(current.engagement)}${current.rep?` &nbsp;·&nbsp; Rep ${esc(current.rep)}`:""}`;
@@ -1273,10 +1281,12 @@ function openDrawer(id){
     fillRepList();
     dRep.oninput=()=>{ draft.rep=dRep.value.trim(); };
   }
+  const dScope=document.getElementById("dScope");
+  if(dScope){ dScope.value=draft.job_name; dScope.oninput=()=>{ draft.job_name=dScope.value; }; }
   setPct(draft.pct);
   document.getElementById("dNotes").value=draft.notes;
   // lead → project conversion offer
-  const canConv=["Lead","Estimating"].includes(current.status);
+  const canConv = current.source==="lead" || ["Lead","Estimating","Proposal Created","Proposal Sent"].includes(current.status);
   const cv=document.getElementById("dConvert"); cv.style.display=canConv?"block":"none";
   if(canConv){ document.getElementById("dConvertBtn").onclick=()=>convertToProject(current);
     document.getElementById("dProposalBtn").onclick=()=>createProposalFromLead(current); }
@@ -1304,6 +1314,7 @@ async function save(){
   }
   current.status=draft.status; current.job_status_pct=draft.pct; current.pm_notes=draft.notes;
   if(draft.rep!==undefined) current.rep=draft.rep;
+  if(draft.job_name!==undefined) current.job_name=draft.job_name;
   current.updated_at=new Date().toISOString();
   await pushToActiveList(current, draft);   // Phase-2 seam
   persistStatus(current); refreshViews(); closeDrawer(); toast(`Saved · ${current.engagement} ${current.job_number}`);
@@ -1323,8 +1334,8 @@ async function pushToActiveList(job, changes){
     try{
       const table = job.source==="lead" ? "apb_leads" : "apb_jobs";
       const body = job.source==="lead"
-        ? {status:changes.status, notes:changes.notes, rep:job.rep, updated_at:new Date().toISOString()}
-        : {status:changes.status, job_status_pct:changes.pct, pm_notes:changes.notes, rep:job.rep, updated_at:new Date().toISOString()};
+        ? {status:changes.status, description:job.job_name, notes:changes.notes, rep:job.rep, updated_at:new Date().toISOString()}
+        : {status:changes.status, job_name:job.job_name, job_status_pct:changes.pct, pm_notes:changes.notes, rep:job.rep, updated_at:new Date().toISOString()};
       const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/${table}?id=eq.${job.id}`,{
         method:"PATCH",
         headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+CONFIG.SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"return=minimal"},
