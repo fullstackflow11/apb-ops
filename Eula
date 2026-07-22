@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>End User License Agreement · All Points Boats</title>
+<style>
+  body{max-width:820px;margin:0 auto;padding:48px 22px 80px;font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#1c2430;background:#fff}
+  h1{font-size:26px;margin:0 0 4px}
+  .updated{color:#66707e;font-size:14px;margin-bottom:32px}
+  h2{font-size:18px;margin:30px 0 8px}
+  p{margin:0 0 14px}
+  a{color:#2457e6}
+  .note{background:#f6f7f9;border:1px solid #e3e7ec;border-radius:10px;padding:14px 16px;font-size:14px;color:#66707e;margin-top:36px}
+</style>
+</head>
+<body>
+  <h1>End User License Agreement</h1>
+  <div class="updated">All Points Boats, Inc. · APB Operations · Last updated July 2026</div>
+
+  <p>This End User License Agreement ("Agreement") governs use of the APB Operations application (the "App"), an internal business tool owned and operated by All Points Boats, Inc. ("APB"). By accessing or using the App, you ("User") agree to these terms.</p>
+
+  <h2>1. License &amp; authorized use</h2>
+  <p>APB grants authorized employees and contractors a limited, non-exclusive, non-transferable, revocable license to use the App solely for APB business purposes. The App is an internal tool and is not licensed for public, personal, or third-party use.</p>
+
+  <h2>2. Accounts &amp; access</h2>
+  <p>Access requires valid credentials issued by APB. Users are responsible for keeping their credentials confidential and for activity under their account. APB may grant, modify, or revoke access at any time.</p>
+
+  <h2>3. Acceptable use</h2>
+  <p>Users agree to use the App only for legitimate business tasks and not to misuse, disrupt, reverse-engineer, or attempt unauthorized access to the App or its connected systems. Data entered must be accurate to the best of the User's knowledge.</p>
+
+  <h2>4. Third-party integrations</h2>
+  <p>The App may connect to third-party services (for example, Intuit QuickBooks Online, Supabase, and Resend) to provide accounting, storage, and notification functionality. Use of those services is subject to their own terms, and APB is not responsible for third-party services outside its control.</p>
+
+  <h2>5. Ownership</h2>
+  <p>The App, its content, and all business data within it are the property of APB. This Agreement does not transfer any ownership rights to the User.</p>
+
+  <h2>6. Disclaimer &amp; limitation of liability</h2>
+  <p>The App is provided "as is," without warranties of any kind. To the fullest extent permitted by law, APB is not liable for any indirect, incidental, or consequential damages arising from use of the App.</p>
+
+  <h2>7. Changes &amp; termination</h2>
+  <p>APB may update this Agreement or discontinue the App at any time. Continued use after changes constitutes acceptance. Access may be terminated at APB's discretion.</p>
+
+  <h2>Contact</h2>
+  <p>All Points Boats, Inc.<br>
+  Email: <a href="mailto:info@apb1.com">info@apb1.com</a><br>
+  Web: <a href="https://apb1.com">apb1.com</a></p>
+
+  <div class="note">This document is a general template for an internal business application and is provided for information only; it is not legal advice. Have it reviewed by qualified counsel before relying on it.</div>
+</body>
+</html>
