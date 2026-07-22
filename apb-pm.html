@@ -855,8 +855,21 @@ function isLead(j){ return j.source==="lead" || j.status==="Lead" || j.status===
 function lsGet(k,d){ try{ const v=JSON.parse(localStorage.getItem(k)); return v==null?d:v; }catch(e){ return d; } }
 function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
 function applyLocalData(){
-  lsGet("apb_local_leads",[]).forEach(l=>{ if(!JOBS.some(j=>j.id===l.id)){ if(!l.source) l.source="lead"; JOBS.unshift(l); } });
-  lsGet("apb_local_jobs",[]).forEach(l=>{ if(!JOBS.some(j=>j.id===l.id)){ if(!l.source) l.source="job"; JOBS.unshift(l); } });
+  // Local storage is a RETRY BUFFER for writes that haven't reached Supabase yet —
+  // never a permanent shadow of the shared DB. A record/edit with a real (DB) id has
+  // already synced, so it must come from Supabase, not localStorage. This is what stops
+  // (a) deleted jobs reappearing (a cached real-id record the DB no longer returns) and
+  // (b) admins seeing different numbers (stale local overrides shadowing the DB).
+  if(LIVE){
+    lsSet("apb_local_leads", lsGet("apb_local_leads",[]).filter(l=>!isRealId(l.id)));
+    lsSet("apb_local_jobs",  lsGet("apb_local_jobs",[]).filter(l=>!isRealId(l.id)));
+    const _ov=lsGet("apb_local_status",{}); Object.keys(_ov).forEach(id=>{ if(isRealId(id)) delete _ov[id]; }); lsSet("apb_local_status",_ov);
+    const _ed=lsGet("apb_local_edits",{});  Object.keys(_ed).forEach(id=>{ if(isRealId(id)) delete _ed[id]; }); lsSet("apb_local_edits",_ed);
+  }
+  // Only merge back records still awaiting sync (local ids); never resurrect a real-id
+  // record the DB dropped.
+  lsGet("apb_local_leads",[]).forEach(l=>{ if(!isRealId(l.id) && !JOBS.some(j=>j.id===l.id)){ if(!l.source) l.source="lead"; JOBS.unshift(l); } });
+  lsGet("apb_local_jobs",[]).forEach(l=>{ if(!isRealId(l.id) && !JOBS.some(j=>j.id===l.id)){ if(!l.source) l.source="job"; JOBS.unshift(l); } });
   const ov=lsGet("apb_local_status",{});
   JOBS.forEach(j=>{ if(ov[j.id]){ j.status=ov[j.id].status; if(ov[j.id].pct!=null) j.job_status_pct=ov[j.id].pct; if(ov[j.id].rep!=null&&ov[j.id].rep!=="") j.rep=ov[j.id].rep; if(ov[j.id].job_name!=null&&ov[j.id].job_name!=="") j.job_name=ov[j.id].job_name; } });
   // Full-field edits (job #/name/rep/engagement) made in the Project drawer.
@@ -1391,7 +1404,7 @@ const PHOTO_BLOCK = PHOTO_HTML + PHOTO_JS;
 
 /* ---------- lead → proposal hand-off (opens the Proposal Builder pre-filled) ---------- */
 function createProposalFromLead(job){
-  const payload={ client:job.engagement, ptitle:job.engagement, scope:job.job_name||"", jobHint:job.job_name||"", ptype:"marine" };
+  const payload={ leadId:job.id, client:job.engagement, ptitle:job.engagement, scope:job.job_name||"", jobHint:job.job_name||"", ptype:"marine" };
   try{ localStorage.setItem("apb_new_proposal", JSON.stringify(payload)); }catch(e){}
   window.open("apb-proposal.html","_blank");
 }
