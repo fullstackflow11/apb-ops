@@ -561,9 +561,16 @@ function jobOptionsHtml(jobs){
   };
   return'<option value="">Select job…</option>'+jobs.map(j=>`<option value="${j.id}" data-job-number="${j.job_number||''}" data-job-name="${j.job_name||''}">${label(j)}</option>`).join('');
 }
+// Match the PM Active List exactly: show a job only if it is NOT a pre-approval
+// lead (Lead / Estimating / Proposal Created / Proposal Sent) and NOT archived —
+// the same rule the Project Console uses (!isLead(j) && !j.archived).
+const LEAD_STATUSES = ['Lead','Estimating','Proposal Created','Proposal Sent'];
 async function getJobsForEngagement(engId){
-  const{data}=await sb.from('apb_jobs').select('id,job_name,job_number,status').eq('engagement_id',engId).not('status','in','("Paid","Cancelled")').order('job_number');
-  return data||[];
+  const{data}=await sb.from('apb_jobs')
+    .select('id,job_name,job_number,status,archived')
+    .eq('engagement_id',engId)
+    .order('job_number');
+  return (data||[]).filter(j => !j.archived && LEAD_STATUSES.indexOf(j.status) < 0);
 }
 async function onLineVesselChange(lineId){
   const div=document.getElementById(lineId);
