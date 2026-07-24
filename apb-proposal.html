@@ -423,8 +423,31 @@ function collect(){
   };
 }
 
+// When a proposal is created, write the client + contact details back onto the
+// lead (the name-only lead created in the console had none). This UPDATE is what
+// fires the "New Customer / Lead" alert — now with full contact info.
+async function syncLeadFromProposal(d){
+  if(!window.__leadId) return;
+  try{
+    await fetch(`${PD_URL}/rest/v1/apb_leads?id=eq.${encodeURIComponent(window.__leadId)}`,{
+      method:"PATCH",
+      headers:{apikey:PD_KEY,Authorization:"Bearer "+PD_KEY,"Content-Type":"application/json",Prefer:"return=minimal"},
+      body: JSON.stringify({
+        name: d.client||undefined,
+        contact_name: d.attn||null,
+        contact_phone: d.cphone||null,
+        contact_email: d.cemail||null,
+        location: d.loc||null,
+        vessel: d.ptitle||null,
+        status: 'Proposal Created'
+      })
+    });
+  }catch(e){/* non-blocking */}
+}
+
 function generate(){
   const d=collect();
+  syncLeadFromProposal(d);   // push client/contact back to the lead + fire the alert
   // log this proposal into the admin pipeline (shows up in the PM Console)
   try{ const pl=JSON.parse(localStorage.getItem("apb_pipeline")||"[]");
     pl.unshift({project:d.ptitle||d.client||"Untitled", client:d.client, rep:d.preparer, value:d.subtotal, stage:"Proposal Created", date:new Date().toISOString().slice(0,10)});
