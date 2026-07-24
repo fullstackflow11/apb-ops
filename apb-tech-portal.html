@@ -390,6 +390,12 @@ let allTechs=[],allEngagements=[],currentTech=null,selectedPin='',lunchHours=0.5
 const LEAD_STATUSES = ['Lead','Estimating','Proposal Created','Proposal Sent'];
 // Local calendar date (NOT UTC) — a tech working late shouldn't get tomorrow's date.
 function todayLocalISO(){ var d=new Date(); return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10); }
+// Shop / Admin are internal, non-billable projects (managed on the Active List).
+// Match the project names the office uses so their time never bills a customer.
+function isNonBillableVessel(name){
+  var n=(name||'').trim().toLowerCase();
+  return n==='shop work'||n==='shop'||n==='admin'||n==='admin / non-billable'||n.indexOf('admin ')===0||n.indexOf('admin/')===0;
+}
 
 const SHOP_CATEGORIES=['1.0 Shop Maintenance, Cleaning & Organization','2.0 Equipment Maintenance & Repairs','3.0 Material Processing & Inventory','4.0 Training & Process Improvement','5.0 Facility Improvements & Internal Projects','6.0 Engineering & Design Development (R&D)','7.0 Mechanical Systems Development (R&D)','8.0 Fabrication & Manufacturing Development (R&D)'];
 const ADMIN_CATEGORIES=['1.0 General Admin — Email & Communication','2.0 Planning & Scheduling','3.0 Policy & Procedure Development','4.0 Staff / Safety Meeting','5.0 Sales, Estimating & Proposals','6.0 Legal & Document Review','7.0 Project Management (Non-Billable)','8.0 R&D Review & Direction'];
@@ -584,7 +590,9 @@ function updateTotals(){
 
 // ── Job lines ──
 function vesselOptionsHtml(){
-  let opts='<option value="">Select vessel / project…</option><option value="SHOP">— Shop Work —</option><option value="ADMIN">— Admin / Non-Billable —</option>';
+  // Shop Work and Admin are now real Active-List projects (no built-in pickers),
+  // so they appear here like any other vessel and are managed from the console.
+  let opts='<option value="">Select vessel / project…</option>';
   allEngagements.forEach(e=>{opts+=`<option value="${e.id}">${e.name}</option>`;});
   return opts;
 }
@@ -613,18 +621,12 @@ async function onLineVesselChange(lineId){
   const val=div.querySelector('.line-vessel').value;
   const jobSlot=div.querySelector('.line-job-slot');
   if(!val){jobSlot.innerHTML='';return;}
-  if(val==='SHOP'){
-    jobSlot.innerHTML=`<div class="field"><label>Shop Category <span class="req">*</span></label><select class="form-select line-job">${shopOptionsHtml()}</select></div>`;
-  } else if(val==='ADMIN'){
-    jobSlot.innerHTML=`<div class="field"><label>Admin Category <span class="req">*</span></label><select class="form-select line-job">${adminOptionsHtml()}</select></div>`;
+  jobSlot.innerHTML=`<div class="field"><label>Job <span class="req">*</span></label><select class="form-select line-job"><option>Loading…</option></select></div>`;
+  const jobs=await getJobsForEngagement(val);
+  if(!jobs.length){
+    jobSlot.innerHTML=`<div class="field"><label>Job</label><div class="job-no-warn">⚠ No active jobs for this vessel.<br>Contact management to add jobs.</div><input type="hidden" class="line-job" value="NO_JOBS"></div>`;
   } else {
-    jobSlot.innerHTML=`<div class="field"><label>Job <span class="req">*</span></label><select class="form-select line-job"><option>Loading…</option></select></div>`;
-    const jobs=await getJobsForEngagement(val);
-    if(!jobs.length){
-      jobSlot.innerHTML=`<div class="field"><label>Job</label><div class="job-no-warn">⚠ No active jobs for this vessel.<br>Contact management to add jobs.</div><input type="hidden" class="line-job" value="NO_JOBS"></div>`;
-    } else {
-      jobSlot.innerHTML=`<div class="field"><label>Job <span class="req">*</span></label><select class="form-select line-job">${jobOptionsHtml(jobs)}</select></div>`;
-    }
+    jobSlot.innerHTML=`<div class="field"><label>Job <span class="req">*</span></label><select class="form-select line-job">${jobOptionsHtml(jobs)}</select></div>`;
   }
 }
 function addJobLine(){
@@ -691,8 +693,7 @@ async function submitTimesheet(){
     if(!jobVal||jobVal==='NO_JOBS')return showMsg('error',!jobVal?'Select a job for each line.':'This vessel has no active jobs. Ask management to add jobs first.');
     if(!workDesc)return showMsg('error','Add a work description for each job line.');
     if(!hrs||hrs<=0)return showMsg('error','Enter hours > 0 for each job line.');
-    const isShop=vesselVal==='SHOP',isAdmin=vesselVal==='ADMIN';
-    lines.push({vessel_id:(isShop||isAdmin)?null:vesselVal,vessel_name:isShop?'Shop':isAdmin?'Admin':vesselName,job_id:(isShop||isAdmin)?null:jobVal,job_number:(isShop||isAdmin)?null:jobNumber,job_name:(isShop||isAdmin)?null:jobName,shop_category:isShop?jobVal:isAdmin?jobVal:null,work_description:workDesc,hours:hrs});
+    lines.push({vessel_id:vesselVal,vessel_name:vesselName,job_id:jobVal,job_number:jobNumber,job_name:jobName,non_billable:isNonBillableVessel(vesselName),work_description:workDesc,hours:hrs});
   }
 
   const lineTotal=lines.reduce((s,l)=>s+l.hours,0);
@@ -713,7 +714,7 @@ async function submitTimesheet(){
   }).select().single();
   if(vErr){btn.disabled=false;btn.textContent='Submit Timesheet';showMsg('error','Error: '+vErr.message);return;}
 
-  const lineRows=lines.map(l=>({timesheet_id:visit.id,engagement_id:l.vessel_id||null,vessel_name:l.vessel_name,job_id:l.job_id||null,job_number:l.job_number||null,job_name:l.job_name||null,shop_category:l.shop_category||null,work_description:l.work_description,hours:l.hours,billable:l.shop_category?false:true,tech_id:currentTech.id,tech_name:currentTech.name}));
+  const lineRows=lines.map(l=>({timesheet_id:visit.id,engagement_id:l.vessel_id||null,vessel_name:l.vessel_name,job_id:l.job_id||null,job_number:l.job_number||null,job_name:l.job_name||null,shop_category:null,work_description:l.work_description,hours:l.hours,billable:l.non_billable?false:true,tech_id:currentTech.id,tech_name:currentTech.name}));
   const{error:lErr}=await sb.from('apb_timesheet_lines').insert(lineRows);
   if(lErr){btn.disabled=false;btn.textContent='Submit Timesheet';showMsg('error','Visit saved but lines failed: '+lErr.message);return;}
 
@@ -754,8 +755,6 @@ function openLineEdit(lineId){
   const l=window.__lineCache[lineId];if(!l||l.reviewed)return;
   let currentVesselVal='';
   if(l.engagement_id)currentVesselVal=l.engagement_id;
-  else if(l.vessel_name==='Shop')currentVesselVal='SHOP';
-  else if(l.vessel_name==='Admin')currentVesselVal='ADMIN';
   document.getElementById('editform-'+lineId).innerHTML=`<div class="ln-edit-form">
     <label style="font-size:11px;font-weight:700;color:var(--ink-3);display:block;margin-bottom:3px">Vessel / Project</label>
     <select id="editvessel-${lineId}" onchange="onEditVesselChange('${lineId}')">${vesselOptionsHtml()}</select>
@@ -776,20 +775,13 @@ async function onEditVesselChange(lineId,isInitial){
   const val=document.getElementById('editvessel-'+lineId).value;
   const jobSlot=document.getElementById('editjobslot-'+lineId);
   if(!val){jobSlot.innerHTML='';return;}
-  if(val==='SHOP'||val==='ADMIN'){
-    const catLabel=val==='SHOP'?'Shop Category':'Admin Category';
-    const optsHtml=val==='SHOP'?shopOptionsHtml():adminOptionsHtml();
-    jobSlot.innerHTML=`<label style="font-size:11px;font-weight:700;color:var(--ink-3);display:block;margin-bottom:3px">${catLabel}</label><select class="edit-job-select" id="editjob-${lineId}">${optsHtml}</select>`;
-    if(isInitial&&l.shop_category)document.getElementById('editjob-'+lineId).value=l.shop_category;
+  jobSlot.innerHTML=`<label style="font-size:11px;font-weight:700;color:var(--ink-3);display:block;margin-bottom:3px">Job</label><select class="edit-job-select" id="editjob-${lineId}"><option>Loading…</option></select>`;
+  const jobs=await getJobsForEngagement(val);
+  if(!jobs.length){
+    jobSlot.innerHTML=`<label style="font-size:11px;font-weight:700;color:var(--ink-3);display:block;margin-bottom:3px">Job</label><div class="job-no-warn">⚠ No active jobs for this vessel.</div><input type="hidden" class="edit-job-select" id="editjob-${lineId}" value="NO_JOBS">`;
   } else {
-    jobSlot.innerHTML=`<label style="font-size:11px;font-weight:700;color:var(--ink-3);display:block;margin-bottom:3px">Job</label><select class="edit-job-select" id="editjob-${lineId}"><option>Loading…</option></select>`;
-    const jobs=await getJobsForEngagement(val);
-    if(!jobs.length){
-      jobSlot.innerHTML=`<label style="font-size:11px;font-weight:700;color:var(--ink-3);display:block;margin-bottom:3px">Job</label><div class="job-no-warn">⚠ No active jobs for this vessel.</div><input type="hidden" class="edit-job-select" id="editjob-${lineId}" value="NO_JOBS">`;
-    } else {
-      jobSlot.innerHTML=`<label style="font-size:11px;font-weight:700;color:var(--ink-3);display:block;margin-bottom:3px">Job</label><select class="edit-job-select" id="editjob-${lineId}">${jobOptionsHtml(jobs)}</select>`;
-      if(isInitial&&l.job_id)document.getElementById('editjob-'+lineId).value=l.job_id;
-    }
+    jobSlot.innerHTML=`<label style="font-size:11px;font-weight:700;color:var(--ink-3);display:block;margin-bottom:3px">Job</label><select class="edit-job-select" id="editjob-${lineId}">${jobOptionsHtml(jobs)}</select>`;
+    if(isInitial&&l.job_id)document.getElementById('editjob-'+lineId).value=l.job_id;
   }
 }
 function cancelLineEdit(lineId){document.getElementById('editform-'+lineId).innerHTML='';}
@@ -802,32 +794,22 @@ async function saveLineEdit(lineId){
   if(!vesselVal)return alert('Select a vessel / project.');
   const jobEl=document.getElementById('editjob-'+lineId);
   const jobVal=jobEl?jobEl.value:'';
-  if(!jobVal)return alert(vesselVal==='SHOP'||vesselVal==='ADMIN'?'Select a category.':'Select a job.');
+  if(!jobVal)return alert('Select a job.');
   if(jobVal==='NO_JOBS')return alert('No active jobs for this vessel — contact management.');
   const newHours=parseFloat(document.getElementById('edithrs-'+lineId).value);
   const newDesc=document.getElementById('editdesc-'+lineId).value.trim();
   if(!newHours||newHours<=0)return alert('Enter hours > 0.');
   if(!newDesc)return alert('Description cannot be empty.');
-  const isShop=vesselVal==='SHOP',isAdmin=vesselVal==='ADMIN';
-  let updateFields;
-  if(isShop||isAdmin){
-    updateFields={
-      engagement_id:null,vessel_name:isShop?'Shop':'Admin',job_id:null,job_number:null,job_name:null,
-      shop_category:jobVal,hours:newHours,work_description:newDesc,
-      edited_by:currentTech.name,edited_at:new Date().toISOString(),
-      original_hours:l.original_hours??l.hours,edit_note:'Self-correction by tech'
-    };
-  } else {
-    const vesselLabel=vesselSelect.options[vesselSelect.selectedIndex].text;
-    const jobOption=jobEl.options[jobEl.selectedIndex];
-    updateFields={
-      engagement_id:vesselVal,vessel_name:vesselLabel,job_id:jobVal,
-      job_number:jobOption?.dataset.jobNumber||null,job_name:jobOption?.dataset.jobName||null,
-      shop_category:null,hours:newHours,work_description:newDesc,
-      edited_by:currentTech.name,edited_at:new Date().toISOString(),
-      original_hours:l.original_hours??l.hours,edit_note:'Self-correction by tech'
-    };
-  }
+  const vesselLabel=vesselSelect.options[vesselSelect.selectedIndex].text;
+  const jobOption=jobEl.options[jobEl.selectedIndex];
+  const updateFields={
+    engagement_id:vesselVal,vessel_name:vesselLabel,job_id:jobVal,
+    job_number:jobOption?.dataset.jobNumber||null,job_name:jobOption?.dataset.jobName||null,
+    shop_category:null,billable:isNonBillableVessel(vesselLabel)?false:true,
+    hours:newHours,work_description:newDesc,
+    edited_by:currentTech.name,edited_at:new Date().toISOString(),
+    original_hours:l.original_hours??l.hours,edit_note:'Self-correction by tech'
+  };
   const{error}=await sb.from('apb_timesheet_lines').update(updateFields).eq('id',lineId);
   if(error)return alert('Save failed: '+error.message);
   const{data:siblings}=await sb.from('apb_timesheet_lines').select('hours').eq('timesheet_id',l.timesheet_id);
