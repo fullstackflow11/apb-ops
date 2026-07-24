@@ -386,12 +386,24 @@ const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 let allTechs=[],allEngagements=[],currentTech=null,selectedPin='',lunchHours=0.5,uploadedPhotos=[],lineCounter=0;
 
+// Pre-approval statuses hidden from the timesheet (mirrors the PM Active List's isLead()).
+const LEAD_STATUSES = ['Lead','Estimating','Proposal Created','Proposal Sent'];
+// Local calendar date (NOT UTC) — a tech working late shouldn't get tomorrow's date.
+function todayLocalISO(){ var d=new Date(); return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10); }
+
 const SHOP_CATEGORIES=['1.0 Shop Maintenance, Cleaning & Organization','2.0 Equipment Maintenance & Repairs','3.0 Material Processing & Inventory','4.0 Training & Process Improvement','5.0 Facility Improvements & Internal Projects','6.0 Engineering & Design Development (R&D)','7.0 Mechanical Systems Development (R&D)','8.0 Fabrication & Manufacturing Development (R&D)'];
 const ADMIN_CATEGORIES=['1.0 General Admin — Email & Communication','2.0 Planning & Scheduling','3.0 Policy & Procedure Development','4.0 Staff / Safety Meeting','5.0 Sales, Estimating & Proposals','6.0 Legal & Document Review','7.0 Project Management (Non-Billable)','8.0 R&D Review & Direction'];
 
 async function loadEngagements(){
+  // Only show vessels that are actually on the PM Active List — i.e. that have at
+  // least one active (non-lead, non-archived) job. A vessel with no active jobs
+  // (e.g. a pending lead or a finished project) is left off the timesheet.
+  const jobsRes = await sb.from('apb_jobs').select('engagement_id,status,archived');
+  const activeEng = new Set((jobsRes.data||[])
+    .filter(j => j.engagement_id && !j.archived && LEAD_STATUSES.indexOf(j.status) < 0)
+    .map(j => j.engagement_id));
   const{data:engs}=await sb.from('apb_engagements').select('id,name,status').not('status','in','("Closed","Cancelled","Lead")').order('name');
-  if(engs){ allEngagements=engs; refreshVesselSelects(); }
+  if(engs){ allEngagements = engs.filter(e => activeEng.has(e.id)); refreshVesselSelects(); }
 }
 // Keep already-open vessel dropdowns in sync with the latest list (preserve the tech's current pick).
 function refreshVesselSelects(){
@@ -417,7 +429,7 @@ async function refreshOpenJobLists(){
 // Pull the current Active List (vessels + jobs) — used on login, tab open, and refocus.
 async function refreshLogData(){ await loadEngagements(); await refreshOpenJobLists(); }
 (async function init(){
-  document.getElementById('dateInput').value=new Date().toISOString().split('T')[0];
+  document.getElementById('dateInput').value=todayLocalISO();
   const{data:techs}=await sb.from('apb_techs').select('*').eq('active',true).order('name');
   allTechs=techs||[];
   document.getElementById('techGrid').innerHTML=allTechs.map(t=>`<button class="tech-btn" onclick="selectTech('${t.id}',this)">${t.name}</button>`).join('');
@@ -589,7 +601,6 @@ function jobOptionsHtml(jobs){
 // Match the PM Active List exactly: show a job only if it is NOT a pre-approval
 // lead (Lead / Estimating / Proposal Created / Proposal Sent) and NOT archived —
 // the same rule the Project Console uses (!isLead(j) && !j.archived).
-const LEAD_STATUSES = ['Lead','Estimating','Proposal Created','Proposal Sent'];
 async function getJobsForEngagement(engId){
   const{data}=await sb.from('apb_jobs')
     .select('id,job_name,job_number,status,archived')
@@ -722,7 +733,7 @@ async function submitTimesheet(){
 
 function resetForm(){
   document.getElementById('jobLines').innerHTML='';lineCounter=0;
-  document.getElementById('dateInput').value=new Date().toISOString().split('T')[0];
+  document.getElementById('dateInput').value=todayLocalISO();
   document.getElementById('totalHoursInput').value='';
   document.getElementById('otNotice').style.display='none';
   document.querySelectorAll('.hq-btn').forEach(b=>b.classList.remove('selected'));
