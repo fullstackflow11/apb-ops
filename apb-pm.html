@@ -1626,12 +1626,31 @@ async function addJobToProject(){
   G("pdMeta").innerHTML=`${jobs.length} job${jobs.length!==1?'s':''} &nbsp;·&nbsp; ${avg}% complete`;
   toast(`Job added · ${curProj}`);
 }
-function saveProjectMeta(){
+async function saveProjectMeta(){
   const newName=G("pdName").value.trim()||curProj;
   const rep=G("pdRep").value.trim();
   const customer=G("pdCustomer").value.trim();
   const notes=G("pdNotes").value;
   const jobs=pjobs(curProj);
+  // The project/vessel name lives in apb_engagements.name — write the rename back to
+  // Supabase so it survives a refresh (previously it only lived in localStorage and
+  // reverted on reload). Every job under this project shares one engagement row.
+  const engId=(jobs.find(j=>j.engagement_id)||{}).engagement_id;
+  if(LIVE && engId && (newName!==curProj || rep)){
+    try{
+      const body={name:newName, updated_at:new Date().toISOString()};
+      if(rep) body.rep=rep;
+      const r=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_engagements?id=eq.${engId}`,{
+        method:"PATCH",
+        headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+CONFIG.SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"return=minimal"},
+        body:JSON.stringify(body)
+      });
+      if(!r.ok){ toast("Rename didn't sync — check connection"); return; }
+    }catch(e){ toast("Rename didn't sync — offline"); return; }
+  } else if(LIVE && !engId && newName!==curProj){
+    toast("Can't rename — this project isn't linked to a vessel yet");
+    return;
+  }
   jobs.forEach(j=>{ j.engagement=newName; if(rep) j.rep=rep; j.updated_at=new Date().toISOString(); persistEdit(j); });
   if(newName!==curProj){
     // migrate project-level data keyed by name
