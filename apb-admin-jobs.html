@@ -376,7 +376,7 @@ function renderBoard(){
   const filtered=items.filter(it=>{
     if(!q)return true;
     const fields=currentTab==='leads'
-      ?[it.name,it.company,it.vessel,it.contact_phone,it.description]
+      ?[it.name,it.contact_name,it.vessel,it.contact_phone,it.description]
       :[it.job_name,it.vessel_name,it.job_number,(it.apb_engagements?.name)];
     return fields.some(f=>f&&f.toLowerCase().includes(q));
   });
@@ -405,7 +405,7 @@ function leadCard(l){
     ondragend="onDragEnd(event)"
     onclick="showLeadDetail('${l.id}')">
     <div class="kcard-top">
-      <div class="kcard-name">${esc(l.name||l.company||'—')}</div>
+      <div class="kcard-name">${esc(l.name||'—')}</div>
       <div class="kcard-actions" onclick="event.stopPropagation()">
         <button class="kcard-action" onclick="openLeadModal('${l.id}')" title="Edit">✎</button>
         <button class="kcard-action danger" onclick="deleteLead('${l.id}')" title="Delete">✕</button>
@@ -413,7 +413,7 @@ function leadCard(l){
     </div>
     ${l.vessel?`<div class="kcard-vessel">⚓ ${esc(l.vessel)}</div>`:''}
     ${l.contact_phone?`<div class="kcard-meta">📞 <a href="tel:${esc(l.contact_phone)}" onclick="event.stopPropagation()" style="color:var(--ink-3);text-decoration:none">${esc(l.contact_phone)}</a></div>`:''}
-    ${l.assigned_to?`<div class="kcard-meta">👤 ${esc(l.assigned_to)}</div>`:''}
+    ${l.rep?`<div class="kcard-meta">👤 ${esc(l.rep)}</div>`:''}
     <div class="kcard-footer">
       <div class="kcard-date">${fmtDate(l.created_at)}</div>
       ${l.follow_up_date?`<div style="font-size:11px;color:var(--amber)">⏰ ${fmtDate(l.follow_up_date)}</div>`:''}
@@ -481,16 +481,18 @@ function openLeadModal(id,preStatus){
   editingLeadId=id||null;
   document.getElementById('leadModalTitle').textContent=id?'Edit Lead':'New Lead';
   document.getElementById('leadFormMsg').className='msg';
-  const fields=['name','vessel','phone','email','source','assigned_to','follow_up_date','description','notes'];
+  // form field suffix (lf_*) -> actual apb_leads column
+  const COLMAP={name:'name',vessel:'vessel',phone:'contact_phone',email:'contact_email',source:'lead_source',assigned_to:'rep',follow_up_date:'follow_up_date',description:'description',notes:'notes'};
+  const fields=Object.keys(COLMAP);
   if(id){
     const l=allLeads.find(x=>x.id===id);
     if(l){
-      fields.forEach(f=>{const el=document.getElementById('lf_'+f);if(el)el.value=l[f]||'';});
-      document.getElementById('lf_status').value=l.status||'New';
+      fields.forEach(f=>{const el=document.getElementById('lf_'+f);if(el)el.value=(l[COLMAP[f]]!=null?l[COLMAP[f]]:'');});
+      document.getElementById('lf_status').value=l.status||'Lead';
     }
   } else {
     fields.forEach(f=>{const el=document.getElementById('lf_'+f);if(el)el.value='';});
-    document.getElementById('lf_status').value=preStatus||'New';
+    document.getElementById('lf_status').value=preStatus||'Lead';
   }
   document.getElementById('leadModal').classList.add('open');
 }
@@ -499,10 +501,18 @@ async function saveLead(){
   const name=document.getElementById('lf_name').value.trim();
   if(!name){showMsg('leadFormMsg','error','Client name required.');return;}
   const btn=document.getElementById('leadSaveBtn');btn.disabled=true;btn.textContent='Saving…';
+  // Column names match the actual apb_leads table (lead_source, rep, vessel, …).
   const payload={
-    name,company:v('lf_name'),contact_phone:v('lf_phone'),contact_email:v('lf_email'),
-    vessel:v('lf_vessel'),description:v('lf_description'),status:v('lf_status')||'New',
-    source:v('lf_source'),assigned_to:v('lf_assigned_to'),notes:v('lf_notes'),
+    name,
+    contact_name:v('lf_name'),
+    contact_phone:v('lf_phone'),
+    contact_email:v('lf_email'),
+    vessel:v('lf_vessel'),
+    lead_source:v('lf_source'),
+    rep:v('lf_assigned_to'),
+    description:v('lf_description'),
+    notes:v('lf_notes'),
+    status:v('lf_status')||'Lead',
     follow_up_date:v('lf_follow_up_date')||null
   };
   const{error}=editingLeadId?await sb.from('apb_leads').update(payload).eq('id',editingLeadId):await sb.from('apb_leads').insert(payload);
@@ -517,15 +527,15 @@ async function deleteLead(id){
 }
 function showLeadDetail(id){
   const l=allLeads.find(x=>x.id===id);if(!l)return;
-  document.getElementById('detailTitle').textContent=l.name||l.company||'Lead';
+  document.getElementById('detailTitle').textContent=l.name||'Lead';
   document.getElementById('detailBody').innerHTML=`
     <div class="detail-row">
       <div class="detail-field"><div class="detail-label">Status</div><div class="detail-value"><span class="status-badge badge-${(l.status||'').toLowerCase().replace(/\s+/g,'')}">${l.status||'—'}</span></div></div>
-      <div class="detail-field"><div class="detail-label">Source</div><div class="detail-value">${esc(l.source||'—')}</div></div>
+      <div class="detail-field"><div class="detail-label">Source</div><div class="detail-value">${esc(l.lead_source||'—')}</div></div>
       <div class="detail-field"><div class="detail-label">Vessel</div><div class="detail-value">${esc(l.vessel||'—')}</div></div>
       <div class="detail-field"><div class="detail-label">Phone</div><div class="detail-value">${l.contact_phone?`<a href="tel:${l.contact_phone}" style="color:var(--accent)">${esc(l.contact_phone)}</a>`:'—'}</div></div>
       <div class="detail-field"><div class="detail-label">Email</div><div class="detail-value">${l.contact_email?`<a href="mailto:${l.contact_email}" style="color:var(--accent)">${esc(l.contact_email)}</a>`:'—'}</div></div>
-      <div class="detail-field"><div class="detail-label">Assigned To</div><div class="detail-value">${esc(l.assigned_to||'—')}</div></div>
+      <div class="detail-field"><div class="detail-label">Assigned To</div><div class="detail-value">${esc(l.rep||'—')}</div></div>
       <div class="detail-field"><div class="detail-label">Follow-up</div><div class="detail-value">${l.follow_up_date?fmtDate(l.follow_up_date):'—'}</div></div>
       <div class="detail-field"><div class="detail-label">Added</div><div class="detail-value">${fmtDate(l.created_at)}</div></div>
     </div>
