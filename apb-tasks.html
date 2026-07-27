@@ -206,7 +206,7 @@ function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(
 
 // ── Shared store (Supabase) — tasks sync to apb_tasks so every computer sees them ──
 const SUPABASE_URL='https://aanrxyiocxxndkvkeocv.supabase.co';
-const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU';
+const SUPABASE_KEY='sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw';
 let sb=null; try{ sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY); }catch(e){}
 async function taskUpsert(t){ if(!sb||!t||!t.id) return; try{ await sb.from('apb_tasks').upsert({id:t.id,status:t.status,data:t,updated_at:new Date().toISOString()}); }catch(e){} }
 async function taskDelete(id){ if(!sb||!id) return; try{ await sb.from('apb_tasks').delete().eq('id',id); }catch(e){} }
