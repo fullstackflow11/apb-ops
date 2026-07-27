@@ -22,7 +22,7 @@
    ══════════════════════════════════════════════════════════════════ */
 (function () {
   var SB_URL = 'https://aanrxyiocxxndkvkeocv.supabase.co';
-  var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU';
+  var SB_KEY = 'sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw';
 
   function norm(s) { return String(s == null ? '' : s).trim().toLowerCase(); }
 
