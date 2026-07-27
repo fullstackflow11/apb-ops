@@ -707,7 +707,7 @@ const CONFIG = {
   // The Connect button can still override it (stored per-browser), and
   // Disconnect still forces demo mode for the current session.
   SUPABASE_ANON_KEY: (window.localStorage && localStorage.getItem("apb_supabase_key"))
-    || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU"
+    || "sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw"
 };
 // True when the current job/lead id is a real Supabase row (not a local-only placeholder).
 function isRealId(id){ return typeof id==="string" && !/^(lead_|job_|demo-)/.test(id); }
