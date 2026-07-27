@@ -1109,7 +1109,7 @@ function jobStagePct(status){
 async function refreshJobsCacheLive(){
   try{
     var SB_URL="https://aanrxyiocxxndkvkeocv.supabase.co";
-    var SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU";
+    var SB_KEY="sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw";
     var r = await fetch(SB_URL+"/rest/v1/apb_jobs?select=job_name,job_number,status,job_status_pct,archived,apb_engagements(name)", {headers:{apikey:SB_KEY, Authorization:"Bearer "+SB_KEY}});
     if(!r.ok) return false;
     var rows = await r.json();
@@ -1315,7 +1315,7 @@ function setView(v){ setRole(v); }
 (async function checkQboPending(){
   if(ROLE!=="admin") return;
   var SB_URL="https://aanrxyiocxxndkvkeocv.supabase.co";
-  var SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU";
+  var SB_KEY="sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw";
   function countPending(table){
     return fetch(SB_URL+"/rest/v1/"+table+"?select=id&qbo_synced=eq.false",{
       headers:{apikey:SB_KEY,Authorization:"Bearer "+SB_KEY,Prefer:"count=exact",Range:"0-0"}
