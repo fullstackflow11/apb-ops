@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>APB — Timesheet Review</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="apb-people.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -215,6 +216,7 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
   <div class="header-sep"></div>
   <a href="index.html" class="btn btn-ghost" style="font-size:12px;">⌂ Home</a>
   <div class="hdr-spacer"></div>
+  <button class="btn btn-export" onclick="exportExcel()" title="Full timesheet review as a formatted Excel workbook">⬇ Export Excel</button>
   <button class="btn btn-export" onclick="exportCSV()">⬇ Export CSV</button>
   <button class="btn btn-export" onclick="exportQuickBooks()" title="Reviewed, billable lines in Chelsea's QuickBooks format">⬇ Export for QuickBooks</button>
   <button class="btn btn-primary" onclick="batchApproveAll()" id="batchAllBtn" style="display:none">✓ Approve All Pending</button>
@@ -357,7 +359,7 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
 
 <script>
 const SUPABASE_URL = 'https://aanrxyiocxxndkvkeocv.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU';
 const ALLOWED_MANAGERS = ['christina@apb1.com','jerry@apb1.com','nate@apb1.com','christopher@apb1.com','chelsea@apb1.com','brandonw@apb1.com','jhuber@apb1.com','bryce@apb1.com','randall_kline@outlook.com','joetoscano4@gmail.com'];
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -366,7 +368,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   await new Promise(r=>setTimeout(r,400));
   
 
-let visits = [], lines = [], punches = [], currentFilter = 'all', currentUser = null, selectedVisits = new Set();
+let visits = [], lines = [], punches = [], engagements = [], jobsAll = [], currentFilter = 'all', currentUser = null, selectedVisits = new Set();
 function punchFor(visitId){ return punches.find(p=>p.timesheet_id===visitId) || null; }
 function fmtPunch(t){ if(!t) return ''; const m=String(t).match(/(\d{1,2}):(\d{2})/); if(!m) return String(t); let h=+m[1]; const mm=m[2], ap=h<12?'AM':'PM'; h=h%12||12; return h+':'+mm+' '+ap; }
 
@@ -409,12 +411,14 @@ sb.auth.getSession().then(({data})=>{if(data&&data.session)_unlock(data.session)
 // ── Data ──
 async function loadData(){
   document.getElementById('visitList').innerHTML='<div class="spinner"></div>';
-  const [vRes,lRes,pRes]=await Promise.all([
+  const [vRes,lRes,pRes,eRes,jRes]=await Promise.all([
     sb.from('apb_timesheets').select('*, apb_engagements(name)').order('visit_date',{ascending:false}).limit(500),
     sb.from('apb_timesheet_lines').select('*').order('created_at',{ascending:true}),
-    sb.from('apb_punches').select('timesheet_id,punch_in,punch_out,duration_hours')
+    sb.from('apb_punches').select('timesheet_id,punch_in,punch_out,duration_hours'),
+    sb.from('apb_engagements').select('id,name').order('name'),
+    sb.from('apb_jobs').select('id,engagement_id,job_number,job_name,status,archived')
   ]);
-  visits=vRes.data||[]; lines=lRes.data||[]; punches=pRes.data||[];
+  visits=vRes.data||[]; lines=lRes.data||[]; punches=pRes.data||[]; engagements=eRes.data||[]; jobsAll=jRes.data||[];
   const techs=[...new Set(visits.map(v=>v.tech_name).filter(Boolean))].sort();
   const vessels=[...new Set(visits.map(v=>v.apb_engagements?.name||v.vessel_name).filter(Boolean))].sort();
   document.getElementById('techFilter').innerHTML='<option value="">All Techs</option>'+techs.map(t=>`<option>${t}</option>`).join('');
@@ -550,9 +554,21 @@ function renderCard(v){
       <thead><tr><th>Job</th><th>Work Description</th><th>Hours</th><th>Billable</th><th>Status</th></tr></thead>
       <tbody>${vLines.map(l=>`
         <tr>
-          <td style="white-space:nowrap">
-            <span class="job-tag">${l.job_number||l.job_no||l.shop_category?.split(' ').slice(0,2).join(' ')||'—'}</span>
-            <div style="font-size:11px;color:var(--ink-3);font-weight:600;margin-top:3px">${l.vessel_name||headerVessel}</div>
+          <td style="white-space:nowrap;min-width:150px">
+            <span id="job-${l.id}">
+              <span class="job-tag">${l.job_number||l.job_no||l.shop_category?.split(' ').slice(0,2).join(' ')||'—'}</span>
+              ${l.reviewed?'':`<span class="edit-icon" onclick="startEditJob('${l.id}')">✎</span>`}
+              <div style="font-size:11px;color:var(--ink-3);font-weight:600;margin-top:3px">${l.vessel_name||headerVessel}</div>
+              ${l.job_name?`<div style="font-size:11px;color:var(--ink-2);margin-top:1px">${l.job_name}</div>`:''}
+            </span>
+            <div id="job-edit-${l.id}" style="display:none;min-width:210px">
+              <select class="edit-input" id="job-vessel-${l.id}" onchange="onRevVesselChange('${l.id}')" style="width:100%;margin-bottom:5px">${revVesselOptions(l.engagement_id)}</select>
+              <select class="edit-input" id="job-sel-${l.id}" style="width:100%">${revJobOptions(l.engagement_id,l.job_id)}</select>
+              <div class="edit-actions">
+                <button class="save-edit-btn" onclick="saveJobLine('${l.id}')">Save</button>
+                <button class="cancel-edit-btn" onclick="cancelEditJob('${l.id}')">Cancel</button>
+              </div>
+            </div>
           </td>
           <td>
             <span class="work-desc" id="desc-${l.id}">${l.work_description||l.description||''}</span>
@@ -597,13 +613,19 @@ function renderCard(v){
       <div class="visit-vessel">${vesselName}</div>
       <div class="visit-meta">
         <span class="visit-tech-pill">${v.tech_name||'—'}</span>
-        <span class="visit-date">${dateStr}</span>
+        <span class="visit-date">${dateStr} <span class="edit-icon" onclick="event.stopPropagation();startEditDate('${v.id}')">✎</span></span>
         ${clockStr?`<span class="visit-date" style="opacity:.65" title="Clock in / out">⏱ ${clockStr}</span>`:''}
         ${submittedStr?`<span class="visit-date" style="opacity:.65" title="When this timecard was submitted">🕑 submitted ${submittedStr}</span>`:''}
         <span class="visit-hours">${parseFloat(v.total_hours||0).toFixed(1)}h</span>
         <span class="status-pill ${allReviewed?'done':'pending'}">${allReviewed?'✓ Done':'Pending'}</span>
       </div>
       <span class="visit-chevron">▾</span>
+    </div>
+    <div id="date-edit-${v.id}" style="display:none;padding:9px 16px;background:var(--panel-2);border-bottom:1px solid var(--line);align-items:center;gap:8px">
+      <label style="font-size:12px;font-weight:600;color:var(--ink-3);margin-right:6px">Visit date</label>
+      <input type="date" id="date-val-${v.id}" value="${v.visit_date||''}" class="edit-input" style="width:auto">
+      <button class="save-edit-btn" onclick="saveVisitDate('${v.id}')">Save date</button>
+      <button class="cancel-edit-btn" onclick="document.getElementById('date-edit-${v.id}').style.display='none'">Cancel</button>
     </div>
     <div class="visit-body">
       ${photos.length?`<div class="photo-strip">${photos.map(p=>`<img src="${p}" onclick="window.open('${p}','_blank')">`).join('')}</div>`:''}
@@ -801,9 +823,52 @@ async function saveHours(lineId){
   const editor=currentUser?.email||'admin';
   const{error}=await sb.from('apb_timesheet_lines').update({hours:val,edited_by:editor,edited_at:new Date().toISOString(),original_hours:orig}).eq('id',lineId);
   if(error){showToast('Error: '+error.message);return;}
-  if(l)l.hours=val;
-  document.getElementById('hrs-'+lineId).textContent=val.toFixed(1)+'h';
-  cancelEdit('hrs',lineId);updateSummary();renderTechTable();showToast('Hours updated to '+val.toFixed(1)+'h ✓');
+  if(l){l.hours=val; await recomputeVisitTotal(l.timesheet_id);}
+  cancelEdit('hrs',lineId);updateSummary();renderTechTable();renderVisits();showToast('Hours updated to '+val.toFixed(1)+'h ✓');
+}
+
+// ── Keep a visit's total in sync with its line hours ──
+async function recomputeVisitTotal(visitId){
+  const sum=lines.filter(l=>l.timesheet_id===visitId).reduce((s,l)=>s+parseFloat(l.hours||0),0);
+  const v=visits.find(x=>x.id===visitId); if(v) v.total_hours=parseFloat(sum.toFixed(2));
+  try{ await sb.from('apb_timesheets').update({total_hours:parseFloat(sum.toFixed(2))}).eq('id',visitId); }catch(e){}
+}
+// ── Edit a line's vessel + job (matches the Active List: non-lead, non-archived) ──
+function rvEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+const REV_LEAD_ST=['Lead','Estimating','Proposal Created','Proposal Sent'];
+function revVesselOptions(sel){
+  return '<option value="">— vessel / project —</option>'+engagements.map(e=>`<option value="${e.id}"${e.id===sel?' selected':''}>${rvEsc(e.name)}</option>`).join('');
+}
+function revJobOptions(engId,sel){
+  const js=jobsAll.filter(j=>j.engagement_id===engId && !j.archived && REV_LEAD_ST.indexOf(j.status)<0);
+  if(!js.length) return '<option value="">— no active jobs —</option>';
+  return '<option value="">— job —</option>'+js.map(j=>{const lbl=(j.job_number&&j.job_name&&!String(j.job_name).startsWith(j.job_number))?`${j.job_number} — ${j.job_name}`:(j.job_name||j.job_number||'—');return `<option value="${j.id}" data-num="${rvEsc(j.job_number||'')}" data-name="${rvEsc(j.job_name||'')}"${j.id===sel?' selected':''}>${rvEsc(lbl)}</option>`;}).join('');
+}
+function startEditJob(lineId){document.getElementById('job-'+lineId).style.display='none';document.getElementById('job-edit-'+lineId).style.display='block';}
+function cancelEditJob(lineId){document.getElementById('job-'+lineId).style.display='';document.getElementById('job-edit-'+lineId).style.display='none';}
+function onRevVesselChange(lineId){document.getElementById('job-sel-'+lineId).innerHTML=revJobOptions(document.getElementById('job-vessel-'+lineId).value,null);}
+async function saveJobLine(lineId){
+  const vSel=document.getElementById('job-vessel-'+lineId), jSel=document.getElementById('job-sel-'+lineId);
+  const engId=vSel.value; if(!engId){showToast('Pick a vessel / project');return;}
+  const jobVal=jSel.value; if(!jobVal){showToast('Pick a job');return;}
+  const vesselName=vSel.options[vSel.selectedIndex]?.textContent||'';
+  const jOpt=jSel.options[jSel.selectedIndex];
+  const editor=currentUser?.email||'admin';
+  const upd={engagement_id:engId,vessel_name:vesselName,job_id:jobVal,job_number:jOpt?.dataset.num||null,job_name:jOpt?.dataset.name||null,edited_by:editor,edited_at:new Date().toISOString()};
+  const{error}=await sb.from('apb_timesheet_lines').update(upd).eq('id',lineId);
+  if(error){showToast('Error: '+error.message);return;}
+  const l=lines.find(x=>x.id===lineId); if(l)Object.assign(l,upd);
+  renderVisits();showToast('Job updated ✓');
+}
+// ── Edit a visit's date ──
+function startEditDate(visitId){const el=document.getElementById('date-edit-'+visitId);el.style.display=(el.style.display==='flex')?'none':'flex';}
+async function saveVisitDate(visitId){
+  const val=document.getElementById('date-val-'+visitId).value;
+  if(!val){showToast('Pick a date');return;}
+  const{error}=await sb.from('apb_timesheets').update({visit_date:val}).eq('id',visitId);
+  if(error){showToast('Error: '+error.message);return;}
+  const v=visits.find(x=>x.id===visitId); if(v)v.visit_date=val;
+  renderVisits();showToast('Date updated ✓');
 }
 
 // ── Billable helper: explicit true/false wins; NULL defaults to non-billable for Shop/Admin lines ──
@@ -829,6 +894,30 @@ function exportCSV(){
   showToast('CSV downloaded');
 }
 
+// ── Export Excel (.xlsx) — same review data, proper workbook ──
+function exportExcel(){
+  if(typeof XLSX==='undefined'){ showToast('Excel tools still loading — try again in a second'); return; }
+  const header=['Date','Tech','Vessel/Project','Job','Description','Hours','OT','Billable','Reviewed'];
+  const visitById={}; visits.forEach(v=>{ visitById[v.id]=v; });
+  const body=lines.map(l=>{
+    const v=visitById[l.timesheet_id]||null;
+    const vessel=l.vessel_name||v?.apb_engagements?.name||v?.vessel_name||'—';
+    const tech=l.tech_name||v?.tech_name||'';
+    const date=v?.visit_date||(l.created_at?l.created_at.split('T')[0]:'');
+    const h=parseFloat(l.hours||0)||0;
+    // Hours/OT kept numeric so they total in Excel
+    return [date,tech,vessel,l.job_number||l.job_no||'',l.work_description||l.description||'',h,Math.max(0,h-8),isBillable(l)?'Y':'N',l.reviewed?'Y':'N'];
+  }).sort((a,b)=>String(b[0]||'').localeCompare(String(a[0]||'')));
+  const aoa=[header,...body];
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[{wch:12},{wch:18},{wch:24},{wch:10},{wch:64},{wch:7},{wch:6},{wch:9},{wch:9}];
+  ws['!autofilter']={ref:XLSX.utils.encode_range({s:{r:0,c:0},e:{r:aoa.length-1,c:header.length-1}})};
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Timesheet Review');
+  XLSX.writeFile(wb,`apb-timesheets-${new Date().toISOString().split('T')[0]}.xlsx`);
+  showToast('Excel downloaded');
+}
+
 // ── Final invoice description (Chelsea's format: MM-DD-YY TECHCODE: description) ──
 function techCode(name){ name=(name||'').trim(); if(!name) return ''; const p=name.split(/\s+/); return ((p[0][0]||'')+(p[p.length-1]||'')).toUpperCase().replace(/[^A-Z]/g,''); }
 function fmtInvDate(d){ if(!d) return ''; const p=String(d).slice(0,10).split('-'); return p.length<3?String(d):p[1]+'-'+p[2]+'-'+p[0].slice(2); }
@@ -839,10 +928,78 @@ async function exportQuickBooks(){
   const {data,error} = await sb.from('apb_invoice_lines_ready').select('*').order('work_date',{ascending:false});
   if(error){ showToast('Error: '+error.message); return; }
   if(!data || !data.length){ showToast('No reviewed, billable lines ready to invoice'); return; }
-  const header=['Date','Tech','Vessel/Project','Job','Hours','Billable','Description'];
+  // ── APB → QuickBooks name mapping (reviewed against QB customer list, Jul 2026) ──
+  // QuickBooks matches time only on EXACT names. APB vessel/job names are spelled
+  // differently, so we translate them here. To add a new vessel/job: add its exact
+  // QuickBooks "Customer:Project" to QB_PROJECT (key = "<vessel>|<job as it appears>").
+  var QB_CUSTOMER = {
+    "APB 1 (Chelsea Rae)": "APB1 Chelsea Rae",
+    "APB 2 (WYWY)": "APB2 - Wywy",
+    "APB 3 (Redundansea)": "APB3 (Redundansea)",
+    "Catskill": "Catskill",
+    "Driven": "Driven",
+    "Goltens": "Goltens",
+    "High Seas": "High Seas",
+    "M/Y Deztination 140'": "Deztination",
+    "Nate's House": "Nate",
+    "OTORO (Freeman)": "Otoro",
+    "Phoenix International": "Phoenix Intl",
+    "Retriever": "Retriever",
+    "Sea Ray 350 Sundancer": "Sea Ray 350",
+    "Shop Work": "Shop Work",
+    "Siemens Energy": "Siemens",
+    "Ted": "Ted",
+    "Uncle Tony": "Uncle Tony"
+  };
+  var QB_PROJECT = {
+    "APB 1 (Chelsea Rae)|1.0 Maintenance": "APB1 Chelsea Rae:1.0 - Maintenance",
+    "APB 1 (Chelsea Rae)|2.0 Project Management": "APB1 Chelsea Rae:2.0 - Project Management",
+    "APB 2 (WYWY)|3.0 Mechanical Systems Development (R&D)": "APB2 - Wywy:3.0 - Mech Syst Devel (R&D)",
+    "APB 2 (WYWY)|4.0 Engineering & Design Development (R&D)": "APB2 - Wywy:4.0 - Eng/Design Dev (R&D)",
+    "APB 2 (WYWY)|5.0 Fabrication & Manufacturing Development (R&D)": "APB2 - Wywy:5.0 - Fab/Mnfg Devel (R&D)",
+    "APB 3 (Redundansea)|1.0 Vessel Support (RedundanSea Re-Power)": "APB3 (Redundansea):1.0 - Vessel Support",
+    "APB 3 (Redundansea)|2.0 Project Management": "APB3 (Redundansea):2.0 - Project Management",
+    "APB 3 (Redundansea)|4.0 Engineering & Design Development (R&D)": "APB3 (Redundansea):4.0 - Eng + Design Dev R+D",
+    "APB 3 (Redundansea)|5.0 Fabrication & Manufacturing Development (R&D)": "APB3 (Redundansea):5.0 - Fab + Mnfg Dev R+D",
+    "Catskill|3.0 Waterjet Valve Cradle": "Catskill:3.0 - Waterjet",
+    "Driven|1.0 Class 200 Assemblies": "Driven:1.0 - Class 200 Assemblies",
+    "Goltens|7.0 Qty 2 Handle and Bracket Assemblies": "Goltens:7.0 - 2 Handle Assemblies",
+    "High Seas|2.0 Steel Prop Wrench": "High Seas:9.0 - Water jet steel prop nut wrench",
+    "High Seas|3.0 Steel Golf Cart Brackets": "High Seas:3.0 - Steel Golf Cart Brackets",
+    "M/Y Deztination 140'|3.0 Port side door access/inspection": "Deztination:3.0 - Side Door Mod and Inspection",
+    "Nate's House|1.0 House Assist": "Nate:1.0 - Nate's House",
+    "OTORO (Freeman)|3.0 Vessel Assist": "Otoro:3.0 - Vessel Assist",
+    "Phoenix International|3.0 Hull Steel Renewal & Overboard Discharge Replacement": "Phoenix Intl:3.0 - Hull Plate Inserts/Overboard Discharge Renewals",
+    "Retriever|7.0 Fab ski pole": "Retriever:7.0 - Fab Ski Pole",
+    "Sea Ray 350 Sundancer|1.0 Main Engine Repairs": "Sea Ray 350:1.0 - Main Engine Repair",
+    "Shop Work|1.0 Shop Maintenance, Cleaning & Organization": "Shop Work:1.0 - Shop Maint, Clean, Org",
+    "Shop Work|2.0 Equipment Maintenance & Repairs": "Shop Work:2.0 - Equip Maint/Repairs",
+    "Shop Work|3.0 Material Processing & Inventory": "Shop Work:3.0 - Mtrl Processing/Inventory",
+    "Shop Work|5.0 Facility Improvements & Internal Projects": "Shop Work:5.0 - Facility Imp/Internal Projects",
+    "Shop Work|6.0 Engineering & Design Development (R&D)": "Shop Work:6.0 - Eng/Design Dev (R&D)",
+    "Siemens Energy|3.0 Waterjet Turbine Parts": "Siemens:3.0 - Waterjet Turbine Parts",
+    "Siemens Energy|5.0 Casting Removal": "Siemens:5.0 - Casting Removal",
+    "Ted|1.0 Lay Tank Fabrication": "Ted:1.0 - Lay Tank Fabrication",
+    "Uncle Tony|4.0 Rocket launcher": "Uncle Tony:4.0 - Rocket Launcher",
+    "Uncle Tony|5.0 Foot Rest/Grab Rails": "Uncle Tony:5.0 - Foot rest/Grab Rails"
+  };
+  // Translate an APB timesheet line to QuickBooks' exact "Customer:Project" path.
+  function qbCustomerProject(r){
+    var vessel=String(r.vessel_name||'').trim();
+    var num=String(r.job_number||'').trim();
+    var name=String(r.job_name||'').trim();
+    // rebuild the APB job label exactly as it appears in the export
+    var apbJob = (name && num && name.indexOf(num)!==0) ? (num+' '+name) : (name||num);
+    if(QB_PROJECT[vessel+'|'+apbJob]) return QB_PROJECT[vessel+'|'+apbJob];   // exact reviewed mapping
+    // fallback: at least route to the right QuickBooks customer
+    var cust = QB_CUSTOMER[vessel] || vessel;
+    var proj = (num && name) ? (name.indexOf(num)===0 ? name : (num+' - '+name)) : (name||num);
+    return proj ? (cust+':'+proj) : (cust||'—');
+  }
+  const header=['Date','Tech','Customer/Project','Hours','Billable','Description'];
   const rows=[header, ...data.map(r=>[
-    r.work_date||'', r.tech_name||'', r.vessel_name||'—',
-    (r.job_name && r.job_number && !r.job_name.startsWith(r.job_number)) ? `${r.job_number} ${r.job_name}` : (r.job_name||r.job_number||''),
+    r.work_date||'', r.tech_name||'',
+    qbCustomerProject(r),
     (+r.hours||0).toFixed(2), 'Y', r.work_description||r.invoice_line||''
   ])];
   const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
@@ -863,9 +1020,10 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 // explicitly attached to window or the buttons silently no-op.
 Object.assign(window, {
   approveFromModal, batchApproveAll, batchApproveSelected, cancelEdit, clearDates, clearSelection,
-  closeReviewModal, deleteVisit, exportCSV, exportQuickBooks, flagFromModal, markAllReviewed,
+  closeReviewModal, deleteVisit, exportCSV, exportExcel, exportQuickBooks, flagFromModal, markAllReviewed,
   openReviewModal, saveDesc, saveHours, setFilter, startEditDesc, startEditHours,
-  toggleBillable, toggleCard, toggleReviewed, toggleTechSummary, renderVisits
+  toggleBillable, toggleCard, toggleReviewed, toggleTechSummary, renderVisits,
+  startEditJob, cancelEditJob, onRevVesselChange, saveJobLine, startEditDate, saveVisitDate
 });
 })();
 </script>
