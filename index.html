@@ -5,6 +5,8 @@
 <script src="apb-demo.js"></script>
 <script src="apb-jobs.js"></script>
 <script src="apb-people.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="apb-auth.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>APB Operations Hub</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -596,76 +598,59 @@ body.theme-light .foot b{color:#48597a}
 </div>
 <script>
 (function(){
-  var ADMINS = {
-    'christina@apb1.com':'1234','jerry@apb1.com':'0123','nate@apb1.com':'1122',
-    'christopher@apb1.com':'2233','chelsea@apb1.com':'3344','brandonw@apb1.com':'2211','bryce@apb1.com':'1100',
-    'randall_kline@outlook.com':'4400','joetoscano4@gmail.com':'5500',
-    'jordan@apb1.com':'5566','jhuber@apb1.com':'8899'
-  };
-  // Per-account dashboard role — anyone not listed here signs in as 'admin'.
-  var ACCT_ROLE = { 'jordan@apb1.com':'pm' };
+  // Real Supabase Auth. The dashboard login establishes the session that every
+  // other admin page reads (shared across the site). No credentials in source.
   var AUTH_KEY = 'apb_hub_auth_v2';
+  var SB_URL='https://aanrxyiocxxndkvkeocv.supabase.co';
+  var SB_KEY='sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw';
+  var sb=window.supabase.createClient(SB_URL, SB_KEY, { auth:{ persistSession:true, autoRefreshToken:true } });
+  if(window.APBAuth) APBAuth.init(sb);
 
   function _grant(email, role){
     localStorage.setItem(AUTH_KEY, email);
     try{ localStorage.setItem('apb_role', role||'admin'); sessionStorage.removeItem('apb_preview'); }catch(e){}
   }
-  function _fail(errEl){
-    errEl.textContent='Incorrect email or PIN.'; errEl.style.display='block';
+  function _fail(errEl, msg){
+    errEl.textContent=msg||'Incorrect email or PIN.'; errEl.style.display='block';
     document.getElementById('authPin').value=''; document.getElementById('authPin').focus();
   }
+  // Role + manager flag from apb_people via the authenticated client (works with RLS on).
+  async function _roleFor(email){
+    try{ var r=await sb.from('apb_people').select('role,is_manager').eq('email',email).maybeSingle();
+      if(r && r.data) return {role:r.data.role||'admin', mgr:!!r.data.is_manager}; }catch(e){}
+    return {role:null, mgr:false};
+  }
 
-  // Login: check apb_people (source of truth) first, then the hardcoded map as a fallback.
   window.apbCheckLogin = async function(){
     var email=(document.getElementById('authEmail').value||'').trim().toLowerCase();
     var pin=(document.getElementById('authPin').value||'').trim();
     var errEl=document.getElementById('authError');
     if(!email||!pin){errEl.textContent='Enter your email and PIN.';errEl.style.display='block';return;}
-
-    try{
-      if(window.APBPeople){
-        var res=await APBPeople.checkLogin(email,pin);
-        if(res && res.found){
-          if(res.ok){ errEl.style.display='none'; _grant(email,res.role); location.reload(); return; }
-          _fail(errEl); return;                       // in the table, wrong PIN
-        }
-      }
-    }catch(e){}
-
-    // Fallback: person not in the table yet, or the DB was unreachable.
-    if(ADMINS[email] && ADMINS[email]===pin){
-      errEl.style.display='none'; _grant(email, ACCT_ROLE[email]||'admin'); location.reload(); return;
-    }
-    _fail(errEl);
+    var res=await APBAuth.signIn(email,pin);
+    if(!res.ok){ _fail(errEl, res.message||'Incorrect email or PIN.'); return; }
+    var who=(res.user&&res.user.email)||email;
+    var rr=await _roleFor(who);
+    if(!rr.mgr){ await APBAuth.signOut(); _fail(errEl,'This account is not a manager.'); return; }
+    errEl.style.display='none'; _grant(who, rr.role); location.reload();
   };
 
-  window.apbSignOut = function(){ localStorage.removeItem(AUTH_KEY); location.reload(); };
-  function apbHideGate(){
-    var g=document.getElementById('authGate');
-    if(g) g.style.display='none';
-    document.body.style.overflow='';
-  }
-  function apbShowGate(){
-    document.body.style.overflow='hidden';
-    setTimeout(function(){var e=document.getElementById('authEmail'); if(e)e.focus();},100);
-  }
+  window.apbSignOut = function(){ try{ sb.auth.signOut(); }catch(e){} localStorage.removeItem(AUTH_KEY); location.reload(); };
+  function apbHideGate(){ var g=document.getElementById('authGate'); if(g) g.style.display='none'; document.body.style.overflow=''; }
+  function apbShowGate(){ document.body.style.overflow='hidden'; setTimeout(function(){var e=document.getElementById('authEmail'); if(e)e.focus();},100); }
   function _reassert(role){ try{ if(sessionStorage.getItem('apb_preview')!=='1') localStorage.setItem('apb_role', role);}catch(e){} }
 
-  var saved = localStorage.getItem(AUTH_KEY);
-  if(saved && ADMINS[saved]){
-    // Known account — fast path, no network needed.
-    _reassert(ACCT_ROLE[saved]||'admin'); apbHideGate();
-  } else if(saved && window.APBPeople){
-    // Account created only in apb_people — verify it's still active, re-assert its role.
+  (async function(){
     document.body.style.overflow='hidden';
-    APBPeople.getRole(saved).then(function(role){
-      if(role){ _reassert(role); apbHideGate(); }            // still valid
-      else if(role===null){ localStorage.removeItem(AUTH_KEY); apbShowGate(); } // removed/deactivated
-      else { apbHideGate(); }                                 // undefined = DB down, trust prior session
-    }).catch(function(){ apbHideGate(); });
-  } else {
-    localStorage.removeItem(AUTH_KEY); apbShowGate();
-  }
+    try{
+      var s=await sb.auth.getSession();
+      var session=(s&&s.data)?s.data.session:null;
+      if(!session){ localStorage.removeItem(AUTH_KEY); apbShowGate(); return; }
+      var who=session.user.email;
+      var rr=await _roleFor(who);
+      if(rr.mgr){ _grant(who, rr.role); _reassert(rr.role); apbHideGate(); }
+      else { await APBAuth.signOut(); localStorage.removeItem(AUTH_KEY); apbShowGate(); }
+    }catch(e){ apbShowGate(); }
+  })();
 })();
 </script>
 
