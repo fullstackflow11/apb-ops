@@ -221,7 +221,7 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
   <button class="btn btn-export" onclick="exportQuickBooks()" title="Reviewed, billable lines in Chelsea's QuickBooks format">⬇ Export for QuickBooks</button>
   <button class="btn btn-primary" onclick="batchApproveAll()" id="batchAllBtn" style="display:none">✓ Approve All Pending</button>
   <span id="userEmail" style="font-size:11px;color:var(--ink-3);font-family:var(--mono);"></span>
-  <button class="btn btn-ghost" id="signOutBtn" style="display:none" onclick="sb.auth.signOut().then(()=>location.reload())">Sign out</button>
+  <button class="btn btn-ghost" id="signOutBtn" style="display:none" onclick="location.reload()">Sign out</button>
 </header>
 
 <main>
@@ -361,7 +361,7 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
 const SUPABASE_URL = 'https://aanrxyiocxxndkvkeocv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU';
 const ALLOWED_MANAGERS = ['christina@apb1.com','jerry@apb1.com','nate@apb1.com','christopher@apb1.com','chelsea@apb1.com','brandonw@apb1.com','jhuber@apb1.com','bryce@apb1.com','randall_kline@outlook.com','joetoscano4@gmail.com'];
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
 
 // ── Auth Gate ──
 (async()=>{
@@ -390,23 +390,35 @@ document.body.appendChild(_gate);
 
 function _normId(raw){ const v=(raw||'').trim().toLowerCase(); if(!v)return null; return v.includes('@')?v:v.replace(/\s+/g,'.')+'@'+SYNTHETIC_DOMAIN; }
 const _id=_gate.querySelector('#apb-id'),_pin=_gate.querySelector('#apb-pin'),_go=_gate.querySelector('#apb-go');
-async function _enter(){ const email=_normId(_id.value),pin=_pin.value; if(!email){_gate.querySelector('#apb-msg').textContent='Enter your name or ID.';return;} if(!pin){_gate.querySelector('#apb-msg').textContent='Enter your PIN.';return;} _go.disabled=true;_go.textContent='...'; try{ const{error}=await sb.auth.signInWithPassword({email,password:pin}); if(error)throw error; }catch(e){_gate.querySelector('#apb-msg').textContent='Wrong name/ID or PIN.';} finally{_go.disabled=false;_go.textContent='Continue →';} }
+function _msg(t){ _gate.querySelector('#apb-msg').textContent=t; }
+// Manager gate — validates the PIN against apb_people over the anon key
+// (same source of truth as the tech portal). No Supabase Auth session, so
+// nothing here expires or goes stale.
+async function _enter(){
+  const email=_normId(_id.value), pin=_pin.value;
+  if(!email){_msg('Enter your name or email.');return;}
+  if(!pin){_msg('Enter your PIN.');return;}
+  _go.disabled=true;_go.textContent='...';
+  try{
+    const res = window.APBPeople ? await APBPeople.checkLogin(email,pin) : {found:false,error:true};
+    if(res.error){ _msg('Can’t reach the server — try again in a moment.'); return; }
+    if(!res.found || !res.ok){ _msg('Wrong name/email or PIN.'); return; }
+    const isMgr = res.is_manager===true || ALLOWED_MANAGERS.includes(email);
+    if(!isMgr){ _msg('Access restricted to managers.'); return; }
+    _unlock(email);
+  } finally { _go.disabled=false;_go.textContent='Continue →'; }
+}
 _go.addEventListener('click',_enter); _gate.addEventListener('keydown',e=>{if(e.key==='Enter')_enter();});
 
 let _booted=false;
-async function _unlock(session){
-  if(_booted)return; if(!session)return;
-  const email=session.user?.email;
-  const _mgr = window.APBPeople ? await APBPeople.isManager(email) : null;   // apb_people is the source of truth
-  if(!ALLOWED_MANAGERS.includes(email) && _mgr!==true){sb.auth.signOut();_gate.querySelector('#apb-msg').textContent='Access restricted to managers.';return;}
-  _booted=true; currentUser=session.user; _gate.remove();
+function _unlock(email){
+  if(_booted||!email)return;
+  _booted=true; currentUser={email}; _gate.remove();
   document.getElementById('userEmail').textContent=email;
   document.getElementById('signOutBtn').style.display='';
   document.getElementById('batchAllBtn').style.display='';
   loadData();
 }
-sb.auth.onAuthStateChange((_e,s)=>{if(s)_unlock(s);});
-sb.auth.getSession().then(({data})=>{if(data&&data.session)_unlock(data.session);});
 
 // ── Data ──
 async function loadData(){
