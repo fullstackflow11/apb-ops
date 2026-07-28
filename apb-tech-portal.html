@@ -370,9 +370,14 @@ html,body{height:100%;background:var(--bg);color:var(--ink);font-family:Inter,-a
 
 <script>
 const SUPABASE_URL='https://aanrxyiocxxndkvkeocv.supabase.co';
-const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU';
+const SUPABASE_KEY='sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw';
 const PHOTO_BUCKET='timesheet-photos';
 const sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+// Techs authenticate name+PIN via server-side functions (apb_tech_login) that
+// return a session token. No Supabase Auth accounts, no PINs in the browser.
+let apbToken = null;
+let ALL_JOBS = [];
+let HISTORY = [];
 
 let allTechs=[],allEngagements=[],currentTech=null,selectedPin='',lunchHours=0.5,uploadedPhotos=[],lineCounter=0;
 
@@ -390,17 +395,7 @@ function isNonBillableVessel(name){
 const SHOP_CATEGORIES=['1.0 Shop Maintenance, Cleaning & Organization','2.0 Equipment Maintenance & Repairs','3.0 Material Processing & Inventory','4.0 Training & Process Improvement','5.0 Facility Improvements & Internal Projects','6.0 Engineering & Design Development (R&D)','7.0 Mechanical Systems Development (R&D)','8.0 Fabrication & Manufacturing Development (R&D)'];
 const ADMIN_CATEGORIES=['1.0 General Admin — Email & Communication','2.0 Planning & Scheduling','3.0 Policy & Procedure Development','4.0 Staff / Safety Meeting','5.0 Sales, Estimating & Proposals','6.0 Legal & Document Review','7.0 Project Management (Non-Billable)','8.0 R&D Review & Direction'];
 
-async function loadEngagements(){
-  // Only show vessels that are actually on the PM Active List — i.e. that have at
-  // least one active (non-lead, non-archived) job. A vessel with no active jobs
-  // (e.g. a pending lead or a finished project) is left off the timesheet.
-  const jobsRes = await sb.from('apb_jobs').select('engagement_id,status,archived');
-  const activeEng = new Set((jobsRes.data||[])
-    .filter(j => j.engagement_id && !j.archived && LEAD_STATUSES.indexOf(j.status) < 0)
-    .map(j => j.engagement_id));
-  const{data:engs}=await sb.from('apb_engagements').select('id,name,status').not('status','in','("Closed","Cancelled","Lead")').order('name');
-  if(engs){ allEngagements = engs.filter(e => activeEng.has(e.id)); refreshVesselSelects(); }
-}
+async function loadEngagements(){ refreshVesselSelects(); }  // data comes from bootstrapPortal()
 // Keep already-open vessel dropdowns in sync with the latest list (preserve the tech's current pick).
 function refreshVesselSelects(){
   document.querySelectorAll('.line-vessel').forEach(function(sel){
@@ -423,25 +418,66 @@ async function refreshOpenJobLists(){
   }
 }
 // Pull the current Active List (vessels + jobs) — used on login, tab open, and refocus.
-async function refreshLogData(){ await loadEngagements(); await refreshOpenJobLists(); }
+async function refreshLogData(){ await bootstrapPortal(); }
 (async function init(){
   document.getElementById('dateInput').value=todayLocalISO();
-  const{data:techs}=await sb.from('apb_techs').select('*').eq('active',true).order('name');
-  allTechs=techs||[];
-  document.getElementById('techGrid').innerHTML=allTechs.map(t=>`<button class="tech-btn" onclick="selectTech('${t.id}',this)">${t.name}</button>`).join('');
-  await loadEngagements();
+  const{data:roster}=await sb.rpc('apb_login_roster');
+  // De-dupe the picker by name (someone in both tables shows once; tech wins).
+  const seen={}; allTechs=[];
+  (Array.isArray(roster)?roster:[]).forEach(function(t){
+    const k=String(t.name||'').trim().toLowerCase();
+    if(seen[k]!==undefined){ if(t.kind==='tech') allTechs[seen[k]]=t; return; }
+    seen[k]=allTechs.length; allTechs.push(t);
+  });
+  document.getElementById('techGrid').innerHTML=allTechs.map((t,i)=>`<button class="tech-btn" onclick="selectTech(${i},this)">${tkEsc(t.name)}</button>`).join('');
   addJobLine();
   updateRemoveButtons();
 })();
 
 // ── Auth ──
-function selectTech(id,el){document.querySelectorAll('.tech-btn').forEach(b=>b.classList.remove('selected'));el.classList.add('selected');currentTech=allTechs.find(t=>t.id===id);selectedPin='';updatePinDots();document.getElementById('loginError').textContent='';}
-function pinPress(d){if(!currentTech){document.getElementById('loginError').textContent='Select your name first.';return;}if(selectedPin.length>=4)return;selectedPin+=d;updatePinDots();if(selectedPin.length===4)checkPin();}
+function selectTech(idx,el){document.querySelectorAll('.tech-btn').forEach(b=>b.classList.remove('selected'));el.classList.add('selected');currentTech=allTechs[idx];selectedPin='';updatePinDots();document.getElementById('loginError').textContent='';}
+function pinPress(d){if(_authBusy)return;if(!currentTech){document.getElementById('loginError').textContent='Select your name first.';return;}if(selectedPin.length>=4)return;selectedPin+=d;updatePinDots();if(selectedPin.length===4)checkPin();}
 function pinDel(){selectedPin=selectedPin.slice(0,-1);updatePinDots();}
 function pinClear(){selectedPin='';updatePinDots();}
 function updatePinDots(){for(let i=0;i<4;i++)document.getElementById('d'+i).classList.toggle('filled',i<selectedPin.length);}
-function checkPin(){var stored=(currentTech&&currentTech.pin!=null)?String(currentTech.pin).trim():'';if(stored.length&&selectedPin===stored)showApp();else{document.getElementById('loginError').textContent='Wrong PIN. Try again.';setTimeout(()=>{selectedPin='';updatePinDots();},800);}}
-function showApp(){document.getElementById('loginScreen').classList.remove('active');document.getElementById('appScreen').classList.add('active');document.getElementById('headerName').textContent=currentTech.name;document.getElementById('headerRole').textContent=currentTech.role||'Tech';loadMyTasks();refreshLogData();}
+let _authBusy=false;
+// PIN is verified SERVER-SIDE by apb_tech_login — never compared in the browser.
+async function checkPin(){
+  if(_authBusy||!currentTech)return; _authBusy=true;
+  document.getElementById('loginError').textContent='Checking…';
+  try{
+    const{data:res,error}=await sb.rpc('apb_tech_login',{p_id:String(currentTech.id),p_pin:selectedPin,p_kind:currentTech.kind||'tech'});
+    if(error){ document.getElementById('loginError').textContent='Server error — try again.'; selectedPin='';updatePinDots(); return; }
+    if(res&&res.ok){
+      apbToken=res.token; try{ sessionStorage.setItem('apb_tech_token',apbToken); }catch(e){}
+      currentTech={id:res.tech_id,uuid:res.tech_uuid,name:res.name,role:res.role,kind:currentTech.kind||'tech'};
+      document.getElementById('loginError').textContent=''; showApp();
+    } else if(res&&res.error==='locked'){
+      document.getElementById('loginError').textContent='Too many tries — locked for a few minutes.'; selectedPin='';updatePinDots();
+    } else {
+      document.getElementById('loginError').textContent='Wrong PIN. Try again.'; setTimeout(()=>{selectedPin='';updatePinDots();},800);
+    }
+  } finally { _authBusy=false; }
+}
+function showApp(){document.getElementById('loginScreen').classList.remove('active');document.getElementById('appScreen').classList.add('active');document.getElementById('headerName').textContent=currentTech.name;document.getElementById('headerRole').textContent=currentTech.role||'Tech';bootstrapPortal();}
+// One call returns everything the portal needs (active list, tasks, team, my hours).
+async function bootstrapPortal(){
+  if(!apbToken)return;
+  const{data:B,error}=await sb.rpc('apb_tech_bootstrap',{p_token:apbToken});
+  if(error||!B){ return; }
+  const activeEng=new Set((B.jobs||[]).filter(j=>j.engagement_id&&!j.archived&&LEAD_STATUSES.indexOf(j.status)<0).map(j=>j.engagement_id));
+  ALL_JOBS=B.jobs||[];
+  allEngagements=(B.engagements||[]).filter(e=>activeEng.has(e.id));
+  refreshVesselSelects(); refreshOpenJobLists();
+  const myName=String(currentTech.name||'').trim().toLowerCase();
+  MY_TASKS=(B.tasks||[]).map(x=>x&&x.data).filter(t=>t&&t.assignee&&String(t.assignee).trim().toLowerCase()===myName);
+  renderMyTasks();
+  TEAM_TASKS=(B.tasks||[]).map(x=>x&&x.data).filter(Boolean);
+  TEAM_ROSTER=(B.team||[]).map(t=>t.name);
+  try{ renderTeamBoard(); }catch(e){}
+  HISTORY=B.hours||[];
+  try{ renderHistory(); }catch(e){}
+}
 // Refresh the vessel/job lists when the tech returns to the app on the Log tab (keeps it live with the Active List).
 document.addEventListener('visibilitychange',function(){var lt=document.getElementById('tabLog');if(!document.hidden&&currentTech&&lt&&lt.classList.contains('active'))refreshLogData();});
 
@@ -450,16 +486,7 @@ var MY_TASKS=[];
 function tkEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function tkDue(s){ if(!s) return ''; try{ return new Date(s+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}); }catch(e){ return s; } }
 function tkLate(t){ if(t.status==='done'||!t.due) return false; try{ return new Date(t.due+'T00:00:00').getTime() < new Date().setHours(0,0,0,0); }catch(e){ return false; } }
-async function loadMyTasks(){
-  var el=document.getElementById('myTasksList'); if(!el||!currentTech) return;
-  try{
-    var res=await sb.from('apb_tasks').select('id,data');
-    if(res.error) throw res.error;
-    var name=String(currentTech.name||'').trim().toLowerCase();
-    MY_TASKS=(res.data||[]).map(function(x){return x&&x.data;}).filter(function(t){ return t && t.assignee && String(t.assignee).trim().toLowerCase()===name; });
-    renderMyTasks();
-  }catch(e){ el.innerHTML='<div class="empty-state">Couldn\'t load tasks right now.</div>'; }
-}
+async function loadMyTasks(){ renderMyTasks(); }  // MY_TASKS is populated by bootstrapPortal()
 function renderMyTasks(){
   var el=document.getElementById('myTasksList'); if(!el) return;
   var ord={todo:0,doing:1,done:2};
@@ -488,23 +515,13 @@ async function techSetTask(id,status){
   var t=MY_TASKS.find(function(x){return x.id===id;}); if(!t) return;
   t.status=status; t.updatedAt=Date.now();
   renderMyTasks();
-  try{ await sb.from('apb_tasks').upsert({id:t.id,status:t.status,data:t,updated_at:new Date().toISOString()}); }catch(e){}
+  try{ await sb.rpc('apb_tech_task_update',{p_token:apbToken,p_id:t.id,p_status:t.status,p_data:t}); }catch(e){}
 }
 
 /* ── Team view — where everyone is assigned (read-only) ── */
 function tkToday(){ var d=new Date(); function p(n){return(n<10?'0':'')+n;} return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
 var TEAM_TASKS=[], TEAM_ROSTER=[];
-async function loadTeamBoard(){
-  var el=document.getElementById('teamBoard'); if(!el) return;
-  try{
-    var tRes=await sb.from('apb_tasks').select('id,data');
-    if(tRes.error) throw tRes.error;
-    TEAM_TASKS=(tRes.data||[]).map(function(x){return x&&x.data;}).filter(Boolean);
-    var rRes=await sb.from('apb_techs').select('name,active').eq('active',true).order('name');
-    TEAM_ROSTER=((rRes&&rRes.data)||[]).map(function(t){return t.name;});
-    renderTeamBoard();
-  }catch(e){ el.innerHTML='<div class="empty-state">Couldn\'t load the team view right now.</div>'; }
-}
+async function loadTeamBoard(){ renderTeamBoard(); }  // TEAM_* is populated by bootstrapPortal()
 function renderTeamBoard(){
   var el=document.getElementById('teamBoard'); if(!el) return;
   var today=tkToday(), byTech={};
@@ -529,7 +546,7 @@ function renderTeamBoard(){
     return '<div class="tm-card'+(isMe?' me':'')+'"><div class="tm-name">'+tkEsc(g.name)+(isMe?' <span class="tm-you">You</span>':'')+'<span class="tm-count">'+open.length+'</span></div>'+rows+'</div>';
   }).join('');
 }
-function logout(){currentTech=null;selectedPin='';document.getElementById('appScreen').classList.remove('active');document.getElementById('loginScreen').classList.add('active');document.querySelectorAll('.tech-btn').forEach(b=>b.classList.remove('selected'));updatePinDots();document.getElementById('loginError').textContent='';resetForm();}
+function logout(){try{if(apbToken)sb.rpc('apb_tech_logout',{p_token:apbToken});}catch(e){}apbToken=null;try{sessionStorage.removeItem('apb_tech_token');}catch(e){}currentTech=null;selectedPin='';document.getElementById('appScreen').classList.remove('active');document.getElementById('loginScreen').classList.add('active');document.querySelectorAll('.tech-btn').forEach(b=>b.classList.remove('selected'));updatePinDots();document.getElementById('loginError').textContent='';resetForm();}
 function switchTab(tab){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');document.getElementById('tab'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active');if(tab==='history')loadHistory();if(tab==='log')refreshLogData();if(tab==='tasks')loadMyTasks();if(tab==='team')loadTeamBoard();}
 
 // ── Hours ──
@@ -576,7 +593,7 @@ function vesselOptionsHtml(){
   // Shop Work and Admin are now real Active-List projects (no built-in pickers),
   // so they appear here like any other vessel and are managed from the console.
   let opts='<option value="">Select vessel / project…</option>';
-  allEngagements.forEach(e=>{opts+=`<option value="${e.id}">${e.name}</option>`;});
+  allEngagements.forEach(e=>{opts+=`<option value="${tkEsc(e.id)}">${tkEsc(e.name)}</option>`;});
   return opts;
 }
 function shopOptionsHtml(){return'<option value="">Select category…</option>'+SHOP_CATEGORIES.map(c=>`<option value="${c}">${c}</option>`).join('');}
@@ -587,17 +604,15 @@ function jobOptionsHtml(jobs){
     if(j.job_number && j.job_name && !j.job_name.startsWith(j.job_number)) return j.job_number+' — '+j.job_name;
     return j.job_name||j.job_number||'—';
   };
-  return'<option value="">Select job…</option>'+jobs.map(j=>`<option value="${j.id}" data-job-number="${j.job_number||''}" data-job-name="${j.job_name||''}">${label(j)}</option>`).join('');
+  return'<option value="">Select job…</option>'+jobs.map(j=>`<option value="${tkEsc(j.id)}" data-job-number="${tkEsc(j.job_number||'')}" data-job-name="${tkEsc(j.job_name||'')}">${tkEsc(label(j))}</option>`).join('');
 }
 // Match the PM Active List exactly: show a job only if it is NOT a pre-approval
 // lead (Lead / Estimating / Proposal Created / Proposal Sent) and NOT archived —
 // the same rule the Project Console uses (!isLead(j) && !j.archived).
-async function getJobsForEngagement(engId){
-  const{data}=await sb.from('apb_jobs')
-    .select('id,job_name,job_number,status,archived')
-    .eq('engagement_id',engId)
-    .order('job_number');
-  return (data||[]).filter(j => !j.archived && LEAD_STATUSES.indexOf(j.status) < 0);
+function getJobsForEngagement(engId){
+  return (ALL_JOBS||[])
+    .filter(j => j.engagement_id===engId && !j.archived && LEAD_STATUSES.indexOf(j.status) < 0)
+    .sort((a,b)=>String(a.job_number||'').localeCompare(String(b.job_number||''),undefined,{numeric:true}));
 }
 async function onLineVesselChange(lineId){
   const div=document.getElementById(lineId);
@@ -685,27 +700,29 @@ async function submitTimesheet(){
   const primaryLine=lines.find(l=>l.vessel_id)||lines[0];
   const btn=document.getElementById('submitBtn');btn.disabled=true;btn.textContent='Saving…';
 
-  const{data:visit,error:vErr}=await sb.from('apb_timesheets').insert({
-    tech_id:currentTech.id,tech_name:currentTech.name,
-    engagement_id:primaryLine.vessel_id||null,vessel_name:primaryLine.vessel_name,
-    visit_date:date,clock_in:cin||null,clock_out:cout||null,
-    lunch_hours:lunchHours,total_hours:totalHours,
-    materials_used:document.getElementById('materialsUsed').value.trim()||null,
-    problem_notes:document.getElementById('problemNotes').value.trim()||null,
-    photo_urls:uploadedPhotos.length?uploadedPhotos.join(','):null
-  }).select().single();
-  if(vErr){btn.disabled=false;btn.textContent='Submit Timesheet';showMsg('error','Error: '+vErr.message);return;}
-
-  const lineRows=lines.map(l=>({timesheet_id:visit.id,engagement_id:l.vessel_id||null,vessel_name:l.vessel_name,job_id:l.job_id||null,job_number:l.job_number||null,job_name:l.job_name||null,shop_category:null,work_description:l.work_description,hours:l.hours,billable:l.non_billable?false:true,tech_id:currentTech.id,tech_name:currentTech.name}));
-  const{error:lErr}=await sb.from('apb_timesheet_lines').insert(lineRows);
-  if(lErr){btn.disabled=false;btn.textContent='Submit Timesheet';showMsg('error','Visit saved but lines failed: '+lErr.message);return;}
-
-  // Save punch record if clock in/out entered
+  let punchPayload=null;
   if(cin&&cout){
     const[ih,im]=cin.split(':').map(Number),[oh,om]=cout.split(':').map(Number);
     const dur=parseFloat((((oh*60+om)-(ih*60+im))/60).toFixed(2));
-    await sb.from('apb_punches').insert({timesheet_id:visit.id,tech_id:currentTech.id,tech_name:currentTech.name,visit_date:date,punch_in:cin,punch_out:cout,duration_hours:dur>0?dur:0,reason:'Work',is_open:false});
+    punchPayload={punch_in:cin,punch_out:cout,duration_hours:dur>0?dur:0};
   }
+  const{data:res,error:sErr}=await sb.rpc('apb_tech_submit',{
+    p_token:apbToken,
+    p_visit:{
+      engagement_id:primaryLine.vessel_id||null, vessel_name:primaryLine.vessel_name,
+      visit_date:date, clock_in:cin||null, clock_out:cout||null, lunch_hours:lunchHours,
+      materials_used:document.getElementById('materialsUsed').value.trim()||null,
+      problem_notes:document.getElementById('problemNotes').value.trim()||null,
+      photo_urls:uploadedPhotos.length?uploadedPhotos.join(','):null
+    },
+    p_lines:lines.map(l=>({
+      engagement_id:l.vessel_id||null, vessel_name:l.vessel_name, job_id:l.job_id||null,
+      job_number:l.job_number||null, job_name:l.job_name||null, shop_category:null,
+      work_description:l.work_description, hours:l.hours, billable:l.non_billable?false:true
+    })),
+    p_punch:punchPayload
+  });
+  if(sErr||!res||!res.ok){btn.disabled=false;btn.textContent='Submit Timesheet';showMsg('error','Error saving: '+(sErr?sErr.message:((res&&res.error)||'unknown')));return;}
 
   btn.disabled=false;btn.textContent='Submit Timesheet';
   const ot=Math.max(0,totalHours-8);
@@ -744,7 +761,7 @@ function openLineEdit(lineId){
     <label style="font-size:11px;font-weight:700;color:var(--ink-3);display:block;margin-top:8px;margin-bottom:3px">Hours</label>
     <input type="number" step="0.1" min="0.1" max="24" id="edithrs-${lineId}" value="${l.hours}">
     <label style="font-size:11px;font-weight:700;color:var(--ink-3);display:block;margin-top:8px;margin-bottom:3px">Description</label>
-    <textarea id="editdesc-${lineId}" rows="2">${l.work_description||''}</textarea>
+    <textarea id="editdesc-${lineId}" rows="2">${tkEsc(l.work_description||'')}</textarea>
     <div class="ln-edit-actions">
       <button class="save" onclick="saveLineEdit('${lineId}')">Save Correction</button>
       <button onclick="cancelLineEdit('${lineId}')">Cancel</button>
@@ -768,9 +785,6 @@ async function onEditVesselChange(lineId,isInitial){
 }
 function cancelLineEdit(lineId){document.getElementById('editform-'+lineId).innerHTML='';}
 async function saveLineEdit(lineId){
-  const l=window.__lineCache[lineId];
-  const{data:fresh}=await sb.from('apb_timesheet_lines').select('reviewed,hours').eq('id',lineId).single();
-  if(!fresh||fresh.reviewed){alert('This entry was reviewed by a manager and can no longer be edited.');loadHistory();return;}
   const vesselSelect=document.getElementById('editvessel-'+lineId);
   const vesselVal=vesselSelect.value;
   if(!vesselVal)return alert('Select a vessel / project.');
@@ -784,19 +798,15 @@ async function saveLineEdit(lineId){
   if(!newDesc)return alert('Description cannot be empty.');
   const vesselLabel=vesselSelect.options[vesselSelect.selectedIndex].text;
   const jobOption=jobEl.options[jobEl.selectedIndex];
-  const updateFields={
-    engagement_id:vesselVal,vessel_name:vesselLabel,job_id:jobVal,
-    job_number:jobOption?.dataset.jobNumber||null,job_name:jobOption?.dataset.jobName||null,
-    shop_category:null,billable:isNonBillableVessel(vesselLabel)?false:true,
-    hours:newHours,work_description:newDesc,
-    edited_by:currentTech.name,edited_at:new Date().toISOString(),
-    original_hours:l.original_hours??l.hours,edit_note:'Self-correction by tech'
-  };
-  const{error}=await sb.from('apb_timesheet_lines').update(updateFields).eq('id',lineId);
-  if(error)return alert('Save failed: '+error.message);
-  const{data:siblings}=await sb.from('apb_timesheet_lines').select('hours').eq('timesheet_id',l.timesheet_id);
-  const newTotal=(siblings||[]).reduce((s,x)=>s+parseFloat(x.hours||0),0);
-  await sb.from('apb_timesheets').update({total_hours:newTotal}).eq('id',l.timesheet_id);
+  const{data:res,error}=await sb.rpc('apb_tech_edit_line',{
+    p_token:apbToken,p_line_id:lineId,p_hours:newHours,p_desc:newDesc,
+    p_engagement_id:vesselVal,p_vessel_name:vesselLabel,p_job_id:jobVal,
+    p_job_number:jobOption?.dataset.jobNumber||null,p_job_name:jobOption?.dataset.jobName||null
+  });
+  if(error||!res||!res.ok){
+    if(res&&res.error==='already_reviewed'){alert('This entry was reviewed by a manager and can no longer be edited.');loadHistory();return;}
+    return alert('Save failed: '+(error?error.message:((res&&res.error)||'unknown')));
+  }
   cancelLineEdit(lineId);loadHistory();
 }
 function openVisitEdit(visitId){
@@ -812,28 +822,28 @@ function openVisitEdit(visitId){
 }
 function cancelVisitEdit(visitId){document.getElementById('visitEditForm-'+visitId).innerHTML='';}
 async function saveVisitEdit(visitId){
-  const{data:fresh}=await sb.from('apb_timesheets').select('*').eq('id',visitId).single();
-  if(!fresh||fresh.reviewed){alert('This entry was reviewed by a manager and can no longer be edited.');loadHistory();return;}
+  const v=window.__visitCache?window.__visitCache[visitId]:null;
   const newDate=document.getElementById('editdate-'+visitId).value;
   if(!newDate){alert('Pick a date.');return;}
-  const oldDate=fresh.visit_date;
+  const oldDate=v?v.visit_date:'';
   if(newDate===oldDate){cancelVisitEdit(visitId);return;}
   const trail=`Date corrected by ${currentTech.name} on ${new Date().toLocaleString()} (was ${oldDate})`;
-  const newNotes=[fresh.notes,trail].filter(Boolean).join(' | ');
-  const{error}=await sb.from('apb_timesheets').update({visit_date:newDate,notes:newNotes}).eq('id',visitId);
-  if(error){alert('Save failed: '+error.message);return;}
+  const{data:res,error}=await sb.rpc('apb_tech_edit_visit',{p_token:apbToken,p_visit_id:visitId,p_visit_date:newDate,p_notes:trail});
+  if(error||!res||!res.ok){
+    if(res&&res.error==='already_reviewed'){alert('This entry was reviewed by a manager and can no longer be edited.');loadHistory();return;}
+    alert('Save failed: '+(error?error.message:((res&&res.error)||'unknown')));return;
+  }
   cancelVisitEdit(visitId);loadHistory();
 }
-async function loadHistory(){
-  const{data:visits}=await sb.from('apb_timesheets').select('*,apb_engagements(name)').eq('tech_name',currentTech.name).order('visit_date',{ascending:false}).limit(30);
-  const el=document.getElementById('historyContent');
-  if(!visits?.length){el.innerHTML='<div class="empty-state">No timesheets logged yet.<br>Submit your first timesheet on the Log Time tab.</div>';document.getElementById('weekSummary').innerHTML='';return;}
+async function loadHistory(){ await bootstrapPortal(); renderHistory(); }
+function renderHistory(){
+  const visits=HISTORY||[];
+  const el=document.getElementById('historyContent'); if(!el)return;
+  if(!visits.length){el.innerHTML='<div class="empty-state">No timesheets logged yet.<br>Submit your first timesheet on the Log Time tab.</div>';var _ws=document.getElementById('weekSummary');if(_ws)_ws.innerHTML='';return;}
   window.__visitCache=Object.fromEntries(visits.map(v=>[v.id,v]));
-  const ids=visits.map(v=>v.id);
-  const{data:allLines}=await sb.from('apb_timesheet_lines').select('*,apb_jobs(job_name,job_number)').in('timesheet_id',ids).order('created_at');
-  window.__lineCache=Object.fromEntries((allLines||[]).map(l=>[l.id,l]));
+  window.__lineCache={};
   const linesByVisit={};
-  (allLines||[]).forEach(l=>{(linesByVisit[l.timesheet_id]=linesByVisit[l.timesheet_id]||[]).push(l);});
+  visits.forEach(v=>{ (v.lines||[]).forEach(l=>{ const lc=Object.assign({},l,{timesheet_id:v.id}); window.__lineCache[l.id]=lc; (linesByVisit[v.id]=linesByVisit[v.id]||[]).push(lc); }); });
   const today=new Date(),monday=new Date(today);monday.setDate(today.getDate()-((today.getDay()+6)%7));monday.setHours(0,0,0,0);
   const weekHrs=visits.filter(t=>new Date(t.visit_date+'T12:00:00')>=monday).reduce((s,t)=>s+parseFloat(t.total_hours||0),0);
   const weekOT=Math.max(0,weekHrs-(visits.filter(t=>new Date(t.visit_date+'T12:00:00')>=monday).length*8));
@@ -845,7 +855,7 @@ async function loadHistory(){
     const photos=v.photo_urls?v.photo_urls.split(',').filter(Boolean):[];
     const h=parseFloat(v.total_hours||0);
     const ot=Math.max(0,h-8);
-    const headerVessel=v.apb_engagements?.name||v.vessel_name||'—';
+    const headerVessel=v.engagement_name||v.vessel_name||'—';
     const distinctLineVessels=[...new Set(lines.map(l=>l.vessel_name).filter(Boolean))];
     const isMixed=distinctLineVessels.length>1||(distinctLineVessels.length===1&&distinctLineVessels[0]!==headerVessel&&headerVessel!=='—');
     const vesselHeader=isMixed?`Multiple projects (${distinctLineVessels.length||lines.length})`:headerVessel;
@@ -862,14 +872,14 @@ async function loadHistory(){
         const locked=!!l.reviewed;
         return`<div class="history-line" id="line-${l.id}">
           ${locked?`<span class="ln-locked">✓ reviewed</span>`:`<button class="ln-edit-btn" onclick="openLineEdit('${l.id}')">Edit</button>`}
-          <div class="ln-vessel" style="font-size:11px;color:#6B7A92;font-weight:600;margin-bottom:2px">${l.vessel_name||headerVessel}</div>
-          <div class="ln-job">${label||'—'} <span class="ln-hrs">· ${parseFloat(l.hours).toFixed(1)}h</span></div>
-          <div class="ln-desc">${l.work_description||''}</div>
-          ${l.edited_by?`<div class="ln-edited-tag">✎ edited by ${l.edited_by}</div>`:''}
+          <div class="ln-vessel" style="font-size:11px;color:#6B7A92;font-weight:600;margin-bottom:2px">${tkEsc(l.vessel_name||headerVessel)}</div>
+          <div class="ln-job">${tkEsc(label||'—')} <span class="ln-hrs">· ${parseFloat(l.hours).toFixed(1)}h</span></div>
+          <div class="ln-desc">${tkEsc(l.work_description||'')}</div>
+          ${l.edited_by?`<div class="ln-edited-tag">✎ edited by ${tkEsc(l.edited_by)}</div>`:''}
           <div id="editform-${l.id}"></div>
         </div>`;
       }).join('')}
-      ${photos.length?`<div class="history-photos">${photos.map(p=>`<img src="${p}" onclick="window.open('${p}','_blank')">`).join('')}</div>`:''}
+      ${photos.length?`<div class="history-photos">${photos.map(p=>`<img src="${tkEsc(p)}" onclick="window.open('${encodeURI(p)}','_blank')">`).join('')}</div>`:''}
     </div>`;
   }).join('');
 }
