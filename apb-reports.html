@@ -225,18 +225,19 @@ main{max-width:1160px;margin:0 auto;padding:24px 24px 80px}
 
 <script>
 const SUPABASE_URL='https://aanrxyiocxxndkvkeocv.supabase.co';
-const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU';
-const sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+const SUPABASE_KEY='sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw';
+const sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
 
 (async()=>{
-  await new Promise(r=>setTimeout(r,500));
-  const AL=['christina@apb1.com','jerry@apb1.com','nate@apb1.com','christopher@apb1.com','chelsea@apb1.com','brandon@apb1.com','jhuber@apb1.com'];
+  await new Promise(r=>setTimeout(r,300));
   try{
     const{data:{session}}=await sb.auth.getSession();
     if(!session){window.location.replace('index.html');return;}
     const _em=(session.user&&session.user.email)||'';
-    const _mgr = window.APBPeople ? await APBPeople.isManager(_em) : null;   // apb_people is the source of truth
-    if(!AL.includes(_em) && _mgr!==true){window.location.replace('index.html');return;}
+    // Manager check via the authenticated client (source of truth; works with RLS on).
+    let _mgr=false;
+    try{ const r=await sb.from('apb_people').select('is_manager').eq('email',_em).maybeSingle(); _mgr=!!(r&&r.data&&r.data.is_manager); }catch(e){}
+    if(!_mgr){window.location.replace('index.html');return;}
     const hdr=document.querySelector('header,.topbar');
     if(hdr){
       const sp=document.createElement('span');sp.style.cssText='font-size:12px;color:#6B7A92;font-weight:500;padding:0 4px;margin-left:auto';sp.textContent=session.user.email.split('@')[0];hdr.appendChild(sp);
@@ -263,7 +264,9 @@ function setRange(range, btn){
   document.querySelectorAll('.qr-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   const today=new Date();
-  const fmt=d=>d.toISOString().split('T')[0];
+  // Local calendar date — using raw toISOString() rolls to tomorrow for
+  // evening US users (UTC), throwing the range off by a day.
+  const fmt=d=>new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().split('T')[0];
   let from, to=fmt(today);
   if(range==='week'){
     const mon=new Date(today);mon.setDate(today.getDate()-((today.getDay()+6)%7));from=fmt(mon);
@@ -431,6 +434,7 @@ function renderDays(visits,punchMap){
   }).join('');
 }
 
+function csvSafe(v){var t=String(v==null?'':v);if(/^[=+@\t\r]/.test(t))return "'"+t;if(/^-/.test(t)&&isNaN(Number(t)))return "'"+t;return t;}
 function exportCSV(){
   const rows=[['Date','Tech','Vessel','Job #','Job Name','Description','Hours','OT Hours','Billable','R&D','Shop/Admin']];
   _allLines.forEach(l=>{
@@ -438,7 +442,7 @@ function exportCSV(){
     const n=l.shop_category||l.apb_jobs?.job_name||'';
     rows.push([l._date||'',l._tech||'',l._vessel||'',l.apb_jobs?.job_number||'',n,l.work_description||l.description||'',h.toFixed(2),Math.max(0,h-8).toFixed(2),l.job_id&&!isAdmin(n)&&!isShop(n)?'Y':'N',isRD(n)?'Y':'N',(isAdmin(n)||isShop(n))?'Y':'N']);
   });
-  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const csv=rows.map(r=>r.map(c=>'"'+csvSafe(c).replace(/"/g,'""')+'"').join(',')).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
   a.download=`apb-report-${new Date().toISOString().split('T')[0]}.csv`;a.click();
   showToast('CSV downloaded');
