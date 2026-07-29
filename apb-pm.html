@@ -819,7 +819,7 @@ async function load(){
   if(k){
     try{
       const sel = "select=id,engagement_id,job_number,job_name,status,job_status_pct,archived,edited_by,edited_at,pm_notes,ms_list_item_id,updated_at,apb_engagements(name,rep)&order=updated_at.desc";
-      const r = await fetch(`${u}/rest/v1/apb_jobs?${sel}`,{headers:{apikey:k,Authorization:"Bearer "+k}});
+      const r = await fetch(`${u}/rest/v1/apb_jobs?${sel}`,{headers:{apikey:k,Authorization:"Bearer "+PM_TOKEN}});
       const data = await r.json();
       JOBS = data.map(j=>({
         id:j.id, source:"job", engagement_id:j.engagement_id, engagement:(j.apb_engagements&&j.apb_engagements.name)||"—",
@@ -831,7 +831,7 @@ async function load(){
       // Brand-new, not-yet-a-client prospects live in apb_leads until approved/converted.
       try{
         const lsel = "select=id,name,rep,lead_source,description,notes,status,contact_name,contact_email,contact_phone,ms_list_item_id,updated_at&converted=eq.false&order=updated_at.desc";
-        const lr = await fetch(`${u}/rest/v1/apb_leads?${lsel}`,{headers:{apikey:k,Authorization:"Bearer "+k}});
+        const lr = await fetch(`${u}/rest/v1/apb_leads?${lsel}`,{headers:{apikey:k,Authorization:"Bearer "+PM_TOKEN}});
         const ldata = await lr.json();
         if(Array.isArray(ldata)){
           JOBS = JOBS.concat(ldata.map(l=>({
