@@ -163,18 +163,40 @@ function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(
 
 // ── Shared store (Supabase) — field updates sync to apb_field_reports so every computer sees them ──
 const SUPABASE_URL='https://aanrxyiocxxndkvkeocv.supabase.co';
-const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU';
-let sb=null; try{ sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false } }); }catch(e){}
-async function reportUpsert(r){ if(!sb||!r||!r.id) return; try{ await sb.from('apb_field_reports').upsert({id:r.id,data:r,updated_at:new Date().toISOString()}); }catch(e){} }
-async function reportDelete(id){ if(!sb||!id) return; try{ await sb.from('apb_field_reports').delete().eq('id',id); }catch(e){} }
+const SUPABASE_KEY='sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw';
+let sb=null; try{ sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true } }); }catch(e){}
+// Require a signed-in manager (shared Supabase Auth session from the dashboard).
+(async()=>{ try{ if(!sb){ location.replace('index.html'); return; }
+  await new Promise(r=>setTimeout(r,150));
+  const{data:{session}}=await sb.auth.getSession();
+  if(!session){ location.replace('index.html'); return; }
+  const _em=(session.user&&session.user.email)||'';
+  let _mgr=false; try{ const r=await sb.from('apb_people').select('is_manager').eq('email',_em).maybeSingle(); _mgr=!!(r&&r.data&&r.data.is_manager); }catch(e){}
+  if(!_mgr){ location.replace('index.html'); return; }
+}catch(e){ location.replace('index.html'); } })();
+// Track ids we've confirmed on the server so we can tell "new offline row"
+// (never synced -> push it) from "deleted on another machine" (was synced,
+// now gone -> drop it, don't resurrect it).
+const LS_SYNCED='apb_field_reports_synced';
+function syncedIds(){ try{ return new Set(JSON.parse(localStorage.getItem(LS_SYNCED)||'[]')); }catch(e){ return new Set(); } }
+function markSynced(ids){ const s=syncedIds(); ids.forEach(i=>s.add(i)); try{ localStorage.setItem(LS_SYNCED, JSON.stringify([...s])); }catch(e){} }
+function unmarkSynced(id){ const s=syncedIds(); s.delete(id); try{ localStorage.setItem(LS_SYNCED, JSON.stringify([...s])); }catch(e){} }
+async function reportUpsert(r){ if(!sb||!r||!r.id) return; try{ await sb.from('apb_field_reports').upsert({id:r.id,data:r,updated_at:new Date().toISOString()}); markSynced([r.id]); }catch(e){} }
+async function reportDelete(id){ if(!sb||!id) return; try{ await sb.from('apb_field_reports').delete().eq('id',id); unmarkSynced(id); }catch(e){} }
 async function syncPull(){
   if(!sb) return;
   try{
     const {data,error}=await sb.from('apb_field_reports').select('id,data');
     if(error) return;
-    const byId={};
-    (data||[]).forEach(x=>{ if(x&&x.data&&x.data.id) byId[x.data.id]=x.data; });
-    reports().forEach(r=>{ if(r&&r.id&&!byId[r.id]){ byId[r.id]=r; reportUpsert(r); } });
+    const byId={}; const serverIds=[];
+    (data||[]).forEach(x=>{ if(x&&x.data&&x.data.id){ byId[x.data.id]=x.data; serverIds.push(x.data.id); } });
+    const known=syncedIds();
+    reports().forEach(r=>{
+      if(!r||!r.id||byId[r.id]) return;   // on server already
+      if(known.has(r.id)) return;         // synced before, now gone => deleted elsewhere; drop it
+      byId[r.id]=r; reportUpsert(r);      // genuinely new local row => push
+    });
+    markSynced(serverIds);
     save(LS_RPT, Object.values(byId).sort((a,b)=>(b.at||0)-(a.at||0)));
     renderFeed();
   }catch(e){}
@@ -264,7 +286,7 @@ function renderFeed(){
   document.getElementById('feedCount').textContent=all.length?all.length+' update'+(all.length>1?'s':''):'';
   if(!all.length){ feed.innerHTML=`<div class="empty"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 9a2 2 0 0 1 2-2h2l1-2h8l1 2h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3"/></svg><p>No updates yet${filter==='mine'?" from you":""}. Post the first one above.</p></div>`; return; }
   feed.innerHTML=all.map(r=>{
-    const photos=(r.photos&&r.photos.length)?`<div class="rpt-photos">${r.photos.map(p=>`<img src="${p}" onclick="openLb('${r.id}',${r.photos.indexOf(p)})">`).join('')}</div>`:'';
+    const photos=(r.photos&&r.photos.length)?`<div class="rpt-photos">${r.photos.map(p=>`<img src="${esc(p)}" onclick="openLb('${esc(r.id)}',${r.photos.indexOf(p)})">`).join('')}</div>`:'';
     const stat=r.status?`<span class="rpt-status ${STATUS_CLS[r.status]||''}">${STATUS_LABEL[r.status]||r.status}</span>`:'';
     const canDel=(role==='admin'||r.author===me());
     return `<div class="rpt">
