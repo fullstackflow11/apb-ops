@@ -815,11 +815,15 @@ function demoJobs(){
 
 /* ---------- data load ---------- */
 async function load(){
+  // Always pull a current token from the session (it refreshes hourly) so a
+  // stale token at page-open doesn't drop us to demo data.
+  if(_pmsb){ try{ const s=await _pmsb.auth.getSession(); if(s&&s.data&&s.data.session) PM_TOKEN=s.data.session.access_token; }catch(e){} }
   const {SUPABASE_URL:u, SUPABASE_ANON_KEY:k} = CONFIG;
   if(k){
     try{
       const sel = "select=id,engagement_id,job_number,job_name,status,job_status_pct,archived,edited_by,edited_at,pm_notes,ms_list_item_id,updated_at,apb_engagements(name,rep)&order=updated_at.desc";
       const r = await fetch(`${u}/rest/v1/apb_jobs?${sel}`,{headers:{apikey:k,Authorization:"Bearer "+PM_TOKEN}});
+      if(!r.ok) throw new Error('jobs '+r.status);
       const data = await r.json();
       JOBS = data.map(j=>({
         id:j.id, source:"job", engagement_id:j.engagement_id, engagement:(j.apb_engagements&&j.apb_engagements.name)||"—",
