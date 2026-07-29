@@ -604,6 +604,7 @@ body.theme-light .foot b{color:#48597a}
   var SB_URL='https://aanrxyiocxxndkvkeocv.supabase.co';
   var SB_KEY='sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw';
   var sb=window.supabase.createClient(SB_URL, SB_KEY, { auth:{ persistSession:true, autoRefreshToken:true } });
+  window.__APBsb=sb;
   if(window.APBAuth) APBAuth.init(sb);
 
   function _grant(email, role){
@@ -886,6 +887,7 @@ body.theme-light .foot b{color:#48597a}
 // Use the logged-in manager's session token on direct REST calls so they run
 // as 'authenticated' (RLS blocks the plain publishable key on tables).
 function _dtok(k){ try{ for(var i=0;i<localStorage.length;i++){ var kk=localStorage.key(i); if(kk&&kk.indexOf('-auth-token')>=0){ var v=JSON.parse(localStorage.getItem(kk)||'null'); if(v) return v.access_token||(v.currentSession&&v.currentSession.access_token)||k; } } }catch(e){} return k; }
+async function _freshTok(k){ try{ if(window.__APBsb){ var s=await window.__APBsb.auth.getSession(); if(s&&s.data&&s.data.session) return s.data.session.access_token; } }catch(e){} return _dtok(k); }
 // ── Role mode (admin / pm / tech) ──────────────────
 // Which roles see which page on the home grid (admin always sees all). Keyed by href substring.
 var WORLD = {
@@ -1098,7 +1100,8 @@ async function refreshJobsCacheLive(){
   try{
     var SB_URL="https://aanrxyiocxxndkvkeocv.supabase.co";
     var SB_KEY="sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw";
-    var r = await fetch(SB_URL+"/rest/v1/apb_jobs?select=job_name,job_number,status,job_status_pct,archived,apb_engagements(name)", {headers:{apikey:SB_KEY, Authorization:"Bearer "+_dtok(SB_KEY)}});
+    var r = await fetch(SB_URL+"/rest/v1/apb_jobs?select=job_name,job_number,status,job_status_pct,archived,apb_engagements(name)", {headers:{apikey:SB_KEY, Authorization:"Bearer "+(await _freshTok(SB_KEY))}});
+    if(!r.ok) throw new Error("jobs "+r.status);
     if(!r.ok) return false;
     var rows = await r.json();
     var freshCache = rows.filter(function(j){ return !j.archived; }).map(function(j){
