@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MTR Hub · Material Traceability</title>
 <script src="apb-roles.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="apb-demo.js"></script>
 <script>APBRoles.guard(['admin','pm','purchasing'],'MTR Hub');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -488,8 +489,20 @@ const LS_KEY = 'apb_mtrs';
 
 const SUPA = {
   url: "https://aanrxyiocxxndkvkeocv.supabase.co",
-  key: (window.localStorage && localStorage.getItem("apb_supabase_key")) || ""
+  key: "sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw"
 };
+function _tokNow(pk){ try{ for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); if(k&&k.indexOf('-auth-token')>=0){ var v=JSON.parse(localStorage.getItem(k)||'null'); if(v) return v.access_token||(v.currentSession&&v.currentSession.access_token)||pk; } } }catch(e){} return pk; }
+let _TOKEN=_tokNow(SUPA.key);
+const _gsb=(window.supabase&&window.supabase.createClient)?window.supabase.createClient(SUPA.url,SUPA.key,{auth:{persistSession:true,autoRefreshToken:true}}):null;
+(async()=>{ if(!_gsb){ location.replace('index.html'); return; }
+  try{ const{data:{session}}=await _gsb.auth.getSession();
+    if(!session){ location.replace('index.html'); return; }
+    _TOKEN=session.access_token;
+    const _em=(session.user&&session.user.email)||'';
+    let _ok=false; try{ const r=await _gsb.from('apb_people').select('active').eq('email',_em).maybeSingle(); _ok=!!(r&&r.data&&r.data.active!==false); }catch(e){}
+    if(!_ok){ location.replace('index.html'); return; }
+  }catch(e){ location.replace('index.html'); }
+})();
 
 /* demo vessels mirror the Project Console fallback so the dropdown is never empty */
 const DEMO_PROJECTS = [
@@ -544,7 +557,7 @@ async function loadProjects(){
   if(SUPA.key){
     try{
       const sel = "select=apb_engagements(name)&order=updated_at.desc";
-      const r = await fetch(`${SUPA.url}/rest/v1/apb_jobs?${sel}`,{headers:{apikey:SUPA.key,Authorization:"Bearer "+SUPA.key}});
+      const r = await fetch(`${SUPA.url}/rest/v1/apb_jobs?${sel}`,{headers:{apikey:SUPA.key,Authorization:"Bearer "+_TOKEN}});
       const data = await r.json();
       const names = [...new Set(data.map(j=>j.apb_engagements&&j.apb_engagements.name).filter(Boolean))];
       if(names.length){ projectList = names; }
