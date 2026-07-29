@@ -11,6 +11,9 @@
   async function hasSupabase() {
     // Legacy manual-connect flag still counts as live.
     try { if (localStorage.getItem("apb_supabase_key")) return true; } catch (e) {}
+    // A live Supabase Auth session (logged-in manager) counts as "live" without
+    // an anon ping — anon can't read tables once RLS is on.
+    try { for (var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); if (k && k.indexOf('-auth-token')>=0) return true; } } catch (e) {}
     // Otherwise verify the shared connection actually works right now — every
     // page ships with this same key baked in, so "live" is the default state.
     try {
