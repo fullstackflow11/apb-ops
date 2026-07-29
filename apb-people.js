@@ -48,7 +48,7 @@
         return {
           found: true,
           ok: String(p.pin == null ? '' : p.pin).trim() === pin,
-          role: p.role || 'admin',
+          role: p.role || 'tech',
           is_manager: !!p.is_manager
         };
       } catch (e) {
@@ -56,7 +56,7 @@
       }
     },
     getRole: async function (email) {
-      try { var p = await fetchPerson(email); return p ? (p.role || 'admin') : null; }
+      try { var p = await fetchPerson(email); return p ? (p.role || 'tech') : null; }
       catch (e) { return undefined; }   // undefined = couldn't reach the DB
     },
     isManager: async function (email) {
