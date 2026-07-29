@@ -193,6 +193,7 @@ header{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.92);backdr
     <div class="modal-body">
       <div class="form-grid">
         <div class="field form-full"><label>Client / Company Name *</label><input class="form-input" id="lf_name" placeholder="Name or company"></div>
+        <div class="field"><label>Contact person</label><input class="form-input" id="lf_contact_name" placeholder="Who to ask for"></div>
         <div class="field"><label>Vessel</label><input class="form-input" id="lf_vessel" placeholder="Vessel name"></div>
         <div class="field"><label>Status</label>
           <select class="form-select" id="lf_status">
@@ -291,20 +292,22 @@ header{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.92);backdr
 
 <script>
 const SUPABASE_URL='https://aanrxyiocxxndkvkeocv.supabase.co';
-const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU';
-const sb=supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+const SUPABASE_KEY='sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw';
+const sb=supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
 
 (async()=>{
-  await new Promise(r=>setTimeout(r,500));
-  const AL=['christina@apb1.com','jerry@apb1.com','nate@apb1.com','christopher@apb1.com','chelsea@apb1.com','brandonw@apb1.com','bryce@apb1.com','jhuber@apb1.com'];
+  await new Promise(r=>setTimeout(r,300));
   try{
-    const email=(localStorage.getItem('apb_hub_auth_v2')||'').toLowerCase();
-    const _mgr = window.APBPeople ? await APBPeople.isManager(email) : null;   // apb_people is the source of truth
-    if(!AL.includes(email) && _mgr!==true){window.location.replace('index.html');return;}
+    const{data:{session}}=await sb.auth.getSession();
+    if(!session){window.location.replace('index.html');return;}
+    const email=(session.user&&session.user.email)||'';
+    let _mgr=false;
+    try{ const r=await sb.from('apb_people').select('is_manager').eq('email',email).maybeSingle(); _mgr=!!(r&&r.data&&r.data.is_manager); }catch(e){}
+    if(!_mgr){window.location.replace('index.html');return;}
     const hdr=document.querySelector('header,.topbar');
     if(hdr){
       const sp=document.createElement('span');sp.style.cssText='font-size:12px;color:#6B7A92;font-weight:500;padding:0 4px;margin-left:auto';sp.textContent=email.split('@')[0];hdr.appendChild(sp);
-      const btn=document.createElement('button');btn.textContent='Sign Out';btn.style.cssText='margin-left:8px;background:none;border:1px solid rgba(196,48,48,.3);color:#C43030;border-radius:7px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit';btn.onclick=()=>{localStorage.removeItem('apb_hub_auth_v2');location.replace('index.html');};hdr.appendChild(btn);
+      const btn=document.createElement('button');btn.textContent='Sign Out';btn.style.cssText='margin-left:8px;background:none;border:1px solid rgba(196,48,48,.3);color:#C43030;border-radius:7px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit';btn.onclick=async()=>{try{await sb.auth.signOut();}catch(e){}localStorage.removeItem('apb_hub_auth_v2');location.replace('index.html');};hdr.appendChild(btn);
     }
   }catch(e){window.location.replace('index.html');}
 })();
@@ -482,7 +485,7 @@ function openLeadModal(id,preStatus){
   document.getElementById('leadModalTitle').textContent=id?'Edit Lead':'New Lead';
   document.getElementById('leadFormMsg').className='msg';
   // form field suffix (lf_*) -> actual apb_leads column
-  const COLMAP={name:'name',vessel:'vessel',phone:'contact_phone',email:'contact_email',source:'lead_source',assigned_to:'rep',follow_up_date:'follow_up_date',description:'description',notes:'notes'};
+  const COLMAP={name:'name',contact_name:'contact_name',vessel:'vessel',phone:'contact_phone',email:'contact_email',source:'lead_source',assigned_to:'rep',follow_up_date:'follow_up_date',description:'description',notes:'notes'};
   const fields=Object.keys(COLMAP);
   if(id){
     const l=allLeads.find(x=>x.id===id);
@@ -504,7 +507,7 @@ async function saveLead(){
   // Column names match the actual apb_leads table (lead_source, rep, vessel, …).
   const payload={
     name,
-    contact_name:v('lf_name'),
+    contact_name:v('lf_contact_name'),
     contact_phone:v('lf_phone'),
     contact_email:v('lf_email'),
     vessel:v('lf_vessel'),
@@ -533,8 +536,8 @@ function showLeadDetail(id){
       <div class="detail-field"><div class="detail-label">Status</div><div class="detail-value"><span class="status-badge badge-${(l.status||'').toLowerCase().replace(/\s+/g,'')}">${l.status||'—'}</span></div></div>
       <div class="detail-field"><div class="detail-label">Source</div><div class="detail-value">${esc(l.lead_source||'—')}</div></div>
       <div class="detail-field"><div class="detail-label">Vessel</div><div class="detail-value">${esc(l.vessel||'—')}</div></div>
-      <div class="detail-field"><div class="detail-label">Phone</div><div class="detail-value">${l.contact_phone?`<a href="tel:${l.contact_phone}" style="color:var(--accent)">${esc(l.contact_phone)}</a>`:'—'}</div></div>
-      <div class="detail-field"><div class="detail-label">Email</div><div class="detail-value">${l.contact_email?`<a href="mailto:${l.contact_email}" style="color:var(--accent)">${esc(l.contact_email)}</a>`:'—'}</div></div>
+      <div class="detail-field"><div class="detail-label">Phone</div><div class="detail-value">${l.contact_phone?`<a href="tel:${esc(l.contact_phone)}" style="color:var(--accent)">${esc(l.contact_phone)}</a>`:'—'}</div></div>
+      <div class="detail-field"><div class="detail-label">Email</div><div class="detail-value">${l.contact_email?`<a href="mailto:${esc(l.contact_email)}" style="color:var(--accent)">${esc(l.contact_email)}</a>`:'—'}</div></div>
       <div class="detail-field"><div class="detail-label">Assigned To</div><div class="detail-value">${esc(l.rep||'—')}</div></div>
       <div class="detail-field"><div class="detail-label">Follow-up</div><div class="detail-value">${l.follow_up_date?fmtDate(l.follow_up_date):'—'}</div></div>
       <div class="detail-field"><div class="detail-label">Added</div><div class="detail-value">${fmtDate(l.created_at)}</div></div>
@@ -562,7 +565,7 @@ function openJobModal(id,preStatus){
     if(j){
       fields.forEach(f=>{const el=document.getElementById('jf_'+f);if(el)el.value=j[f]||'';});
       document.getElementById('jf_status').value=j.status||'Approved';
-      if(j.proposal_url){pendingFileUrl=j.proposal_url;pendingFileName=j.proposal_filename||'proposal.pdf';document.getElementById('fileAttached').style.display='block';document.getElementById('fileAttached').innerHTML=`<div class="file-attached"><span class="file-name">${esc(pendingFileName)}</span><a href="${j.proposal_url}" target="_blank" style="color:var(--accent);font-size:12px">View</a></div>`;}
+      if(j.proposal_url){pendingFileUrl=j.proposal_url;pendingFileName=j.proposal_filename||'proposal.pdf';document.getElementById('fileAttached').style.display='block';document.getElementById('fileAttached').innerHTML=`<div class="file-attached"><span class="file-name">${esc(pendingFileName)}</span><a href="${esc(j.proposal_url)}" target="_blank" style="color:var(--accent);font-size:12px">View</a></div>`;}
     }
   } else {
     fields.forEach(f=>{const el=document.getElementById('jf_'+f);if(el)el.value='';});
@@ -635,7 +638,7 @@ function showJobDetail(id){
     </div>
     ${j.pm_notes?`<div class="detail-section">Scope of Work</div><div class="detail-value" style="white-space:pre-wrap">${esc(j.pm_notes)}</div>`:''}
     ${j.admin_notes?`<div class="detail-section">Notes</div><div class="detail-value" style="white-space:pre-wrap">${esc(j.admin_notes)}</div>`:''}
-    ${j.proposal_url?`<div class="detail-section">Proposal</div><div class="proposal-link"><span style="flex:1;font-size:13px;color:var(--ink-2)">${esc(j.proposal_filename||'Proposal')}</span><a href="${j.proposal_url}" target="_blank">View PDF →</a></div>`:''}`;
+    ${j.proposal_url?`<div class="detail-section">Proposal</div><div class="proposal-link"><span style="flex:1;font-size:13px;color:var(--ink-2)">${esc(j.proposal_filename||'Proposal')}</span><a href="${esc(j.proposal_url)}" target="_blank">View PDF →</a></div>`:''}`;
   document.getElementById('detailFooter').innerHTML=`
     <button class="btn btn-cancel" onclick="closeDetail()">Close</button>
     <div class="spacer"></div>
