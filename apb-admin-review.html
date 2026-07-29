@@ -7,6 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="apb-people.js"></script>
+<script src="apb-auth.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -221,7 +222,7 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
   <button class="btn btn-export" onclick="exportQuickBooks()" title="Reviewed, billable lines in Chelsea's QuickBooks format">⬇ Export for QuickBooks</button>
   <button class="btn btn-primary" onclick="batchApproveAll()" id="batchAllBtn" style="display:none">✓ Approve All Pending</button>
   <span id="userEmail" style="font-size:11px;color:var(--ink-3);font-family:var(--mono);"></span>
-  <button class="btn btn-ghost" id="signOutBtn" style="display:none" onclick="location.reload()">Sign out</button>
+  <button class="btn btn-ghost" id="signOutBtn" style="display:none" onclick="APBAuth.signOut().then(()=>location.reload())">Sign out</button>
 </header>
 
 <main>
@@ -359,9 +360,10 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
 
 <script>
 const SUPABASE_URL = 'https://aanrxyiocxxndkvkeocv.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbnJ4eWlvY3h4bmRrdmtlb2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzcwMjksImV4cCI6MjA5NTY1MzAyOX0.QXBQj9bNKXMh4l0lfe6XO-_0ZoZiiYDy7sypQ2U01bU';
+const SUPABASE_KEY = 'sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw';
 const ALLOWED_MANAGERS = ['christina@apb1.com','jerry@apb1.com','nate@apb1.com','christopher@apb1.com','chelsea@apb1.com','brandonw@apb1.com','jhuber@apb1.com','bryce@apb1.com','randall_kline@outlook.com','joetoscano4@gmail.com'];
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+APBAuth.init(sb);   // real Supabase Auth — PIN validated server-side
 
 // ── Auth Gate ──
 (async()=>{
@@ -391,21 +393,24 @@ document.body.appendChild(_gate);
 function _normId(raw){ const v=(raw||'').trim().toLowerCase(); if(!v)return null; return v.includes('@')?v:v.replace(/\s+/g,'.')+'@'+SYNTHETIC_DOMAIN; }
 const _id=_gate.querySelector('#apb-id'),_pin=_gate.querySelector('#apb-pin'),_go=_gate.querySelector('#apb-go');
 function _msg(t){ _gate.querySelector('#apb-msg').textContent=t; }
-// Manager gate — validates the PIN against apb_people over the anon key
-// (same source of truth as the tech portal). No Supabase Auth session, so
-// nothing here expires or goes stale.
+// Manager gate — real Supabase Auth. The PIN is verified SERVER-SIDE; after
+// sign-in we confirm the person is a manager via the authenticated client
+// (works with RLS on, since the request now carries the user's token).
 async function _enter(){
   const email=_normId(_id.value), pin=_pin.value;
   if(!email){_msg('Enter your name or email.');return;}
   if(!pin){_msg('Enter your PIN.');return;}
   _go.disabled=true;_go.textContent='...';
   try{
-    const res = window.APBPeople ? await APBPeople.checkLogin(email,pin) : {found:false,error:true};
-    if(res.error){ _msg('Can’t reach the server — try again in a moment.'); return; }
-    if(!res.found || !res.ok){ _msg('Wrong name/email or PIN.'); return; }
-    const isMgr = res.is_manager===true || ALLOWED_MANAGERS.includes(email);
-    if(!isMgr){ _msg('Access restricted to managers.'); return; }
-    _unlock(email);
+    const res = await APBAuth.signIn(email, pin);
+    if(!res.ok){ _msg(res.message||'Wrong name/email or PIN.'); return; }
+    const who = (res.user && res.user.email) || email;
+    let isMgr = ALLOWED_MANAGERS.includes(who);
+    if(!isMgr){
+      try{ const {data:me}=await sb.from('apb_people').select('is_manager').eq('email',who).maybeSingle(); isMgr=!!(me&&me.is_manager===true); }catch(e){}
+    }
+    if(!isMgr){ await APBAuth.signOut(); _msg('Access restricted to managers.'); return; }
+    _unlock(who);
   } finally { _go.disabled=false;_go.textContent='Continue →'; }
 }
 _go.addEventListener('click',_enter); _gate.addEventListener('keydown',e=>{if(e.key==='Enter')_enter();});
@@ -420,6 +425,17 @@ function _unlock(email){
   loadData();
 }
 
+// Auto-unlock if a manager is already signed in from a previous visit.
+(async()=>{
+  try{
+    const em = await APBAuth.email();
+    if(!em) return;
+    let isMgr = ALLOWED_MANAGERS.includes(em);
+    if(!isMgr){ try{ const {data:me}=await sb.from('apb_people').select('is_manager').eq('email',em).maybeSingle(); isMgr=!!(me&&me.is_manager===true); }catch(e){} }
+    if(isMgr) _unlock(em); else await APBAuth.signOut();
+  }catch(e){}
+})();
+
 // ── Data ──
 async function loadData(){
   document.getElementById('visitList').innerHTML='<div class="spinner"></div>';
@@ -433,8 +449,8 @@ async function loadData(){
   visits=vRes.data||[]; lines=lRes.data||[]; punches=pRes.data||[]; engagements=eRes.data||[]; jobsAll=jRes.data||[];
   const techs=[...new Set(visits.map(v=>v.tech_name).filter(Boolean))].sort();
   const vessels=[...new Set(visits.map(v=>v.apb_engagements?.name||v.vessel_name).filter(Boolean))].sort();
-  document.getElementById('techFilter').innerHTML='<option value="">All Techs</option>'+techs.map(t=>`<option>${t}</option>`).join('');
-  document.getElementById('vesselFilter').innerHTML='<option value="">All Vessels</option>'+vessels.map(v=>`<option>${v}</option>`).join('');
+  document.getElementById('techFilter').innerHTML='<option value="">All Techs</option>'+techs.map(t=>`<option>${rvEsc(t)}</option>`).join('');
+  document.getElementById('vesselFilter').innerHTML='<option value="">All Vessels</option>'+vessels.map(v=>`<option>${rvEsc(v)}</option>`).join('');
   updateSummary(); renderTechTable(); renderVisits();
 }
 
@@ -568,10 +584,10 @@ function renderCard(v){
         <tr>
           <td style="white-space:nowrap;min-width:150px">
             <span id="job-${l.id}">
-              <span class="job-tag">${l.job_number||l.job_no||l.shop_category?.split(' ').slice(0,2).join(' ')||'—'}</span>
+              <span class="job-tag">${rvEsc(l.job_number||l.job_no||(l.shop_category?String(l.shop_category).split(' ').slice(0,2).join(' '):'')||'—')}</span>
               ${l.reviewed?'':`<span class="edit-icon" onclick="startEditJob('${l.id}')">✎</span>`}
-              <div style="font-size:11px;color:var(--ink-3);font-weight:600;margin-top:3px">${l.vessel_name||headerVessel}</div>
-              ${l.job_name?`<div style="font-size:11px;color:var(--ink-2);margin-top:1px">${l.job_name}</div>`:''}
+              <div style="font-size:11px;color:var(--ink-3);font-weight:600;margin-top:3px">${rvEsc(l.vessel_name||headerVessel)}</div>
+              ${l.job_name?`<div style="font-size:11px;color:var(--ink-2);margin-top:1px">${rvEsc(l.job_name)}</div>`:''}
             </span>
             <div id="job-edit-${l.id}" style="display:none;min-width:210px">
               <select class="edit-input" id="job-vessel-${l.id}" onchange="onRevVesselChange('${l.id}')" style="width:100%;margin-bottom:5px">${revVesselOptions(l.engagement_id)}</select>
@@ -583,17 +599,17 @@ function renderCard(v){
             </div>
           </td>
           <td>
-            <span class="work-desc" id="desc-${l.id}">${l.work_description||l.description||''}</span>
+            <span class="work-desc" id="desc-${l.id}">${rvEsc(l.work_description||l.description||'')}</span>
             <span class="edit-icon" onclick="startEditDesc('${l.id}')">✎</span>
             <div id="desc-edit-${l.id}" style="display:none">
-              <textarea class="edit-input" id="desc-val-${l.id}" rows="2">${l.work_description||l.description||''}</textarea>
+              <textarea class="edit-input" id="desc-val-${l.id}" rows="2">${rvEsc(l.work_description||l.description||'')}</textarea>
               <div class="edit-actions">
                 <button class="save-edit-btn" onclick="saveDesc('${l.id}')">Save</button>
                 <button class="cancel-edit-btn" onclick="cancelEdit('desc','${l.id}')">Cancel</button>
               </div>
             </div>
-            ${l.edited_by?`<div class="edited-tag">✎ edited by ${l.edited_by}${l.original_hours?' · was '+l.original_hours+'h':''}</div>`:`<div id="audit-${l.id}"></div>`}
-            ${finalInvoiceDesc(l,v)?`<div style="font-size:11px;color:var(--ink-2);margin-top:6px;font-family:var(--mono,ui-monospace,monospace);background:var(--panel-2,#f4f6f9);padding:5px 8px;border-radius:6px;line-height:1.4"><span style="opacity:.6;text-transform:uppercase;letter-spacing:.05em;font-size:9px;display:block;margin-bottom:2px">Final invoice description</span>${finalInvoiceDesc(l,v)}</div>`:''}
+            ${l.edited_by?`<div class="edited-tag">✎ edited by ${rvEsc(l.edited_by)}${l.original_hours?' · was '+l.original_hours+'h':''}</div>`:`<div id="audit-${l.id}"></div>`}
+            ${finalInvoiceDesc(l,v)?`<div style="font-size:11px;color:var(--ink-2);margin-top:6px;font-family:var(--mono,ui-monospace,monospace);background:var(--panel-2,#f4f6f9);padding:5px 8px;border-radius:6px;line-height:1.4"><span style="opacity:.6;text-transform:uppercase;letter-spacing:.05em;font-size:9px;display:block;margin-bottom:2px">Final invoice description</span>${rvEsc(finalInvoiceDesc(l,v))}</div>`:''}
           </td>
           <td style="white-space:nowrap">
             <span class="hours-cell" id="hrs-${l.id}">${parseFloat(l.hours||0).toFixed(1)}h</span>
@@ -622,9 +638,9 @@ function renderCard(v){
   return `<div class="visit-card ${allReviewed?'all-done':hasPending?'has-pending':''} ${selected?'selected':''}" id="vc-${v.id}">
     <div class="visit-head" onclick="toggleCard(this)">
       <div class="visit-check ${selected?'checked':''}" onclick="event.stopPropagation();toggleSelect('${v.id}')">${selected?'✓':''}</div>
-      <div class="visit-vessel">${vesselName}</div>
+      <div class="visit-vessel">${rvEsc(vesselName)}</div>
       <div class="visit-meta">
-        <span class="visit-tech-pill">${v.tech_name||'—'}</span>
+        <span class="visit-tech-pill">${rvEsc(v.tech_name||'—')}</span>
         <span class="visit-date">${dateStr} <span class="edit-icon" onclick="event.stopPropagation();startEditDate('${v.id}')">✎</span></span>
         ${clockStr?`<span class="visit-date" style="opacity:.65" title="Clock in / out">⏱ ${clockStr}</span>`:''}
         ${submittedStr?`<span class="visit-date" style="opacity:.65" title="When this timecard was submitted">🕑 submitted ${submittedStr}</span>`:''}
@@ -640,9 +656,9 @@ function renderCard(v){
       <button class="cancel-edit-btn" onclick="document.getElementById('date-edit-${v.id}').style.display='none'">Cancel</button>
     </div>
     <div class="visit-body">
-      ${photos.length?`<div class="photo-strip">${photos.map(p=>`<img src="${p}" onclick="window.open('${p}','_blank')">`).join('')}</div>`:''}
-      ${v.materials_used?`<div class="visit-extras"><span class="extra-tag">📦 ${v.materials_used}</span></div>`:''}
-      ${v.problem_notes?`<div class="visit-extras"><span class="extra-tag warn">⚠ ${v.problem_notes}</span></div>`:''}
+      ${photos.length?`<div class="photo-strip">${photos.map(p=>`<img src="${rvEsc(p)}" onclick="window.open('${encodeURI(p)}','_blank')">`).join('')}</div>`:''}
+      ${v.materials_used?`<div class="visit-extras"><span class="extra-tag">📦 ${rvEsc(v.materials_used)}</span></div>`:''}
+      ${v.problem_notes?`<div class="visit-extras"><span class="extra-tag warn">⚠ ${rvEsc(v.problem_notes)}</span></div>`:''}
       ${linesHtml}
       <div class="visit-actions">
         ${vLines.length&&hasPending?`<button class="btn btn-success" onclick="markAllReviewed('${v.id}')">✓ Approve All Lines</button>`:''}
@@ -807,9 +823,12 @@ async function markAllReviewed(visitId){
 }
 async function deleteVisit(visitId){
   if(!confirm('Delete this timesheet entry? This cannot be undone.'))return;
+  // Remove children first so no orphaned line items / punches survive to export.
+  await sb.from('apb_timesheet_lines').delete().eq('timesheet_id',visitId);
+  await sb.from('apb_punches').delete().eq('timesheet_id',visitId);
   const{error}=await sb.from('apb_timesheets').delete().eq('id',visitId);
   if(error){showToast('Error deleting');return;}
-  visits=visits.filter(v=>v.id!==visitId);lines=lines.filter(l=>l.timesheet_id!==visitId);
+  visits=visits.filter(v=>v.id!==visitId);lines=lines.filter(l=>l.timesheet_id!==visitId);punches=punches.filter(p=>p.timesheet_id!==visitId);
   showToast('Visit deleted');updateSummary();renderTechTable();renderVisits();
 }
 
@@ -887,6 +906,7 @@ async function saveVisitDate(visitId){
 function isBillable(l){if(l.billable===true)return true;if(l.billable===false)return false;return !l.shop_category;}
 
 // ── Export CSV ──
+function csvSafe(v){var t=String(v==null?'':v);if(/^[=+@\t\r]/.test(t))return "'"+t;if(/^-/.test(t)&&isNaN(Number(t)))return "'"+t;return t;}
 function exportCSV(){
   const header=['Date','Tech','Vessel/Project','Job','Description','Hours','OT','Billable','Reviewed'];
   const visitById={}; visits.forEach(v=>{ visitById[v.id]=v; });
@@ -899,7 +919,7 @@ function exportCSV(){
     return [date,tech,vessel,l.job_number||l.job_no||'',l.work_description||l.description||'',h.toFixed(2),Math.max(0,h-8).toFixed(2),isBillable(l)?'Y':'N',l.reviewed?'Y':'N'];
   }).sort((a,b)=>(b[0]||'').localeCompare(a[0]||''));
   const rows=[header,...body];
-  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const csv=rows.map(r=>r.map(c=>'"'+csvSafe(c).replace(/"/g,'""')+'"').join(',')).join('\n');
   const blob=new Blob([csv],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download=`apb-timesheets-${new Date().toISOString().split('T')[0]}.csv`;a.click();
@@ -921,7 +941,7 @@ function exportExcel(){
     return [date,tech,vessel,l.job_number||l.job_no||'',l.work_description||l.description||'',h,Math.max(0,h-8),isBillable(l)?'Y':'N',l.reviewed?'Y':'N'];
   }).sort((a,b)=>String(b[0]||'').localeCompare(String(a[0]||'')));
   const aoa=[header,...body];
-  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  const ws=XLSX.utils.aoa_to_sheet(aoa.map(r=>r.map(c=>typeof c==='string'?csvSafe(c):c)));
   ws['!cols']=[{wch:12},{wch:18},{wch:24},{wch:10},{wch:64},{wch:7},{wch:6},{wch:9},{wch:9}];
   ws['!autofilter']={ref:XLSX.utils.encode_range({s:{r:0,c:0},e:{r:aoa.length-1,c:header.length-1}})};
   const wb=XLSX.utils.book_new();
@@ -1014,7 +1034,7 @@ async function exportQuickBooks(){
     qbCustomerProject(r),
     (+r.hours||0).toFixed(2), 'Y', r.work_description||r.invoice_line||''
   ])];
-  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const csv=rows.map(r=>r.map(c=>'"'+csvSafe(c).replace(/"/g,'""')+'"').join(',')).join('\n');
   const blob=new Blob([csv],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download=`apb-quickbooks-${new Date().toISOString().split('T')[0]}.csv`;a.click();
