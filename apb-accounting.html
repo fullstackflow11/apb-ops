@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Accounting · Financial Heartbeat · APB</title>
 <script src="apb-roles.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="apb-demo.js"></script>
 <script>APBRoles.guard(['admin','accounting'],'Accounting');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -478,7 +479,19 @@ function sumPnLIncome(d){
 }
 
 /* ── Active List (jobs) ── */
-const SUPA = { url:"https://aanrxyiocxxndkvkeocv.supabase.co", key:(localStorage.getItem("apb_supabase_key")||"") };
+const SUPA = { url:"https://aanrxyiocxxndkvkeocv.supabase.co", key:"sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw" };
+function _tokNow(pk){ try{ for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); if(k&&k.indexOf('-auth-token')>=0){ var v=JSON.parse(localStorage.getItem(k)||'null'); if(v) return v.access_token||(v.currentSession&&v.currentSession.access_token)||pk; } } }catch(e){} return pk; }
+let _TOKEN=_tokNow(SUPA.key);
+const _gsb=(window.supabase&&window.supabase.createClient)?window.supabase.createClient(SUPA.url,SUPA.key,{auth:{persistSession:true,autoRefreshToken:true}}):null;
+(async()=>{ if(!_gsb){ location.replace('index.html'); return; }
+  try{ const{data:{session}}=await _gsb.auth.getSession();
+    if(!session){ location.replace('index.html'); return; }
+    _TOKEN=session.access_token;
+    const _em=(session.user&&session.user.email)||'';
+    let _ok=false; try{ const r=await _gsb.from('apb_people').select('active').eq('email',_em).maybeSingle(); _ok=!!(r&&r.data&&r.data.active!==false); }catch(e){}
+    if(!_ok){ location.replace('index.html'); return; }
+  }catch(e){ location.replace('index.html'); }
+})();
 const JOBS_DEMO = [
   {engagement:"Endless Summer", job_number:"40.0", job_name:"Engine Room Bottle Shelf", status:"In Progress", pct:35},
   {engagement:"Endless Summer", job_number:"48.0", job_name:"Engine Battery Mounts", status:"Ready To Be Billed", pct:100},
@@ -501,7 +514,7 @@ async function loadJobs(){
   if(SUPA.key){
     try{
       const sel="select=job_number,job_name,status,job_status_pct,apb_engagements(name)&order=updated_at.desc";
-      const r=await fetch(`${SUPA.url}/rest/v1/apb_jobs?${sel}`,{headers:{apikey:SUPA.key,Authorization:"Bearer "+SUPA.key}});
+      const r=await fetch(`${SUPA.url}/rest/v1/apb_jobs?${sel}`,{headers:{apikey:SUPA.key,Authorization:"Bearer "+_TOKEN}});
       const data=await r.json();
       jobs=(data||[]).map(j=>({engagement:(j.apb_engagements&&j.apb_engagements.name)||'—', job_number:j.job_number||'', job_name:j.job_name||'', status:j.status||'Lead', pct:j.job_status_pct||0}));
     }catch(e){}
