@@ -883,6 +883,9 @@ body.theme-light .foot b{color:#48597a}
 </footer>
 
 <script>
+// Use the logged-in manager's session token on direct REST calls so they run
+// as 'authenticated' (RLS blocks the plain publishable key on tables).
+function _dtok(k){ try{ for(var i=0;i<localStorage.length;i++){ var kk=localStorage.key(i); if(kk&&kk.indexOf('-auth-token')>=0){ var v=JSON.parse(localStorage.getItem(kk)||'null'); if(v) return v.access_token||(v.currentSession&&v.currentSession.access_token)||k; } } }catch(e){} return k; }
 // ── Role mode (admin / pm / tech) ──────────────────
 // Which roles see which page on the home grid (admin always sees all). Keyed by href substring.
 var WORLD = {
@@ -1095,7 +1098,7 @@ async function refreshJobsCacheLive(){
   try{
     var SB_URL="https://aanrxyiocxxndkvkeocv.supabase.co";
     var SB_KEY="sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw";
-    var r = await fetch(SB_URL+"/rest/v1/apb_jobs?select=job_name,job_number,status,job_status_pct,archived,apb_engagements(name)", {headers:{apikey:SB_KEY, Authorization:"Bearer "+SB_KEY}});
+    var r = await fetch(SB_URL+"/rest/v1/apb_jobs?select=job_name,job_number,status,job_status_pct,archived,apb_engagements(name)", {headers:{apikey:SB_KEY, Authorization:"Bearer "+_dtok(SB_KEY)}});
     if(!r.ok) return false;
     var rows = await r.json();
     var freshCache = rows.filter(function(j){ return !j.archived; }).map(function(j){
@@ -1303,7 +1306,7 @@ function setView(v){ setRole(v); }
   var SB_KEY="sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw";
   function countPending(table){
     return fetch(SB_URL+"/rest/v1/"+table+"?select=id&qbo_synced=eq.false",{
-      headers:{apikey:SB_KEY,Authorization:"Bearer "+SB_KEY,Prefer:"count=exact",Range:"0-0"}
+      headers:{apikey:SB_KEY,Authorization:"Bearer "+_dtok(SB_KEY),Prefer:"count=exact",Range:"0-0"}
     }).then(function(r){
       var cr=r.headers.get("content-range"); // e.g. "0-0/7"
       return cr ? (parseInt(cr.split("/")[1],10)||0) : 0;
