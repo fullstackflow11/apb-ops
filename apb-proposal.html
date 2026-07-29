@@ -6,6 +6,7 @@
 <title>APB · Proposal Builder</title>
 <script src="apb-roles.js"></script>
 <script src="apb-demo.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>APBRoles.guard('pm','Proposal Builder');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -346,12 +347,27 @@ function restoreState(s){
 const DKEY="apb_proposal_drafts";
 const PD_URL="https://aanrxyiocxxndkvkeocv.supabase.co";
 const PD_KEY="sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw";
+// Require a signed-in manager (shared Supabase Auth session); use the user's
+// token on the REST calls so they run as 'authenticated' once RLS is on.
+let PD_TOKEN=PD_KEY;
+const _pdsb=(window.supabase&&window.supabase.createClient)?window.supabase.createClient(PD_URL,PD_KEY,{auth:{persistSession:true,autoRefreshToken:true}}):null;
+(async()=>{
+  if(!_pdsb){ location.replace('index.html'); return; }
+  try{
+    const{data:{session}}=await _pdsb.auth.getSession();
+    if(!session){ location.replace('index.html'); return; }
+    PD_TOKEN=session.access_token;
+    const _em=(session.user&&session.user.email)||'';
+    let _mgr=false; try{ const r=await _pdsb.from('apb_people').select('is_manager').eq('email',_em).maybeSingle(); _mgr=!!(r&&r.data&&r.data.is_manager); }catch(e){}
+    if(!_mgr){ location.replace('index.html'); return; }
+  }catch(e){ location.replace('index.html'); }
+})();
 let DRAFTS=[];
 function localDrafts(){ try{ return JSON.parse(localStorage.getItem(DKEY)||"[]"); }catch(e){ return []; } }
 function mirrorLocal(){ try{ localStorage.setItem(DKEY, JSON.stringify(DRAFTS.slice(0,200))); }catch(e){} }
 async function loadDraftsFromCloud(){
   try{
-    const r=await fetch(`${PD_URL}/rest/v1/apb_proposal_drafts?select=id,name,by,lead_id,saved_at,data&order=saved_at.desc`,{headers:{apikey:PD_KEY,Authorization:"Bearer "+PD_KEY}});
+    const r=await fetch(`${PD_URL}/rest/v1/apb_proposal_drafts?select=id,name,by,lead_id,saved_at,data&order=saved_at.desc`,{headers:{apikey:PD_KEY,Authorization:"Bearer "+PD_TOKEN}});
     if(!r.ok) throw new Error("http "+r.status);
     const rows=await r.json();
     DRAFTS=rows.map(d=>({id:d.id,name:d.name,by:d.by,lead_id:d.lead_id,savedAt:d.saved_at,state:d.data}));
@@ -369,7 +385,7 @@ async function saveDraft(){
   try{
     const r=await fetch(`${PD_URL}/rest/v1/apb_proposal_drafts`,{
       method:"POST",
-      headers:{apikey:PD_KEY,Authorization:"Bearer "+PD_KEY,"Content-Type":"application/json",Prefer:"return=minimal"},
+      headers:{apikey:PD_KEY,Authorization:"Bearer "+PD_TOKEN,"Content-Type":"application/json",Prefer:"return=minimal"},
       body: JSON.stringify({ id:draft.id, name:draft.name, by:draft.by, lead_id:draft.lead_id, saved_at:draft.savedAt, data:draft.state })
     });
     if(!r.ok) throw new Error("http "+r.status);
@@ -397,7 +413,7 @@ function renderDraftsList(){
 }
 async function deleteDraft(id){
   DRAFTS=DRAFTS.filter(x=>x.id!==id); mirrorLocal(); renderDraftsList();
-  try{ await fetch(`${PD_URL}/rest/v1/apb_proposal_drafts?id=eq.${encodeURIComponent(id)}`,{method:"DELETE",headers:{apikey:PD_KEY,Authorization:"Bearer "+PD_KEY}}); }catch(e){}
+  try{ await fetch(`${PD_URL}/rest/v1/apb_proposal_drafts?id=eq.${encodeURIComponent(id)}`,{method:"DELETE",headers:{apikey:PD_KEY,Authorization:"Bearer "+PD_TOKEN}}); }catch(e){}
 }
 function closeDrafts(){ $("draftsModal").classList.remove("open"); }
 let toastT=null; function toast(m){ const t=$("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2400); }
@@ -429,20 +445,30 @@ function collect(){
 async function syncLeadFromProposal(d){
   if(!window.__leadId) return;
   try{
-    await fetch(`${PD_URL}/rest/v1/apb_leads?id=eq.${encodeURIComponent(window.__leadId)}`,{
+    // Only write fields the proposal actually filled in — never overwrite
+    // existing CRM contact data with blanks. (Do NOT touch `vessel`; the
+    // project/job title is not a vessel name.)
+    const body={};
+    if(d.client) body.name=d.client;
+    if(d.attn)   body.contact_name=d.attn;
+    if(d.cphone) body.contact_phone=d.cphone;
+    if(d.cemail) body.contact_email=d.cemail;
+    if(d.loc)    body.location=d.loc;
+    // Advance the pipeline only — don't knock a lead back from a later stage.
+    try{
+      const r=await fetch(`${PD_URL}/rest/v1/apb_leads?id=eq.${encodeURIComponent(window.__leadId)}&select=status`,{headers:{apikey:PD_KEY,Authorization:"Bearer "+PD_TOKEN}});
+      const cur=(await r.json())[0];
+      const AFTER=['Proposal Created','Proposal Sent','Approved','Won','Converted'];
+      if(!cur||AFTER.indexOf(cur.status)<0) body.status='Proposal Created';
+    }catch(e){ body.status='Proposal Created'; }
+    if(!Object.keys(body).length) return;
+    const res=await fetch(`${PD_URL}/rest/v1/apb_leads?id=eq.${encodeURIComponent(window.__leadId)}`,{
       method:"PATCH",
-      headers:{apikey:PD_KEY,Authorization:"Bearer "+PD_KEY,"Content-Type":"application/json",Prefer:"return=minimal"},
-      body: JSON.stringify({
-        name: d.client||undefined,
-        contact_name: d.attn||null,
-        contact_phone: d.cphone||null,
-        contact_email: d.cemail||null,
-        location: d.loc||null,
-        vessel: d.ptitle||null,
-        status: 'Proposal Created'
-      })
+      headers:{apikey:PD_KEY,Authorization:"Bearer "+PD_TOKEN,"Content-Type":"application/json",Prefer:"return=minimal"},
+      body: JSON.stringify(body)
     });
-  }catch(e){/* non-blocking */}
+    if(!res.ok) console.warn('Lead sync failed:', res.status, await res.text().catch(()=>''));
+  }catch(e){ console.warn('Lead sync error:', e); }
 }
 
 function generate(){
