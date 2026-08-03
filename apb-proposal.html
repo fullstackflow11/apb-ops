@@ -112,15 +112,7 @@ textarea{resize:vertical;min-height:74px;line-height:1.5}
           <option value="general">General</option>
         </select><div class="hint">Tunes the legal language &amp; assumptions.</div></div>
       <div class="field"><label>Prepared by</label>
-        <select id="preparer">
-          <option value="Christopher Collins|Christopher@APB1.com|Director of Business Operations &amp; Development">Christopher Collins</option>
-          <option value="Bryce Sander|bryce@apb1.com|All Points Boats, Inc.">Bryce Sander</option>
-          <option value="Christina Daglia|christina@apb1.com|All Points Boats, Inc.">Christina Daglia</option>
-          <option value="Chelsea Goodwin|chelsea@apb1.com|All Points Boats, Inc.">Chelsea Goodwin</option>
-          <option value="Nate Goodwin|nate@apb1.com|All Points Boats, Inc.">Nate Goodwin</option>
-          <option value="Jerry Clark|jerry@apb1.com|All Points Boats, Inc.">Jerry Clark</option>
-          <option value="|info@apb1.com|All Points Boats, Inc.">Other / APB</option>
-        </select></div>
+        <select id="preparer"><option value="|info@apb1.com|All Points Boats, Inc.">Loading names…</option></select></div>
       <div class="field"><label>Date</label><input id="date" type="date"></div>
     </div>
     <div class="grid g3">
@@ -237,6 +229,36 @@ function updateSub(){
 $("depPct").addEventListener("input",updateSub);
 $("depOn").addEventListener("change",updateSub);
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+
+// ── "Prepared by" list — loaded from apb_proposal_preparers so managers can
+// add tech/PM names right here ("＋ Add name…") without touching code. ──
+async function loadPreparers(){
+  const sel=document.getElementById("preparer"); if(!sel) return;
+  if(_pdsb){ try{ const s=await _pdsb.auth.getSession(); if(s&&s.data&&s.data.session) PD_TOKEN=s.data.session.access_token; }catch(e){} }
+  let rows=[];
+  try{ const r=await fetch(`${PD_URL}/rest/v1/apb_proposal_preparers?select=name,email,title&active=eq.true&order=name`,{headers:{apikey:PD_KEY,Authorization:"Bearer "+PD_TOKEN}}); if(r.ok) rows=await r.json(); }catch(e){}
+  const cur=sel.value;
+  sel.innerHTML=(Array.isArray(rows)?rows:[]).map(p=>`<option value="${esc(p.name)}|${esc(p.email||"")}|${esc(p.title||"All Points Boats, Inc.")}">${esc(p.name)}</option>`).join("")
+    +`<option value="|info@apb1.com|All Points Boats, Inc.">Other / APB</option>`
+    +`<option value="__ADD__">＋ Add name…</option>`;
+  if(cur && [...sel.options].some(o=>o.value===cur)) sel.value=cur;
+  if(!sel.dataset.wired){ sel.dataset.wired="1"; sel.addEventListener("change", onPreparerChange); }
+}
+async function onPreparerChange(e){
+  if(e.target.value!=="__ADD__") return;
+  const name=(prompt("Add a name (tech or PM):")||"").trim();
+  if(!name){ e.target.selectedIndex=0; return; }
+  const email=(prompt("Their email (optional):","")||"").trim();
+  const title=(prompt("Title / role (optional):","Project Manager")||"").trim()||"All Points Boats, Inc.";
+  try{
+    const r=await fetch(`${PD_URL}/rest/v1/apb_proposal_preparers`,{method:"POST",headers:{apikey:PD_KEY,Authorization:"Bearer "+PD_TOKEN,"Content-Type":"application/json",Prefer:"return=minimal"},body:JSON.stringify({name:name,email:email||null,title:title})});
+    if(!r.ok) throw new Error("save "+r.status);
+    await loadPreparers();
+    const opt=[...document.getElementById("preparer").options].find(o=>o.value.split("|")[0]===name);
+    if(opt) document.getElementById("preparer").value=opt.value;
+  }catch(err){ alert("Could not add that name — try again."); await loadPreparers(); }
+}
+loadPreparers();
 $("addJob").onclick=()=>addJob(); $("addJob2").onclick=()=>addJob();
 addJob();
 
