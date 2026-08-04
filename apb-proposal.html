@@ -258,7 +258,6 @@ async function onPreparerChange(e){
     if(opt) document.getElementById("preparer").value=opt.value;
   }catch(err){ alert("Could not add that name — try again."); await loadPreparers(); }
 }
-loadPreparers();
 $("addJob").onclick=()=>addJob(); $("addJob2").onclick=()=>addJob();
 addJob();
 
@@ -382,6 +381,7 @@ const _pdsb=(window.supabase&&window.supabase.createClient)?window.supabase.crea
     const _em=(session.user&&session.user.email)||'';
     let _mgr=false; try{ const r=await _pdsb.from('apb_people').select('is_manager').eq('email',_em).maybeSingle(); _mgr=!!(r&&r.data&&r.data.is_manager); }catch(e){}
     if(!_mgr){ location.replace('index.html'); return; }
+    loadPreparers();   // fill the Prepared-by dropdown once we're authenticated
   }catch(e){ location.replace('index.html'); }
 })();
 let DRAFTS=[];
