@@ -721,6 +721,10 @@ function _pmTokenNow(){
 }
 let PM_TOKEN=_pmTokenNow();
 const _pmsb=(window.supabase&&window.supabase.createClient)?window.supabase.createClient(CONFIG.SUPABASE_URL,"sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw",{auth:{persistSession:true,autoRefreshToken:true}}):null;
+// Return a CURRENT access token before each request; also keep PM_TOKEN updated
+// whenever supabase-js refreshes it, so writes never fail on a stale token.
+async function pmFresh(){ if(_pmsb){ try{ const s=await _pmsb.auth.getSession(); if(s&&s.data&&s.data.session) PM_TOKEN=s.data.session.access_token; }catch(e){} } return PM_TOKEN; }
+if(_pmsb) _pmsb.auth.onAuthStateChange(function(_e,session){ if(session&&session.access_token) PM_TOKEN=session.access_token; });
 (async()=>{
   if(!_pmsb){ location.replace('index.html'); return; }
   try{
@@ -822,7 +826,7 @@ async function load(){
   if(k){
     try{
       const sel = "select=id,engagement_id,job_number,job_name,status,job_status_pct,archived,edited_by,edited_at,pm_notes,ms_list_item_id,updated_at,apb_engagements(name,rep)&order=updated_at.desc";
-      const r = await fetch(`${u}/rest/v1/apb_jobs?${sel}`,{headers:{apikey:k,Authorization:"Bearer "+PM_TOKEN}});
+      const r = await fetch(`${u}/rest/v1/apb_jobs?${sel}`,{headers:{apikey:k,Authorization:"Bearer "+(await pmFresh())}});
       if(!r.ok) throw new Error('jobs '+r.status);
       const data = await r.json();
       JOBS = data.map(j=>({
@@ -835,7 +839,7 @@ async function load(){
       // Brand-new, not-yet-a-client prospects live in apb_leads until approved/converted.
       try{
         const lsel = "select=id,name,rep,lead_source,description,notes,status,contact_name,contact_email,contact_phone,ms_list_item_id,updated_at&converted=eq.false&order=updated_at.desc";
-        const lr = await fetch(`${u}/rest/v1/apb_leads?${lsel}`,{headers:{apikey:k,Authorization:"Bearer "+PM_TOKEN}});
+        const lr = await fetch(`${u}/rest/v1/apb_leads?${lsel}`,{headers:{apikey:k,Authorization:"Bearer "+(await pmFresh())}});
         const ldata = await lr.json();
         if(Array.isArray(ldata)){
           JOBS = JOBS.concat(ldata.map(l=>({
@@ -867,7 +871,7 @@ async function ensureEngagementId(name){
   try{
     const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_engagements`,{
       method:"POST",
-      headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+PM_TOKEN,"Content-Type":"application/json",Prefer:"return=representation"},
+      headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+(await pmFresh()),"Content-Type":"application/json",Prefer:"return=representation"},
       body: JSON.stringify({name, status:"Active"})
     });
     if(!r.ok) return null;
@@ -942,7 +946,7 @@ async function deleteJobRow(id,skipConfirm){
       const table = j.source==="lead" ? "apb_leads" : "apb_jobs";
       const _res=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`,{
         method:"DELETE",
-        headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+PM_TOKEN}
+        headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+(await pmFresh())}
       });
       if(!_res.ok){ toast("Delete failed on server ("+_res.status+") — nothing removed."); return; }
     }catch(e){ toast("Delete failed — check connection"); return; }
@@ -1164,7 +1168,7 @@ async function newLead(){
     try{
       const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_leads`,{
         method:"POST",
-        headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+PM_TOKEN,"Content-Type":"application/json",Prefer:"return=representation"},
+        headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+(await pmFresh()),"Content-Type":"application/json",Prefer:"return=representation"},
         body: JSON.stringify({name, status:"Lead"})
       });
       if(r.ok){
@@ -1386,7 +1390,7 @@ async function toggleArchive(job){
     try{
       const r=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_jobs?id=eq.${encodeURIComponent(job.id)}`,{
         method:"PATCH",
-        headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+PM_TOKEN,"Content-Type":"application/json",Prefer:"return=minimal"},
+        headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+(await pmFresh()),"Content-Type":"application/json",Prefer:"return=minimal"},
         body: JSON.stringify({archived:to, updated_at:new Date().toISOString()})
       });
       if(!r.ok){ toast("Archive failed — check connection"); return; }
@@ -1414,7 +1418,7 @@ async function pushToActiveList(job, changes){
         : {status:changes.status, job_name:job.job_name, job_status_pct:changes.pct, pm_notes:changes.notes, rep:job.rep, edited_by:job.edited_by||null, edited_at:job.edited_at||null, updated_at:new Date().toISOString()};
       const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(job.id)}`,{
         method:"PATCH",
-        headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+PM_TOKEN,"Content-Type":"application/json",Prefer:"return=minimal"},
+        headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+(await pmFresh()),"Content-Type":"application/json",Prefer:"return=minimal"},
         body: JSON.stringify(body)
       });
       if(!r.ok){ toast("Saved locally — sync failed"); return false; }
@@ -1478,7 +1482,7 @@ function createProposalFromLead(job){
 async function fetchLeadProposalLines(leadId){
   if(!LIVE || !leadId) return null;
   try{
-    const r=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_proposal_drafts?lead_id=eq.${encodeURIComponent(leadId)}&select=data&order=saved_at.desc&limit=1`,{headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+PM_TOKEN}});
+    const r=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_proposal_drafts?lead_id=eq.${encodeURIComponent(leadId)}&select=data&order=saved_at.desc&limit=1`,{headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+(await pmFresh())}});
     if(!r.ok) return null;
     const rows=await r.json();
     const d=rows&&rows[0]&&rows[0].data;
@@ -1505,7 +1509,7 @@ async function convertToProject(job){
         try{
           const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_jobs`,{
             method:"POST",
-            headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+PM_TOKEN,"Content-Type":"application/json",Prefer:"return=representation"},
+            headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+(await pmFresh()),"Content-Type":"application/json",Prefer:"return=representation"},
             body: JSON.stringify(bodies)
           });
           if(r.ok){ const c=await r.json(); newJobId = c[0] && c[0].id; }
@@ -1518,7 +1522,7 @@ async function convertToProject(job){
         try{
           const r2 = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_leads?id=eq.${encodeURIComponent(job.id)}`,{
             method:"PATCH",
-            headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+PM_TOKEN,"Content-Type":"application/json",Prefer:"return=minimal"},
+            headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+(await pmFresh()),"Content-Type":"application/json",Prefer:"return=minimal"},
             body: JSON.stringify({converted:true, engagement_id:engId, status:"Approved", updated_at:new Date().toISOString()})
           });
           leadMarked = r2.ok;
@@ -1638,7 +1642,7 @@ async function addJobToProject(){
       try{
         const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_jobs`,{
           method:"POST",
-          headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+PM_TOKEN,"Content-Type":"application/json",Prefer:"return=representation"},
+          headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+(await pmFresh()),"Content-Type":"application/json",Prefer:"return=representation"},
           body: JSON.stringify({engagement_id:engId, job_number:num||null, job_name:name||"", status:job.status, job_status_pct:job.job_status_pct})
         });
         if(r.ok){
@@ -1673,7 +1677,7 @@ async function saveProjectMeta(){
       if(rep) body.rep=rep;
       const r=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_engagements?id=eq.${encodeURIComponent(engId)}`,{
         method:"PATCH",
-        headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+PM_TOKEN,"Content-Type":"application/json",Prefer:"return=minimal"},
+        headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+(await pmFresh()),"Content-Type":"application/json",Prefer:"return=minimal"},
         body:JSON.stringify(body)
       });
       if(!r.ok){ toast("Rename didn't sync — check connection"); return; }
@@ -2210,7 +2214,7 @@ async function migrateLocalOnlyRecords(){
     try{
       const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_leads`,{
         method:"POST",
-        headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+PM_TOKEN,"Content-Type":"application/json",Prefer:"return=representation"},
+        headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+(await pmFresh()),"Content-Type":"application/json",Prefer:"return=representation"},
         body: JSON.stringify({name: rec.engagement, status: rec.status||"Lead", notes: rec.pm_notes||null})
       });
       if(r.ok){ rec._migrated = true; migrated++; } else { failed++; }
@@ -2223,7 +2227,7 @@ async function migrateLocalOnlyRecords(){
     try{
       const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_jobs`,{
         method:"POST",
-        headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+PM_TOKEN,"Content-Type":"application/json",Prefer:"return=representation"},
+        headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+(await pmFresh()),"Content-Type":"application/json",Prefer:"return=representation"},
         body: JSON.stringify({
           engagement_id: engId,
           job_number: rec.job_number || null,
