@@ -372,6 +372,7 @@ const PD_KEY="sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw";
 // token on the REST calls so they run as 'authenticated' once RLS is on.
 let PD_TOKEN=PD_KEY;
 const _pdsb=(window.supabase&&window.supabase.createClient)?window.supabase.createClient(PD_URL,PD_KEY,{auth:{persistSession:true,autoRefreshToken:true}}):null;
+if(_pdsb) _pdsb.auth.onAuthStateChange(function(_e,se){ if(se&&se.access_token) PD_TOKEN=se.access_token; });
 (async()=>{
   if(!_pdsb){ location.replace('index.html'); return; }
   try{
