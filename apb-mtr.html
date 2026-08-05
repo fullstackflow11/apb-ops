@@ -494,6 +494,7 @@ const SUPA = {
 function _tokNow(pk){ try{ for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); if(k&&k.indexOf('-auth-token')>=0){ var v=JSON.parse(localStorage.getItem(k)||'null'); if(v) return v.access_token||(v.currentSession&&v.currentSession.access_token)||pk; } } }catch(e){} return pk; }
 let _TOKEN=_tokNow(SUPA.key);
 const _gsb=(window.supabase&&window.supabase.createClient)?window.supabase.createClient(SUPA.url,SUPA.key,{auth:{persistSession:true,autoRefreshToken:true}}):null;
+if(_gsb) _gsb.auth.onAuthStateChange(function(_e,se){ if(se&&se.access_token) _TOKEN=se.access_token; });
 (async()=>{ if(!_gsb){ location.replace('index.html'); return; }
   try{ const{data:{session}}=await _gsb.auth.getSession();
     if(!session){ location.replace('index.html'); return; }
