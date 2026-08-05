@@ -1377,7 +1377,14 @@ async function save(){
   current.edited_by=(function(){try{return (localStorage.getItem("apb_hub_auth_v2")||"").split("@")[0];}catch(e){return "";}})()||current.edited_by||"";
   current.edited_at=new Date().toISOString();
   current.updated_at=new Date().toISOString();
-  await pushToActiveList(current, draft);   // Phase-2 seam
+  const res = await pushToActiveList(current, draft);   // write-back to Supabase
+  // For a real (DB) job the local overlay is PURGED on the next load (see applyLocalData),
+  // so if the write didn't land we must NOT fake success — surface the real reason and keep
+  // the edit on screen so it can be retried. This is what stopped edits from silently vanishing.
+  if(res && res.ok===false){
+    toast(`NOT saved — ${res.reason||('error '+(res.status||'?'))}. Try again.`);
+    return; // drawer stays open, edit stays on screen
+  }
   persistStatus(current); refreshViews(); closeDrawer(); toast(`Saved · ${current.engagement} ${current.job_number}`);
 }
 document.getElementById("dSave").onclick=save;
@@ -1413,24 +1420,31 @@ async function pushToActiveList(job, changes){
   if(LIVE && isRealId(job.id)){
     try{
       const table = job.source==="lead" ? "apb_leads" : "apb_jobs";
+      // Leads: only write columns the loader reads back (apb_leads has no edited_by/edited_at).
       const body = job.source==="lead"
-        ? {status:changes.status, description:job.job_name, notes:changes.notes, rep:job.rep, edited_by:job.edited_by||null, edited_at:job.edited_at||null, updated_at:new Date().toISOString()}
+        ? {status:changes.status, description:job.job_name, notes:changes.notes, rep:job.rep, updated_at:new Date().toISOString()}
         : {status:changes.status, job_name:job.job_name, job_status_pct:changes.pct, pm_notes:changes.notes, rep:job.rep, edited_by:job.edited_by||null, edited_at:job.edited_at||null, updated_at:new Date().toISOString()};
       const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(job.id)}`,{
         method:"PATCH",
         headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+(await pmFresh()),"Content-Type":"application/json",Prefer:"return=minimal"},
         body: JSON.stringify(body)
       });
-      if(!r.ok){ toast("Saved locally — sync failed"); return false; }
-      return true;
-    }catch(e){ toast("Saved locally — offline, will retry"); return false; }
+      if(!r.ok){
+        let detail=""; try{ detail=(await r.text()||"").slice(0,180); }catch(e){}
+        const reason = r.status===401||r.status===403 ? "sign-in expired — reload the page"
+                     : r.status===400||r.status===404||r.status===409 ? ("DB rejected the change"+(detail?": "+detail:""))
+                     : ("server error "+r.status+(detail?": "+detail:""));
+        return {ok:false, status:r.status, reason:reason};
+      }
+      return {ok:true};
+    }catch(e){ return {ok:false, status:0, reason:"no connection"}; }
   }
   // PHASE 2 (uncomment & set the flow URL) once the Active List (MS Lists) becomes
   // the system of record instead of Supabase:
   // await fetch(POWER_AUTOMATE_FLOW_URL, {method:"POST", headers:{"Content-Type":"application/json"},
   //   body: JSON.stringify({ ms_list_item_id: job.ms_list_item_id, status: changes.status,
   //   job_status_pct: changes.pct, pm_notes: changes.notes })});
-  return true;
+  return {ok:true};
 }
 
 function toast(m){ const t=document.getElementById("toast"); document.getElementById("toastMsg").textContent=m;
