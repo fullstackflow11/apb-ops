@@ -448,7 +448,13 @@ async function loadData(){
   ]);
   visits=vRes.data||[]; lines=lRes.data||[]; punches=pRes.data||[]; engagements=eRes.data||[]; jobsAll=jRes.data||[];
   const techs=[...new Set(visits.map(v=>v.tech_name).filter(Boolean))].sort();
-  const vessels=[...new Set(visits.map(v=>v.apb_engagements?.name||v.vessel_name).filter(Boolean))].sort();
+  // Vessels come from BOTH the visit header AND every line (a line can be on a
+  // different vessel than its visit), so a vessel only ever used on a line still
+  // shows up as a filter option.
+  const vessels=[...new Set([
+    ...visits.map(v=>v.apb_engagements?.name||v.vessel_name),
+    ...lines.map(l=>l.vessel_name||engNameById(l.engagement_id))
+  ].filter(Boolean))].sort();
   document.getElementById('techFilter').innerHTML='<option value="">All Techs</option>'+techs.map(t=>`<option>${rvEsc(t)}</option>`).join('');
   document.getElementById('vesselFilter').innerHTML='<option value="">All Vessels</option>'+vessels.map(v=>`<option>${rvEsc(v)}</option>`).join('');
   updateSummary(); renderTechTable(); renderVisits();
@@ -524,6 +530,25 @@ function getWeekLabel(dateStr){
   return 'Week of '+mon.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+sun.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 }
 
+// ── Vessel resolution ──────────────────────────────────────────────────────
+// A visit has a header vessel, but each LINE can be logged against its own
+// vessel/job. Filtering must look at the lines, not just the header — that is
+// the bug behind "filter by vessel misses a tech's hours on that vessel."
+function engNameById(id){ if(!id) return ''; const e=engagements.find(x=>x.id===id); return e?e.name:''; }
+function headerVesselName(v){ return (v&&v.apb_engagements&&v.apb_engagements.name)||(v&&v.vessel_name)||''; }
+function lineOwnVessel(l){ return l.vessel_name||engNameById(l.engagement_id)||''; }
+function effLineVessel(l,v){ return lineOwnVessel(l)||headerVesselName(v); } // a blank line inherits its header
+function linesForVisit(v,vesselF){
+  let vl=lines.filter(l=>l.timesheet_id===v.id);
+  if(vesselF) vl=vl.filter(l=>effLineVessel(l,v)===vesselF);
+  return vl;
+}
+function visitOnVessel(v,vesselF){
+  if(!vesselF) return true;
+  if(headerVesselName(v)===vesselF) return true;
+  return lines.some(l=>l.timesheet_id===v.id && effLineVessel(l,v)===vesselF);
+}
+
 function renderVisits(){
   const techF=document.getElementById('techFilter').value;
   const vesselF=document.getElementById('vesselFilter').value;
@@ -533,11 +558,10 @@ function renderVisits(){
 
   let filtered=visits.filter(v=>{
     if(techF&&v.tech_name!==techF)return false;
-    const vName=v.apb_engagements?.name||v.vessel_name||'';
-    if(vesselF&&vName!==vesselF)return false;
+    if(!visitOnVessel(v,vesselF))return false;
     if(dateFrom&&v.visit_date<dateFrom)return false;
     if(dateTo&&v.visit_date>dateTo)return false;
-    const vLines=lines.filter(l=>l.timesheet_id===v.id);
+    const vLines=linesForVisit(v,vesselF);
     if(currentFilter==='pending')return vLines.some(l=>!l.reviewed);
     if(currentFilter==='reviewed')return vLines.length&&vLines.every(l=>l.reviewed);
     if(currentFilter==='nonbillable')return vLines.some(l=>!isBillable(l));
@@ -555,19 +579,22 @@ function renderVisits(){
     document.getElementById('visitList').innerHTML=Object.entries(weeks).map(([wk,wVisits])=>`
       <div class="week-group">
         <div class="week-label">${wk}</div>
-        ${wVisits.map(v=>renderCard(v)).join('')}
+        ${wVisits.map(v=>renderCard(v,vesselF)).join('')}
       </div>`).join('');
   } else {
-    document.getElementById('visitList').innerHTML=filtered.map(v=>renderCard(v)).join('');
+    document.getElementById('visitList').innerHTML=filtered.map(v=>renderCard(v,vesselF)).join('');
   }
 }
 
-function renderCard(v){
-  const vLines=lines.filter(l=>l.timesheet_id===v.id);
+function renderCard(v,vesselF){
+  // When a vessel filter is active, this card shows ONLY that vessel's lines,
+  // so the hours/status reflect the filtered vessel (not the whole visit).
+  const vLines=linesForVisit(v,vesselF);
   const allReviewed=vLines.length&&vLines.every(l=>l.reviewed);
   const hasPending=vLines.some(l=>!l.reviewed);
-  const headerVessel=v.apb_engagements?.name||v.vessel_name||'—';
-  const distinctLineVessels=[...new Set(vLines.map(l=>l.vessel_name).filter(Boolean))];
+  const headerVessel=headerVesselName(v)||'—';
+  const shownHours=vesselF?vLines.reduce((s,l)=>s+parseFloat(l.hours||0),0):parseFloat(v.total_hours||0);
+  const distinctLineVessels=[...new Set(vLines.map(l=>lineOwnVessel(l)).filter(Boolean))];
   const isMixed=distinctLineVessels.length>1||(distinctLineVessels.length===1&&distinctLineVessels[0]!==headerVessel&&headerVessel!=='—');
   const vesselName=isMixed?`Multiple projects (${distinctLineVessels.length||vLines.length})`:headerVessel;
   const dateStr=v.visit_date?new Date(v.visit_date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'}):'—';
@@ -644,7 +671,7 @@ function renderCard(v){
         <span class="visit-date">${dateStr} <span class="edit-icon" onclick="event.stopPropagation();startEditDate('${v.id}')">✎</span></span>
         ${clockStr?`<span class="visit-date" style="opacity:.65" title="Clock in / out">⏱ ${clockStr}</span>`:''}
         ${submittedStr?`<span class="visit-date" style="opacity:.65" title="When this timecard was submitted">🕑 submitted ${submittedStr}</span>`:''}
-        <span class="visit-hours">${parseFloat(v.total_hours||0).toFixed(1)}h</span>
+        <span class="visit-hours">${shownHours.toFixed(1)}h</span>
         <span class="status-pill ${allReviewed?'done':'pending'}">${allReviewed?'✓ Done':'Pending'}</span>
       </div>
       <span class="visit-chevron">▾</span>
@@ -814,7 +841,12 @@ async function toggleReviewed(lineId,reviewed,btn){
   }
 }
 async function markAllReviewed(visitId){
-  const vLines=lines.filter(l=>l.timesheet_id===visitId&&!l.reviewed);
+  // Only approve what's visible: if a vessel filter is active, this card is
+  // showing that vessel's lines, so don't silently approve hidden other-vessel lines.
+  const vesselF=document.getElementById('vesselFilter').value;
+  const v=visits.find(x=>x.id===visitId);
+  let vLines=lines.filter(l=>l.timesheet_id===visitId&&!l.reviewed);
+  if(vesselF&&v) vLines=vLines.filter(l=>effLineVessel(l,v)===vesselF);
   if(!vLines.length)return;
   const{error}=await sb.from('apb_timesheet_lines').update({reviewed:true}).in('id',vLines.map(l=>l.id));
   if(error){showToast('Error');return;}
