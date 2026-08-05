@@ -1420,10 +1420,13 @@ async function pushToActiveList(job, changes){
   if(LIVE && isRealId(job.id)){
     try{
       const table = job.source==="lead" ? "apb_leads" : "apb_jobs";
-      // Leads: only write columns the loader reads back (apb_leads has no edited_by/edited_at).
+      // Column note: `rep` lives on apb_leads but NOT on apb_jobs (it's on the
+      // engagement). Writing rep to apb_jobs is what caused PGRST204 and killed
+      // every job save — so a job's rep is written to apb_engagements below.
+      // Leads also have no edited_by/edited_at, so those go to jobs only.
       const body = job.source==="lead"
         ? {status:changes.status, description:job.job_name, notes:changes.notes, rep:job.rep, updated_at:new Date().toISOString()}
-        : {status:changes.status, job_name:job.job_name, job_status_pct:changes.pct, pm_notes:changes.notes, rep:job.rep, edited_by:job.edited_by||null, edited_at:job.edited_at||null, updated_at:new Date().toISOString()};
+        : {status:changes.status, job_name:job.job_name, job_status_pct:changes.pct, pm_notes:changes.notes, edited_by:job.edited_by||null, edited_at:job.edited_at||null, updated_at:new Date().toISOString()};
       const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(job.id)}`,{
         method:"PATCH",
         headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+(await pmFresh()),"Content-Type":"application/json",Prefer:"return=minimal"},
@@ -1435,6 +1438,17 @@ async function pushToActiveList(job, changes){
                      : r.status===400||r.status===404||r.status===409 ? ("DB rejected the change"+(detail?": "+detail:""))
                      : ("server error "+r.status+(detail?": "+detail:""));
         return {ok:false, status:r.status, reason:reason};
+      }
+      // Rep belongs to the engagement, not the job — persist a rep edit there
+      // (best-effort; the job itself already saved so don't fail on this).
+      if(job.source!=="lead" && job.rep && job.engagement_id && isRealId(job.engagement_id)){
+        try{
+          await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_engagements?id=eq.${encodeURIComponent(job.engagement_id)}`,{
+            method:"PATCH",
+            headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+(await pmFresh()),"Content-Type":"application/json",Prefer:"return=minimal"},
+            body: JSON.stringify({rep:job.rep, updated_at:new Date().toISOString()})
+          });
+        }catch(e){ /* rep sync is non-critical */ }
       }
       return {ok:true};
     }catch(e){ return {ok:false, status:0, reason:"no connection"}; }
