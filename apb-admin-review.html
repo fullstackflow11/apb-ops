@@ -93,6 +93,27 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
 .tech-table .tech-name{font-weight:600;color:var(--ink)}
 .tech-table .mono{font-family:var(--mono)}
 .ot-badge{font-size:10px;font-weight:700;background:var(--amber-soft);color:var(--amber);padding:1px 6px;border-radius:99px;margin-left:6px}
+/* ── Weekly timesheet status grid ── */
+.week-grid th,.week-grid td{text-align:center;white-space:nowrap;padding:8px 10px}
+.week-grid th:first-child,.week-grid td:first-child{text-align:left}
+.week-grid .wg-worked{background:var(--green-soft);color:var(--green);font-weight:700;padding:2px 7px;border-radius:6px;display:inline-block}
+.week-grid .wg-pto{background:var(--amber-soft);color:var(--amber);font-weight:700;padding:2px 7px;border-radius:6px;display:inline-block}
+.week-grid .wg-hol{background:#E8F0FE;color:#2457E6;font-weight:700;padding:2px 7px;border-radius:6px;display:inline-block}
+.week-grid .wg-miss{background:#FDECEC;color:#C0392B;font-weight:700;padding:2px 9px;border-radius:6px;display:inline-block}
+.week-grid .wg-none{color:var(--ink-4);opacity:.6}
+.week-grid td.wg-total{font-weight:800;color:var(--ink)}
+.week-grid .wg-status-in{color:var(--green);font-weight:700}
+.week-grid .wg-status-miss{color:#C0392B;font-weight:700}
+.week-grid .wg-status-off{color:var(--ink-3);font-weight:700}
+.week-grid tr.wg-missing-row td{background:rgba(192,57,43,.045)}
+.week-grid tr:hover td{background:var(--panel-2)}
+.week-grid .wg-name{cursor:pointer}
+.week-grid .wg-name:hover{color:var(--accent,#2457E6);text-decoration:underline}
+.week-grid-legend{display:flex;flex-wrap:wrap;gap:8px 16px;padding:11px 16px;border-top:1px solid var(--line-2);font-size:11.5px;color:var(--ink-2);font-weight:600}
+.week-grid-legend span{display:inline-flex;align-items:center;gap:6px}
+.week-grid-legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.week-nav{display:flex;align-items:center;gap:8px;margin-left:auto}
+.week-nav .wk-label{font-weight:800;font-size:13px;min-width:180px;text-align:center;color:var(--ink)}
 
 /* ── Visit cards ── */
 .week-group{margin-bottom:8px}
@@ -298,6 +319,26 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
     <button class="btn btn-ghost" onclick="clearSelection()">Clear</button>
   </div>
 
+  <!-- Weekly timesheet status grid (who turned in, by day) -->
+  <div class="tech-summary" id="weekGridPanel" style="margin-bottom:16px">
+    <div class="tech-summary-head">
+      <h3>Weekly Timesheet Status</h3>
+      <div class="week-nav">
+        <button class="btn btn-ghost" style="font-size:12px;padding:5px 11px" onclick="shiftGridWeek(-1)">◀ Prev</button>
+        <span class="wk-label" id="weekGridLabel">—</span>
+        <button class="btn btn-ghost" style="font-size:12px;padding:5px 11px" onclick="shiftGridWeek(1)">Next ▶</button>
+        <button class="btn btn-ghost" style="font-size:11px;padding:5px 11px" onclick="gridThisWeek()">This week</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="tech-table week-grid">
+        <thead><tr id="weekGridHead"></tr></thead>
+        <tbody id="weekGridBody"></tbody>
+      </table>
+    </div>
+    <div class="week-grid-legend" id="weekGridLegend"></div>
+  </div>
+
   <!-- Tech hours summary (collapsible) -->
   <div class="tech-summary" id="techSummaryPanel">
     <div class="tech-summary-head">
@@ -371,6 +412,14 @@ APBAuth.init(sb);   // real Supabase Auth — PIN validated server-side
   
 
 let visits = [], lines = [], punches = [], engagements = [], jobsAll = [], currentFilter = 'all', currentUser = null, selectedVisits = new Set();
+// ── Weekly grid state ──
+let ROSTER = [], PTOREQS = [], gridWeekStart = null, GRID_ROWS = [];
+const HOLIDAYS = {
+  '2026-01-01':"New Year's Day",'2026-01-19':'MLK Day','2026-02-16':"Presidents' Day",
+  '2026-05-25':'Memorial Day','2026-06-19':'Juneteenth','2026-07-03':'July 4th (obs.)',
+  '2026-09-07':'Labor Day','2026-11-11':'Veterans Day','2026-11-26':'Thanksgiving',
+  '2026-11-27':'Day After Thxg','2026-12-25':'Christmas'
+};
 function punchFor(visitId){ return punches.find(p=>p.timesheet_id===visitId) || null; }
 function fmtPunch(t){ if(!t) return ''; const m=String(t).match(/(\d{1,2}):(\d{2})/); if(!m) return String(t); let h=+m[1]; const mm=m[2], ap=h<12?'AM':'PM'; h=h%12||12; return h+':'+mm+' '+ap; }
 
@@ -457,7 +506,19 @@ async function loadData(){
   ].filter(Boolean))].sort();
   document.getElementById('techFilter').innerHTML='<option value="">All Techs</option>'+techs.map(t=>`<option>${rvEsc(t)}</option>`).join('');
   document.getElementById('vesselFilter').innerHTML='<option value="">All Vessels</option>'+vessels.map(v=>`<option>${rvEsc(v)}</option>`).join('');
-  updateSummary(); renderTechTable(); renderVisits();
+  await loadRosterAndPTO();
+  updateSummary(); renderTechTable(); renderWeekGrid(); renderVisits();
+}
+
+// Full active roster (so people who submitted NOTHING still appear as a row) +
+// approved PTO, both used by the weekly grid. Each source is independently
+// guarded so a missing table never breaks the page.
+async function loadRosterAndPTO(){
+  const seen={}; ROSTER=[]; PTOREQS=[];
+  const addRoster=(rows)=>{(rows||[]).forEach(p=>{ if(!p||!p.name)return; const s=gSlug(p.name); if(seen[s])return; seen[s]=1; ROSTER.push({name:String(p.name).trim()}); });};
+  try{ const {data}=await sb.from('apb_techs').select('name,active').eq('active',true); addRoster(data); }catch(e){}
+  try{ const {data}=await sb.from('apb_report_roster').select('name,active').eq('active',true); addRoster(data); }catch(e){}
+  try{ const {data}=await sb.from('apb_pto').select('id,data'); PTOREQS=(data||[]).map(x=>x&&x.data).filter(Boolean); }catch(e){}
 }
 
 function updateSummary(){
@@ -511,6 +572,95 @@ function toggleTechSummary(){
   const shown=body.style.display!=='none';
   body.style.display=shown?'none':'';
   btn.textContent=shown?'Show ▼':'Hide ▲';
+}
+
+// ── Weekly timesheet status grid ────────────────────────────────────────────
+function gSlug(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
+function _ymd(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function _parseYMD(s){ const p=String(s||'').split('-').map(Number); return new Date(p[0],(p[1]||1)-1,p[2]||1); }
+function _mondayOf(d){ const x=new Date(d.getFullYear(),d.getMonth(),d.getDate()); const w=x.getDay(); x.setDate(x.getDate()+(w===0?-6:1-w)); return x; }
+function _weekKeys(monday){ const out=[]; for(let i=0;i<7;i++){ const d=new Date(monday.getFullYear(),monday.getMonth(),monday.getDate()+i); out.push(_ymd(d)); } return out; }
+function _onApprovedPTO(slug,key){ return PTOREQS.some(r=>r&&gSlug(r.name)===slug&&String(r.status||'').toLowerCase()==='approved'&&r.start<=key&&key<=r.end); }
+function _ptoHoursForWeek(slug,keys){
+  let h=0;
+  keys.forEach(k=>{ const dow=_parseYMD(k).getDay(); if(dow===0||dow===6||HOLIDAYS[k]) return;
+    if(_onApprovedPTO(slug,k)){ // half-day only if the whole request is a single half day
+      const half=PTOREQS.some(r=>r&&gSlug(r.name)===slug&&String(r.status||'').toLowerCase()==='approved'&&r.start===k&&r.end===k&&r.half);
+      h+=half?4:8;
+    }});
+  return h;
+}
+function _holidayHoursForWeek(keys){ let h=0; keys.forEach(k=>{ const dow=_parseYMD(k).getDay(); if(dow!==0&&dow!==6&&HOLIDAYS[k]) h+=8; }); return h; }
+function _vdate(v){ return String(v&&v.visit_date||'').slice(0,10); } // date-only key, robust to a timestamp
+function _workedMap(){ const m={}; visits.forEach(v=>{ const dk=_vdate(v); if(!dk)return; const k=gSlug(v.tech_name)+'|'+dk; m[k]=(m[k]||0)+parseFloat(v.total_hours||0); }); return m; }
+
+function shiftGridWeek(n){
+  if(!gridWeekStart) gridWeekStart=_mondayOf(new Date());
+  gridWeekStart=new Date(gridWeekStart.getFullYear(),gridWeekStart.getMonth(),gridWeekStart.getDate()+7*n);
+  renderWeekGrid();
+}
+function gridThisWeek(){ gridWeekStart=_mondayOf(new Date()); renderWeekGrid(); }
+function gridPickTech(i){
+  const row=GRID_ROWS[i]; if(!row) return;
+  const sel=document.getElementById('techFilter');
+  const opt=[...sel.options].find(o=>gSlug(o.value)===gSlug(row.name));
+  if(opt){ sel.value=opt.value; renderVisits(); document.getElementById('visitList').scrollIntoView({behavior:'smooth',block:'start'}); }
+}
+
+function renderWeekGrid(){
+  if(!gridWeekStart) gridWeekStart=_mondayOf(new Date());
+  const keys=_weekKeys(gridWeekStart);
+  const dow=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const start=_parseYMD(keys[0]), end=_parseYMD(keys[6]);
+  const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  document.getElementById('weekGridLabel').textContent=`${fmt(start)} – ${fmt(end)}, ${end.getFullYear()}`;
+  document.getElementById('weekGridHead').innerHTML =
+    '<th>Tech</th>'+keys.map((k,i)=>{ const d=_parseYMD(k); const hol=HOLIDAYS[k];
+      return `<th>${dow[i]}<div style="font-weight:600;color:var(--ink-3);font-size:10px">${d.getMonth()+1}/${d.getDate()}${hol?' •':''}</div></th>`; }).join('')
+    +'<th>Worked</th><th>OT</th><th>PTO</th><th>Hldy</th><th>Total</th><th>Status</th>';
+
+  const wm=_workedMap();
+  const holWk=_holidayHoursForWeek(keys);
+
+  // Rows = full roster ∪ anyone with hours this week (so nobody is hidden).
+  const names={}; ROSTER.forEach(r=>{ if(r&&r.name) names[gSlug(r.name)]={name:r.name}; });
+  visits.forEach(v=>{ if(v.tech_name&&keys.includes(_vdate(v))){ const s=gSlug(v.tech_name); if(!names[s]) names[s]={name:v.tech_name}; } });
+  GRID_ROWS=Object.values(names).sort((a,b)=>a.name.localeCompare(b.name));
+
+  const none='<span class="wg-none">0</span>';
+  let body='';
+  GRID_ROWS.forEach((row,idx)=>{
+    const sl=gSlug(row.name); let worked=0, ot=0;
+    const cells=keys.map(k=>{
+      const d=_parseYMD(k), wd=d.getDay(), h=wm[sl+'|'+k]||0;
+      if(h>0){ worked+=h; ot+=Math.max(0,h-8); return `<td><span class="wg-worked">${h.toFixed(1)}</span></td>`; }
+      if(HOLIDAYS[k]&&wd!==0&&wd!==6) return `<td><span class="wg-hol" title="${rvEsc(HOLIDAYS[k])}">Hol</span></td>`;
+      if(_onApprovedPTO(sl,k)) return '<td><span class="wg-pto">PTO</span></td>';
+      if(wd===0||wd===6) return '<td><span class="wg-none">·</span></td>';
+      return '<td><span class="wg-miss">—</span></td>';
+    }).join('');
+    const pto=_ptoHoursForWeek(sl,keys);
+    const total=worked+pto+holWk;
+    // "Missing" only if there was a workable weekday (not weekend/holiday/their PTO) with nothing submitted.
+    const workable=keys.filter(k=>{ const wd=_parseYMD(k).getDay(); return wd!==0&&wd!==6&&!HOLIDAYS[k]&&!_onApprovedPTO(sl,k); }).length;
+    let stat,cls;
+    if(worked>0){ stat='✓ In'; cls='wg-status-in'; }
+    else if(workable===0){ stat='Off'; cls='wg-status-off'; }
+    else { stat='⚠ Missing'; cls='wg-status-miss'; }
+    const rowCls=(worked===0&&workable>0)?'wg-missing-row':'';
+    body+=`<tr class="${rowCls}"><td class="tech-name wg-name" onclick="gridPickTech(${idx})">${rvEsc(row.name)}</td>${cells}`
+       +`<td>${worked?worked.toFixed(1):none}</td><td>${ot?ot.toFixed(1):none}</td>`
+       +`<td>${pto?pto.toFixed(1):none}</td><td>${holWk?holWk.toFixed(1):none}</td>`
+       +`<td class="wg-total">${total.toFixed(1)}</td><td class="${cls}">${stat}</td></tr>`;
+  });
+  document.getElementById('weekGridBody').innerHTML = body ||
+    '<tr><td colspan="14" style="text-align:center;color:var(--ink-3);padding:16px">No roster or entries for this week.</td></tr>';
+  document.getElementById('weekGridLegend').innerHTML =
+    '<span><i style="background:var(--green-soft)"></i> Worked hours</span>'+
+    '<span><i style="background:var(--amber-soft)"></i> Approved PTO</span>'+
+    '<span><i style="background:#E8F0FE"></i> Company holiday</span>'+
+    '<span><i style="background:#FDECEC"></i> Missing — weekday, nothing turned in</span>'+
+    '<span style="color:var(--ink-3)">Click a name to filter the list below.</span>';
 }
 
 // ── Filters ──
