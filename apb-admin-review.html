@@ -106,6 +106,7 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
 .week-grid .wg-status-miss{color:#C0392B;font-weight:700}
 .week-grid .wg-status-off{color:var(--ink-3);font-weight:700}
 .week-grid tr.wg-missing-row td{background:rgba(192,57,43,.045)}
+.week-grid tr.wg-section td{background:var(--panel-2);font-weight:800;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:7px 14px}
 .week-grid tr:hover td{background:var(--panel-2)}
 .week-grid .wg-name{cursor:pointer}
 .week-grid .wg-name:hover{color:var(--accent,#2457E6);text-decoration:underline}
@@ -567,11 +568,14 @@ function renderTechTable(){
 }
 
 function toggleTechSummary(){
-  const body=document.querySelector('#techSummaryPanel .tech-table').parentElement;
-  const btn=document.querySelector('#techSummaryPanel button');
-  const shown=body.style.display!=='none';
-  body.style.display=shown?'none':'';
-  btn.textContent=shown?'Show ▼':'Hide ▲';
+  // Hide only the TABLE, not the whole panel — otherwise the "Show" button gets
+  // hidden too and the section can't be brought back without a refresh.
+  const tbl=document.querySelector('#techSummaryPanel .tech-table');
+  const btn=document.querySelector('#techSummaryPanel .tech-summary-head button');
+  if(!tbl||!btn) return;
+  const hidden=tbl.style.display==='none';
+  tbl.style.display=hidden?'':'none';
+  btn.textContent=hidden?'Hide ▲':'Show ▼';
 }
 
 // ── Weekly timesheet status grid ────────────────────────────────────────────
@@ -603,18 +607,69 @@ function gridThisWeek(){ gridWeekStart=_mondayOf(new Date()); renderWeekGrid(); 
 function gridPickTech(i){
   const row=GRID_ROWS[i]; if(!row) return;
   const sel=document.getElementById('techFilter');
-  const opt=[...sel.options].find(o=>gSlug(o.value)===gSlug(row.name));
+  const opt=[...sel.options].find(o=>o.value&&_sameEmp(o.value,row.name));
   if(opt){ sel.value=opt.value; renderVisits(); document.getElementById('visitList').scrollIntoView({behavior:'smooth',block:'start'}); }
 }
 
+// Employees excluded from the timesheet board (office staff who don't submit timesheets).
+const GRID_EXCLUDE_FIRST = ['chelsea','nate'];
+// Salaried employees — everyone else is shown as Hourly. Matched by first name +
+// last-initial so "Joey Z." matches "Joey Zammataro". Edit this list as staff change.
+const GRID_SALARIED = [
+  'Jerry Clark','Christopher Collins','Michael Corbett','Christina Daglia','Skylar Ell',
+  'Robert Ferreira','Jason Garcia','Randall Kline','Jordan Moreno','Bryce Sander',
+  'Christopher Stones','Jhuber Vasquez','John Warren','Brandon Wezkiewicz','Joey Zammataro'
+];
+function _first(n){ return String(n||'').trim().toLowerCase().split(/\s+/)[0]||''; }
+function _lastInit(n){ const p=String(n||'').trim().toLowerCase().split(/\s+/); return p.length>1?(p[p.length-1][0]||''):''; }
+function _isExcluded(name){ return GRID_EXCLUDE_FIRST.includes(_first(name)); }
+function _isSalaried(name){ const f=_first(name),li=_lastInit(name); return GRID_SALARIED.some(s=>_first(s)===f&&_lastInit(s)===li); }
+// Same person? first name equal AND last name equal or an abbreviation of the
+// other ("Joey Z." vs "Joey Zammataro"). Keeps distinct people (Collins vs Corbett) apart.
+function _lastTok(n){ const p=String(n||'').trim().toLowerCase().replace(/\./g,'').split(/\s+/); return p.length>1?p[p.length-1]:''; }
+function _sameEmp(a,b){ if(_first(a)!==_first(b)) return false; const la=_lastTok(a),lb=_lastTok(b); if(!la||!lb) return true; return la===lb||la.startsWith(lb)||lb.startsWith(la); }
+// A merged row can have several name spellings (aliases); sum/match across all of them.
+function _rowDayHours(row,k,wm){ let h=0; row.aliases.forEach(a=>{ h+=wm[a+'|'+k]||0; }); return h; }
+function _rowOnPTO(row,k){ return PTOREQS.some(r=>r&&String(r.status||'').toLowerCase()==='approved'&&r.start<=k&&k<=r.end&&_sameEmp(r.name,row.name)); }
+function _rowPtoHours(row,keys){ let h=0; keys.forEach(k=>{ const wd=_parseYMD(k).getDay(); if(wd===0||wd===6||HOLIDAYS[k])return; if(_rowOnPTO(row,k)){ const half=PTOREQS.some(r=>r&&String(r.status||'').toLowerCase()==='approved'&&r.start===k&&r.end===k&&r.half&&_sameEmp(r.name,row.name)); h+=half?4:8; } }); return h; }
+
+function _wgRowHtml(row,idx,keys,wm,holWk){
+  const none='<span class="wg-none">0</span>';
+  let worked=0, ot=0;
+  const cells=keys.map(k=>{
+    const wd=_parseYMD(k).getDay(), h=_rowDayHours(row,k,wm);
+    if(h>0){ worked+=h; ot+=Math.max(0,h-8); return `<td><span class="wg-worked">${h.toFixed(1)}</span></td>`; }
+    if(HOLIDAYS[k]&&wd!==0&&wd!==6) return `<td><span class="wg-hol" title="${rvEsc(HOLIDAYS[k])}">Hol</span></td>`;
+    if(_rowOnPTO(row,k)) return '<td><span class="wg-pto">PTO</span></td>';
+    if(wd===0||wd===6) return '<td><span class="wg-none">·</span></td>';
+    return '<td><span class="wg-miss">—</span></td>';
+  }).join('');
+  const pto=_rowPtoHours(row,keys);
+  const total=worked+pto+holWk;
+  const workable=keys.filter(k=>{ const wd=_parseYMD(k).getDay(); return wd!==0&&wd!==6&&!HOLIDAYS[k]&&!_rowOnPTO(row,k); }).length;
+  let stat,cls;
+  if(worked>0){ stat='✓ In'; cls='wg-status-in'; }
+  else if(workable===0){ stat='Off'; cls='wg-status-off'; }
+  else { stat='⚠ Missing'; cls='wg-status-miss'; }
+  const rowCls=(worked===0&&workable>0)?'wg-missing-row':'';
+  return `<tr class="${rowCls}"><td class="tech-name wg-name" onclick="gridPickTech(${idx})">${rvEsc(row.name)}</td>${cells}`
+     +`<td>${worked?worked.toFixed(1):none}</td><td>${ot?ot.toFixed(1):none}</td>`
+     +`<td>${pto?pto.toFixed(1):none}</td><td>${holWk?holWk.toFixed(1):none}</td>`
+     +`<td class="wg-total">${total.toFixed(1)}</td><td class="${cls}">${stat}</td></tr>`;
+}
+
 function renderWeekGrid(){
+  const lbl=document.getElementById('weekGridLabel');
+  const head=document.getElementById('weekGridHead');
+  const bodyEl=document.getElementById('weekGridBody');
+  if(!lbl||!head||!bodyEl) return; // panel not on page — never throw and break other renders
   if(!gridWeekStart) gridWeekStart=_mondayOf(new Date());
   const keys=_weekKeys(gridWeekStart);
   const dow=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   const start=_parseYMD(keys[0]), end=_parseYMD(keys[6]);
   const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-  document.getElementById('weekGridLabel').textContent=`${fmt(start)} – ${fmt(end)}, ${end.getFullYear()}`;
-  document.getElementById('weekGridHead').innerHTML =
+  lbl.textContent=`${fmt(start)} – ${fmt(end)}, ${end.getFullYear()}`;
+  head.innerHTML =
     '<th>Tech</th>'+keys.map((k,i)=>{ const d=_parseYMD(k); const hol=HOLIDAYS[k];
       return `<th>${dow[i]}<div style="font-weight:600;color:var(--ink-3);font-size:10px">${d.getMonth()+1}/${d.getDate()}${hol?' •':''}</div></th>`; }).join('')
     +'<th>Worked</th><th>OT</th><th>PTO</th><th>Hldy</th><th>Total</th><th>Status</th>';
@@ -622,39 +677,28 @@ function renderWeekGrid(){
   const wm=_workedMap();
   const holWk=_holidayHoursForWeek(keys);
 
-  // Rows = full roster ∪ anyone with hours this week (so nobody is hidden).
-  const names={}; ROSTER.forEach(r=>{ if(r&&r.name) names[gSlug(r.name)]={name:r.name}; });
-  visits.forEach(v=>{ if(v.tech_name&&keys.includes(_vdate(v))){ const s=gSlug(v.tech_name); if(!names[s]) names[s]={name:v.tech_name}; } });
-  GRID_ROWS=Object.values(names).sort((a,b)=>a.name.localeCompare(b.name));
+  // Rows = full roster ∪ anyone with hours this week (so nobody is hidden), minus excluded
+  // office staff. Name variants of one person (e.g. "Joey Z." and "Joey Zammataro") merge
+  // into a single row that carries every spelling as an alias, so hours line up and there
+  // are no duplicate accounts.
+  const rows=[];
+  const addEmp=nm=>{ if(!nm) return; const ex=rows.find(r=>_sameEmp(r.name,nm));
+    if(ex){ ex.aliases.add(gSlug(nm)); if(_lastTok(nm).length>_lastTok(ex.name).length) ex.name=nm; return; }
+    rows.push({name:nm, aliases:new Set([gSlug(nm)])}); };
+  ROSTER.forEach(r=>{ if(r&&r.name) addEmp(r.name); });
+  visits.forEach(v=>{ if(v.tech_name&&keys.includes(_vdate(v))) addEmp(v.tech_name); });
+  const all=rows.filter(r=>!_isExcluded(r.name)).sort((a,b)=>a.name.localeCompare(b.name));
+  const hourly=all.filter(r=>!_isSalaried(r.name));
+  const salaried=all.filter(r=>_isSalaried(r.name));
+  GRID_ROWS=[...hourly,...salaried]; // flat, index-aligned with the click handler
 
-  const none='<span class="wg-none">0</span>';
-  let body='';
-  GRID_ROWS.forEach((row,idx)=>{
-    const sl=gSlug(row.name); let worked=0, ot=0;
-    const cells=keys.map(k=>{
-      const d=_parseYMD(k), wd=d.getDay(), h=wm[sl+'|'+k]||0;
-      if(h>0){ worked+=h; ot+=Math.max(0,h-8); return `<td><span class="wg-worked">${h.toFixed(1)}</span></td>`; }
-      if(HOLIDAYS[k]&&wd!==0&&wd!==6) return `<td><span class="wg-hol" title="${rvEsc(HOLIDAYS[k])}">Hol</span></td>`;
-      if(_onApprovedPTO(sl,k)) return '<td><span class="wg-pto">PTO</span></td>';
-      if(wd===0||wd===6) return '<td><span class="wg-none">·</span></td>';
-      return '<td><span class="wg-miss">—</span></td>';
-    }).join('');
-    const pto=_ptoHoursForWeek(sl,keys);
-    const total=worked+pto+holWk;
-    // "Missing" only if there was a workable weekday (not weekend/holiday/their PTO) with nothing submitted.
-    const workable=keys.filter(k=>{ const wd=_parseYMD(k).getDay(); return wd!==0&&wd!==6&&!HOLIDAYS[k]&&!_onApprovedPTO(sl,k); }).length;
-    let stat,cls;
-    if(worked>0){ stat='✓ In'; cls='wg-status-in'; }
-    else if(workable===0){ stat='Off'; cls='wg-status-off'; }
-    else { stat='⚠ Missing'; cls='wg-status-miss'; }
-    const rowCls=(worked===0&&workable>0)?'wg-missing-row':'';
-    body+=`<tr class="${rowCls}"><td class="tech-name wg-name" onclick="gridPickTech(${idx})">${rvEsc(row.name)}</td>${cells}`
-       +`<td>${worked?worked.toFixed(1):none}</td><td>${ot?ot.toFixed(1):none}</td>`
-       +`<td>${pto?pto.toFixed(1):none}</td><td>${holWk?holWk.toFixed(1):none}</td>`
-       +`<td class="wg-total">${total.toFixed(1)}</td><td class="${cls}">${stat}</td></tr>`;
-  });
-  document.getElementById('weekGridBody').innerHTML = body ||
-    '<tr><td colspan="14" style="text-align:center;color:var(--ink-3);padding:16px">No roster or entries for this week.</td></tr>';
+  const sect=(t,n)=>`<tr class="wg-section"><td colspan="14">${t} — ${n}</td></tr>`;
+  const emptyRow='<tr><td colspan="14" style="text-align:center;color:var(--ink-3);padding:10px">— none —</td></tr>';
+  let idx=0;
+  const emit=arr=>arr.map(row=>_wgRowHtml(row,idx++,keys,wm,holWk)).join('');
+  let body = sect('HOURLY',hourly.length) + (hourly.length?emit(hourly):emptyRow)
+           + sect('SALARIED',salaried.length) + (salaried.length?emit(salaried):emptyRow);
+  bodyEl.innerHTML = body;
   document.getElementById('weekGridLegend').innerHTML =
     '<span><i style="background:var(--green-soft)"></i> Worked hours</span>'+
     '<span><i style="background:var(--amber-soft)"></i> Approved PTO</span>'+
@@ -1237,7 +1281,8 @@ Object.assign(window, {
   closeReviewModal, deleteVisit, exportCSV, exportExcel, exportQuickBooks, flagFromModal, markAllReviewed,
   openReviewModal, saveDesc, saveHours, setFilter, startEditDesc, startEditHours,
   toggleBillable, toggleCard, toggleReviewed, toggleTechSummary, renderVisits,
-  startEditJob, cancelEditJob, onRevVesselChange, saveJobLine, startEditDate, saveVisitDate
+  startEditJob, cancelEditJob, onRevVesselChange, saveJobLine, startEditDate, saveVisitDate,
+  shiftGridWeek, gridThisWeek, gridPickTech
 });
 })();
 </script>
