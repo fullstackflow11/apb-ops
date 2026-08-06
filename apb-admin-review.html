@@ -242,6 +242,7 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
   <button class="btn btn-export" onclick="exportExcel()" title="Full timesheet review as a formatted Excel workbook">⬇ Export Excel</button>
   <button class="btn btn-export" onclick="exportCSV()">⬇ Export CSV</button>
   <button class="btn btn-export" onclick="exportQuickBooks()" title="Reviewed, billable lines in Chelsea's QuickBooks format">⬇ Export for QuickBooks</button>
+  <button class="btn btn-export" onclick="exportWeeklyLabor()" title="Weekly Labor sheet (Mon–Sun by employee). Set the From/To dates to pick the range — one tab per week; otherwise exports the week shown in the grid.">⬇ Weekly Labor Sheet</button>
   <button class="btn btn-primary" onclick="batchApproveAll()" id="batchAllBtn" style="display:none">✓ Approve All Pending</button>
   <span id="userEmail" style="font-size:11px;color:var(--ink-3);font-family:var(--mono);"></span>
   <button class="btn btn-ghost" id="signOutBtn" style="display:none" onclick="APBAuth.signOut().then(()=>location.reload())">Sign out</button>
@@ -633,6 +634,20 @@ function _rowDayHours(row,k,wm){ let h=0; row.aliases.forEach(a=>{ h+=wm[a+'|'+k
 function _rowOnPTO(row,k){ return PTOREQS.some(r=>r&&String(r.status||'').toLowerCase()==='approved'&&r.start<=k&&k<=r.end&&_sameEmp(r.name,row.name)); }
 function _rowPtoHours(row,keys){ let h=0; keys.forEach(k=>{ const wd=_parseYMD(k).getDay(); if(wd===0||wd===6||HOLIDAYS[k])return; if(_rowOnPTO(row,k)){ const half=PTOREQS.some(r=>r&&String(r.status||'').toLowerCase()==='approved'&&r.start===k&&r.end===k&&r.half&&_sameEmp(r.name,row.name)); h+=half?4:8; } }); return h; }
 
+// Build the employee rows (roster ∪ people with hours), merging name variants into one row
+// (aliases), dropping excluded office staff, split into hourly/salaried. Pass weekKeys to also
+// pull in anyone with hours that specific week; pass null to include everyone with any hours.
+function _buildRows(weekKeys){
+  const rows=[];
+  const addEmp=nm=>{ if(!nm) return; const ex=rows.find(r=>_sameEmp(r.name,nm));
+    if(ex){ ex.aliases.add(gSlug(nm)); if(_lastTok(nm).length>_lastTok(ex.name).length) ex.name=nm; return; }
+    rows.push({name:nm, aliases:new Set([gSlug(nm)])}); };
+  ROSTER.forEach(r=>{ if(r&&r.name) addEmp(r.name); });
+  (weekKeys ? visits.filter(v=>weekKeys.includes(_vdate(v))) : visits).forEach(v=>{ if(v.tech_name) addEmp(v.tech_name); });
+  const all=rows.filter(r=>!_isExcluded(r.name)).sort((a,b)=>a.name.localeCompare(b.name));
+  return { hourly: all.filter(r=>!_isSalaried(r.name)), salaried: all.filter(r=>_isSalaried(r.name)) };
+}
+
 function _wgRowHtml(row,idx,keys,wm,holWk){
   const none='<span class="wg-none">0</span>';
   let worked=0, ot=0;
@@ -677,19 +692,7 @@ function renderWeekGrid(){
   const wm=_workedMap();
   const holWk=_holidayHoursForWeek(keys);
 
-  // Rows = full roster ∪ anyone with hours this week (so nobody is hidden), minus excluded
-  // office staff. Name variants of one person (e.g. "Joey Z." and "Joey Zammataro") merge
-  // into a single row that carries every spelling as an alias, so hours line up and there
-  // are no duplicate accounts.
-  const rows=[];
-  const addEmp=nm=>{ if(!nm) return; const ex=rows.find(r=>_sameEmp(r.name,nm));
-    if(ex){ ex.aliases.add(gSlug(nm)); if(_lastTok(nm).length>_lastTok(ex.name).length) ex.name=nm; return; }
-    rows.push({name:nm, aliases:new Set([gSlug(nm)])}); };
-  ROSTER.forEach(r=>{ if(r&&r.name) addEmp(r.name); });
-  visits.forEach(v=>{ if(v.tech_name&&keys.includes(_vdate(v))) addEmp(v.tech_name); });
-  const all=rows.filter(r=>!_isExcluded(r.name)).sort((a,b)=>a.name.localeCompare(b.name));
-  const hourly=all.filter(r=>!_isSalaried(r.name));
-  const salaried=all.filter(r=>_isSalaried(r.name));
+  const {hourly,salaried}=_buildRows(keys);
   GRID_ROWS=[...hourly,...salaried]; // flat, index-aligned with the click handler
 
   const sect=(t,n)=>`<tr class="wg-section"><td colspan="14">${t} — ${n}</td></tr>`;
@@ -1176,6 +1179,53 @@ function exportExcel(){
   showToast('Excel downloaded');
 }
 
+// ── Export Weekly Labor sheet — the "Week of" layout, one tab per week ──────────
+// Uses the From/To date filters to pick the range (each Mon–Sun week = one tab);
+// if no range is set, exports the week currently shown in the grid. Hire Date and
+// Salary Actual are intentionally left blank (the app doesn't hold that data).
+function exportWeeklyLabor(){
+  if(typeof XLSX==='undefined'){ showToast('Excel tools still loading — try again in a second'); return; }
+  const from=document.getElementById('dateFrom').value, to=document.getElementById('dateTo').value;
+  let weeks=[];
+  if(from&&to){
+    let m=_mondayOf(_parseYMD(from)); const end=_parseYMD(to); let guard=0;
+    while(m<=end && guard++<120){ weeks.push(new Date(m)); m=new Date(m.getFullYear(),m.getMonth(),m.getDate()+7); }
+  }
+  if(!weeks.length) weeks=[gridWeekStart||_mondayOf(new Date())];
+  const groups=_buildRows(null);           // same employee list on every tab
+  const wm=_workedMap();                    // hours by name-slug|date (week-independent)
+  const header=['Last','First','Hire Date','Mon','Tue','Wed','Thu','Fri','Sat','Sun','Total','Holiday','PTO','Total w/PTO/Hldy','Salary Actual'];
+  const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  const num=n=>Math.round((n||0)*100)/100;
+  const splitName=nm=>{ const t=String(nm||'').trim().split(/\s+/); return t.length>1?[t[t.length-1],t.slice(0,-1).join(' ')]:[nm||'','']; };
+  const wb=XLSX.utils.book_new();
+  weeks.forEach(mon=>{
+    const keys=_weekKeys(mon), holWk=_holidayHoursForWeek(keys);
+    const s=_parseYMD(keys[0]), e=_parseYMD(keys[6]);
+    const aoa=[['Week of', `${fmt(s)} – ${fmt(e)}, ${e.getFullYear()}`], [], header];
+    const emitRow=row=>{
+      const [last,first]=splitName(row.name);
+      let worked=0; const days=keys.map(k=>{ const h=_rowDayHours(row,k,wm); worked+=h; return num(h); });
+      const pto=_rowPtoHours(row,keys), totalAll=worked+pto+holWk;
+      aoa.push([last,first,'',...days,num(worked),num(holWk),num(pto),num(totalAll),'']);
+    };
+    aoa.push(['HOURLY']); groups.hourly.forEach(emitRow);
+    aoa.push(['SALARIED']); groups.salaried.forEach(emitRow);
+    // production-hours total row across everyone
+    const allRows=[...groups.hourly,...groups.salaried];
+    const dayTot=keys.map(k=>allRows.reduce((a,row)=>a+_rowDayHours(row,k,wm),0));
+    aoa.push([]);
+    aoa.push(['Total Production Hours','','',...dayTot.map(num),num(dayTot.reduce((a,b)=>a+b,0))]);
+    const ws=XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols']=[{wch:16},{wch:14},{wch:11}].concat(Array(7).fill({wch:6})).concat([{wch:8},{wch:8},{wch:7},{wch:15},{wch:12}]);
+    let nm=`${fmt(s)} - ${fmt(e)}`.replace(/[\\\/\?\*\[\]:]/g,'').slice(0,28), base=nm, i=2;
+    while(wb.SheetNames.includes(nm)){ nm=(base+' '+i++).slice(0,31); }
+    XLSX.utils.book_append_sheet(wb,ws,nm||'Week');
+  });
+  XLSX.writeFile(wb, (from&&to)?`APB-Weekly-Labor_${from}_to_${to}.xlsx`:`APB-Weekly-Labor.xlsx`);
+  showToast('Weekly Labor sheet downloaded');
+}
+
 // ── Final invoice description (Chelsea's format: MM-DD-YY TECHCODE: description) ──
 function techCode(name){ name=(name||'').trim(); if(!name) return ''; const p=name.split(/\s+/); return ((p[0][0]||'')+(p[p.length-1]||'')).toUpperCase().replace(/[^A-Z]/g,''); }
 function fmtInvDate(d){ if(!d) return ''; const p=String(d).slice(0,10).split('-'); return p.length<3?String(d):p[1]+'-'+p[2]+'-'+p[0].slice(2); }
@@ -1282,7 +1332,7 @@ Object.assign(window, {
   openReviewModal, saveDesc, saveHours, setFilter, startEditDesc, startEditHours,
   toggleBillable, toggleCard, toggleReviewed, toggleTechSummary, renderVisits,
   startEditJob, cancelEditJob, onRevVesselChange, saveJobLine, startEditDate, saveVisitDate,
-  shiftGridWeek, gridThisWeek, gridPickTech
+  shiftGridWeek, gridThisWeek, gridPickTech, exportWeeklyLabor
 });
 })();
 </script>
