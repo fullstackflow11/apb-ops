@@ -324,12 +324,12 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
   <!-- Weekly timesheet status grid (who turned in, by day) -->
   <div class="tech-summary" id="weekGridPanel" style="margin-bottom:16px">
     <div class="tech-summary-head">
-      <h3>Weekly Timesheet Status</h3>
+      <h3>Weekly Timesheet Status <span style="opacity:.4;font-weight:600;font-size:9px;letter-spacing:.05em">BUILD 8-06b</span></h3>
       <div class="week-nav">
-        <button class="btn btn-ghost" style="font-size:12px;padding:5px 11px" onclick="shiftGridWeek(-1)">◀ Prev</button>
+        <button type="button" id="wgPrev" class="btn btn-ghost" style="font-size:12px;padding:5px 11px">◀ Prev</button>
         <span class="wk-label" id="weekGridLabel">—</span>
-        <button class="btn btn-ghost" style="font-size:12px;padding:5px 11px" onclick="shiftGridWeek(1)">Next ▶</button>
-        <button class="btn btn-ghost" style="font-size:11px;padding:5px 11px" onclick="gridThisWeek()">This week</button>
+        <button type="button" id="wgNext" class="btn btn-ghost" style="font-size:12px;padding:5px 11px">Next ▶</button>
+        <button type="button" id="wgThisWeek" class="btn btn-ghost" style="font-size:11px;padding:5px 11px">This week</button>
       </div>
     </div>
     <div style="overflow-x:auto">
@@ -341,17 +341,8 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
     <div class="week-grid-legend" id="weekGridLegend"></div>
   </div>
 
-  <!-- Tech hours summary (collapsible) -->
-  <div class="tech-summary" id="techSummaryPanel">
-    <div class="tech-summary-head">
-      <h3>Hours by Tech</h3>
-      <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="toggleTechSummary()">Hide ▲</button>
-    </div>
-    <table class="tech-table">
-      <thead><tr><th>Tech</th><th>Visits</th><th>Total Hours</th><th>Regular</th><th>Overtime</th><th>Pending Lines</th><th>Reviewed</th></tr></thead>
-      <tbody id="techTableBody"></tbody>
-    </table>
-  </div>
+  <!-- (The old "Hours by Tech" summary was removed — the Weekly Timesheet Status
+       grid above now covers per-tech hours, so it was redundant.) -->
 
   <!-- Visit list -->
   <div id="visitList"><div class="spinner"></div></div>
@@ -510,6 +501,7 @@ async function loadData(){
   document.getElementById('vesselFilter').innerHTML='<option value="">All Vessels</option>'+vessels.map(v=>`<option>${rvEsc(v)}</option>`).join('');
   await loadRosterAndPTO();
   updateSummary(); renderTechTable(); renderWeekGrid(); renderVisits();
+  _wireGridNav();
 }
 
 // Full active roster (so people who submitted NOTHING still appear as a row) +
@@ -543,6 +535,7 @@ function updateSummary(){
 }
 
 function renderTechTable(){
+  if(!document.getElementById('techTableBody')) return; // panel removed — no-op
   const techData={};
   visits.forEach(v=>{
     const t=v.tech_name||'Unknown';
@@ -605,6 +598,18 @@ function shiftGridWeek(n){
   renderWeekGrid();
 }
 function gridThisWeek(){ gridWeekStart=_mondayOf(new Date()); renderWeekGrid(); }
+// Wire the week-nav buttons directly (these functions live inside this script's
+// scope, so binding here never depends on them being exposed to window).
+let _navWired=false;
+function _wireGridNav(){
+  if(_navWired) return;
+  const prev=document.getElementById('wgPrev'), next=document.getElementById('wgNext'), tw=document.getElementById('wgThisWeek');
+  if(!prev||!next||!tw) return;
+  prev.addEventListener('click', ()=>shiftGridWeek(-1));
+  next.addEventListener('click', ()=>shiftGridWeek(1));
+  tw.addEventListener('click', gridThisWeek);
+  _navWired=true;
+}
 function gridPickTech(i){
   const row=GRID_ROWS[i]; if(!row) return;
   const sel=document.getElementById('techFilter');
