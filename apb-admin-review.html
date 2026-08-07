@@ -167,6 +167,10 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
 .edit-actions{display:flex;gap:6px;margin-top:6px}
 .save-edit-btn{font-size:11px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:5px 12px;cursor:pointer}
 .cancel-edit-btn{font-size:11px;font-weight:600;background:var(--panel-2);color:var(--ink-3);border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer}
+/* Vessel/Job editor — a clean floating panel so it stops overlapping the description */
+.job-edit-pop{position:absolute;z-index:30;top:100%;left:0;margin-top:6px;width:300px;max-width:82vw;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:14px;white-space:normal}
+.job-edit-pop .je-lbl{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-bottom:5px}
+.job-edit-pop select.edit-input{margin-top:0}
 .hours-cell{font-family:var(--mono);font-weight:600;color:var(--ink)}
 .audit-tag{font-size:10px;color:var(--ink-4);margin-top:2px;font-family:var(--mono)}
 .edited-tag{font-size:10px;color:var(--amber);margin-top:2px;font-family:var(--mono)}
@@ -811,17 +815,19 @@ function renderCard(v,vesselF){
       <thead><tr><th>Job</th><th>Work Description</th><th>Hours</th><th>Billable</th><th>Status</th></tr></thead>
       <tbody>${vLines.map(l=>`
         <tr>
-          <td style="white-space:nowrap;min-width:150px">
+          <td style="white-space:nowrap;min-width:150px;position:relative">
             <span id="job-${l.id}">
               <span class="job-tag">${rvEsc(l.job_number||l.job_no||(l.shop_category?String(l.shop_category).split(' ').slice(0,2).join(' '):'')||'—')}</span>
-              ${l.reviewed?'':`<span class="edit-icon" onclick="startEditJob('${l.id}')">✎</span>`}
+              <span class="edit-icon" onclick="startEditJob('${l.id}')" title="Change vessel / job">✎</span>
               <div style="font-size:11px;color:var(--ink-3);font-weight:600;margin-top:3px">${rvEsc(l.vessel_name||headerVessel)}</div>
               ${l.job_name?`<div style="font-size:11px;color:var(--ink-2);margin-top:1px">${rvEsc(l.job_name)}</div>`:''}
             </span>
-            <div id="job-edit-${l.id}" style="display:none;min-width:210px">
-              <select class="edit-input" id="job-vessel-${l.id}" onchange="onRevVesselChange('${l.id}')" style="width:100%;margin-bottom:5px">${revVesselOptions(l.engagement_id)}</select>
-              <select class="edit-input" id="job-sel-${l.id}" style="width:100%">${revJobOptions(l.engagement_id,l.job_id)}</select>
-              <div class="edit-actions">
+            <div id="job-edit-${l.id}" class="job-edit-pop" style="display:none">
+              <div class="je-lbl">Vessel / Project</div>
+              <select class="edit-input" id="job-vessel-${l.id}" onchange="onRevVesselChange('${l.id}')" style="width:100%;margin:0 0 10px">${revVesselOptions(l.engagement_id)}</select>
+              <div class="je-lbl">Job</div>
+              <select class="edit-input" id="job-sel-${l.id}" style="width:100%;margin:0">${revJobOptions(l.engagement_id,l.job_id)}</select>
+              <div class="edit-actions" style="margin-top:12px">
                 <button class="save-edit-btn" onclick="saveJobLine('${l.id}')">Save</button>
                 <button class="cancel-edit-btn" onclick="cancelEditJob('${l.id}')">Cancel</button>
               </div>
@@ -1342,4 +1348,4 @@ Object.assign(window, {
 })();
 </script>
 </body>
-</html>  
+</html>
