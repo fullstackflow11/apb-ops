@@ -170,6 +170,7 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
 /* Vessel/Job editor — a clean floating panel so it stops overlapping the description */
 .job-edit-pop{position:absolute;z-index:30;top:100%;left:0;margin-top:6px;width:300px;max-width:82vw;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:14px;white-space:normal}
 .job-edit-pop .je-lbl{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-bottom:5px}
+.approved-by{font-size:10px;color:var(--ink-4);margin-top:4px;font-family:var(--mono);line-height:1.3}
 .job-edit-pop select.edit-input{margin-top:0}
 .hours-cell{font-family:var(--mono);font-weight:600;color:var(--ink)}
 .audit-tag{font-size:10px;color:var(--ink-4);margin-top:2px;font-family:var(--mono)}
@@ -864,7 +865,7 @@ function renderCard(v,vesselF){
               <span class="billable-label ${isBillable(l)?'yes':'no'}">${isBillable(l)?'Bill':'Non'}</span>
             </div>
           </td>
-          <td><button class="review-btn ${l.reviewed?'done':'pending'}" onclick="${l.reviewed?`toggleReviewed('${l.id}',false,this)`:`openReviewModal('${l.id}')`}">${l.reviewed?'✓ Done':'Review'}</button></td>
+          <td><button class="review-btn ${l.reviewed?'done':'pending'}" onclick="${l.reviewed?`toggleReviewed('${l.id}',false,this)`:`openReviewModal('${l.id}')`}">${l.reviewed?'✓ Done':'Review'}</button><div class="approved-by" id="appr-${l.id}" style="${l.reviewed&&l.reviewed_by?'':'display:none'}">${apprLabel(l)}</div></td>
         </tr>`).join('')}
       </tbody>
     </table>`
@@ -920,14 +921,25 @@ function toggleSelect(visitId){
 }
 function clearSelection(){selectedVisits.clear();document.getElementById('batchBar').classList.remove('visible');renderVisits();}
 
+// ── Approver stamp: who approved a line + when ──
+function _reviewStamp(reviewed){
+  return reviewed
+    ? { reviewed:true,  reviewed_by:(currentUser&&currentUser.email)||'admin', reviewed_at:new Date().toISOString() }
+    : { reviewed:false, reviewed_by:null, reviewed_at:null };
+}
+function _applyStamp(l,s){ if(!l) return; l.reviewed=s.reviewed; l.reviewed_by=s.reviewed_by; l.reviewed_at=s.reviewed_at; }
+function fmtApprovedDate(iso){ try{ return new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric'}); }catch(e){ return ''; } }
+function apprLabel(l){ if(!l||!l.reviewed||!l.reviewed_by) return ''; return 'approved by '+rvEsc(String(l.reviewed_by).split('@')[0])+(l.reviewed_at?' · '+fmtApprovedDate(l.reviewed_at):''); }
+
 // ── Batch approve ──
 async function batchApproveSelected(){
   const ids=[];
   selectedVisits.forEach(visitId=>{lines.filter(l=>l.timesheet_id===visitId&&!l.reviewed).forEach(l=>ids.push(l.id));});
   if(!ids.length){showToast('No pending lines in selection');return;}
-  const{error}=await sb.from('apb_timesheet_lines').update({reviewed:true}).in('id',ids);
+  const stamp=_reviewStamp(true);
+  const{error}=await sb.from('apb_timesheet_lines').update(stamp).in('id',ids);
   if(error){showToast('Error: '+error.message);return;}
-  ids.forEach(id=>{const l=lines.find(x=>x.id===id);if(l)l.reviewed=true;});
+  ids.forEach(id=>_applyStamp(lines.find(x=>x.id===id),stamp));
   showToast(`✓ ${ids.length} lines approved`);
   clearSelection(); updateSummary(); renderTechTable(); renderVisits();
 }
@@ -936,9 +948,10 @@ async function batchApproveAll(){
   if(!pending.length){showToast('Nothing pending');return;}
   if(!confirm(`Approve all ${pending.length} pending lines?`))return;
   const ids=pending.map(l=>l.id);
-  const{error}=await sb.from('apb_timesheet_lines').update({reviewed:true}).in('id',ids);
+  const stamp=_reviewStamp(true);
+  const{error}=await sb.from('apb_timesheet_lines').update(stamp).in('id',ids);
   if(error){showToast('Error: '+error.message);return;}
-  pending.forEach(l=>l.reviewed=true);
+  pending.forEach(l=>_applyStamp(l,stamp));
   showToast(`✓ All ${ids.length} lines approved`);
   updateSummary(); renderTechTable(); renderVisits();
 }
@@ -988,13 +1001,12 @@ function closeReviewModal() {
 async function approveFromModal() {
   if (!_modalLineId) return;
   const note = document.getElementById('rm-note').value.trim();
-  const editor = currentUser?.email || 'admin';
-  const updates = { reviewed: true };
+  const updates = _reviewStamp(true);
   if (note) updates.review_note = note;
   const { error } = await sb.from('apb_timesheet_lines').update(updates).eq('id', _modalLineId);
   if (error) { showToast('Error: ' + error.message); return; }
   const l = lines.find(x => x.id === _modalLineId);
-  if (l) { l.reviewed = true; if (note) l.review_note = note; }
+  if (l) { _applyStamp(l, updates); if (note) l.review_note = note; }
   closeReviewModal();
   showToast('✓ Approved');
   updateSummary(); renderTechTable(); renderVisits();
@@ -1003,10 +1015,11 @@ async function approveFromModal() {
 async function flagFromModal() {
   if (!_modalLineId) return;
   const note = document.getElementById('rm-note').value.trim() || 'Flagged for follow-up';
-  const { error } = await sb.from('apb_timesheet_lines').update({ review_note: note, reviewed: false }).eq('id', _modalLineId);
+  const stamp = _reviewStamp(false);   // flagging un-approves → clear the approver
+  const { error } = await sb.from('apb_timesheet_lines').update({ ...stamp, review_note: note }).eq('id', _modalLineId);
   if (error) { showToast('Error: ' + error.message); return; }
   const l = lines.find(x => x.id === _modalLineId);
-  if (l) { l.review_note = note; }
+  if (l) { _applyStamp(l, stamp); l.review_note = note; }
   closeReviewModal();
   showToast('⚑ Flagged');
 }
@@ -1029,11 +1042,15 @@ async function toggleBillable(lineId,billable){
   if(label){label.textContent=billable?'Bill':'Non';label.className='billable-label '+(billable?'yes':'no');}
 }
 async function toggleReviewed(lineId,reviewed,btn){
-  const{error}=await sb.from('apb_timesheet_lines').update({reviewed}).eq('id',lineId);
+  const stamp=_reviewStamp(reviewed);
+  const{error}=await sb.from('apb_timesheet_lines').update(stamp).eq('id',lineId);
   if(error){showToast('Error updating');return;}
-  const l=lines.find(x=>x.id===lineId);if(l)l.reviewed=reviewed;
+  const l=lines.find(x=>x.id===lineId); _applyStamp(l,stamp);
   btn.className='review-btn '+(reviewed?'done':'pending');
   btn.textContent=reviewed?'✓ Done':'Review';
+  // update the "approved by" note in place (no full re-render, keeps the card open)
+  const ap=document.getElementById('appr-'+lineId);
+  if(ap){ ap.textContent=reviewed?apprLabel(l):''; ap.style.display=(reviewed&&l&&l.reviewed_by)?'':'none'; }
   showToast(reviewed?'Approved':'Unapproved');
   updateSummary(); renderTechTable();
   // Update card border
@@ -1056,9 +1073,10 @@ async function markAllReviewed(visitId){
   let vLines=lines.filter(l=>l.timesheet_id===visitId&&!l.reviewed);
   if(vesselF&&v) vLines=vLines.filter(l=>effLineVessel(l,v)===vesselF);
   if(!vLines.length)return;
-  const{error}=await sb.from('apb_timesheet_lines').update({reviewed:true}).in('id',vLines.map(l=>l.id));
+  const stamp=_reviewStamp(true);
+  const{error}=await sb.from('apb_timesheet_lines').update(stamp).in('id',vLines.map(l=>l.id));
   if(error){showToast('Error');return;}
-  vLines.forEach(l=>l.reviewed=true);
+  vLines.forEach(l=>_applyStamp(l,stamp));
   showToast('All lines approved ✓');updateSummary();renderTechTable();renderVisits();
 }
 async function deleteVisit(visitId){
