@@ -318,6 +318,18 @@
       return;
     }
 
+    // No fix at all is refused server-side under the blocking policy.
+    // Saying so here avoids a pointless round trip and gives better advice.
+    if(fix && fix.ok === false){
+      busy = false;
+      paint("fault-state", "No fix", "", "", "",
+        "Your phone could not get a location, so nothing was recorded.\n\n"
+        + "Step outside or away from the hull and try again. See a manager if it keeps failing.");
+      $("note").style.whiteSpace = "pre-line";
+      $("doneBtn").textContent = "Try again";
+      return;
+    }
+
     $("workingMsg").textContent = "Recording";
 
     const payload = {
@@ -398,6 +410,14 @@
         localStorage.removeItem(PIN_KEY);
         paint("flag-state","Check PIN","","","", (out && out.message) || "That PIN isn't recognized. Try again, or see a manager.");
         setTimeout(() => { document.body.className=""; pin=""; entry=""; paintPips(); show("pin"); }, 2600);
+      }else if(code === "out_of_range"){
+        paint("fault-state", "Too far", "", "", "",
+          (out && out.message) || "You are not at the job site. Nothing was recorded.");
+        $("doneBtn").textContent = "Try again";
+      }else if(code === "no_location"){
+        paint("fault-state", "No fix", "", "", "",
+          (out && out.message) || "Your phone could not get a location. Nothing was recorded.");
+        $("doneBtn").textContent = "Try again";
       }else{
         paint("flag-state","Hold up","","","", (out && out.message) || "Something went wrong. Show this to a manager.");
       }
