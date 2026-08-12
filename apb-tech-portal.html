@@ -210,7 +210,7 @@ html,body{height:100%;background:var(--bg);color:var(--ink);font-family:Inter,-a
     </div>
     <button class="signout-btn" onclick="logout()">Sign Out</button>
   </div>
-  <div id="punchBar" style="margin:0 0 14px;background:#fff;border:1px solid #DDE1E8;border-left:3px solid #C7CED9;border-radius:12px;padding:13px 15px">
+  <div id="punchBar" style="display:none;margin:0 0 14px;background:#fff;border:1px solid #DDE1E8;border-left:3px solid #C7CED9;border-radius:12px;padding:13px 15px">
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <div style="flex:1;min-width:150px">
         <div id="punchState" style="font-size:14px;font-weight:700;color:#0D1626">Clock</div>
@@ -525,13 +525,20 @@ function punchNote(msg,bad){
   n.textContent=msg||'';
 }
 
+let punchEnabled=false;
+
 async function loadPunchState(){
   if(!apbToken) return;
   try{
     const{data:r}=await sb.rpc('punch_status_token',{p_token:apbToken});
-    if(r&&r.ok){ punchState=r.state||'out'; punchSince=r.since||null; }
-  }catch(e){}
-  paintPunch();
+    if(r&&r.ok){
+      punchEnabled = r.enabled === true;
+      if(punchEnabled){ punchState=r.state||'out'; punchSince=r.since||null; }
+    }
+  }catch(e){ punchEnabled=false; }
+  const bar=document.getElementById('punchBar');
+  if(bar) bar.style.display = punchEnabled ? '' : 'none';
+  if(punchEnabled) paintPunch();
 }
 
 // Must run inside the tap handler — iOS will not prompt for a fix
@@ -674,7 +681,6 @@ document.addEventListener('DOMContentLoaded',function(){
   var m=document.getElementById('punchMain'), l=document.getElementById('punchLunch');
   if(m) m.addEventListener('click',function(){ doPortalPunch(m.dataset.a||'in'); });
   if(l) l.addEventListener('click',function(){ doPortalPunch('lunch'); });
-  paintPunch();
 });
 
 function logout(){try{if(apbToken)sb.rpc('apb_tech_logout',{p_token:apbToken});}catch(e){}apbToken=null;try{sessionStorage.removeItem('apb_tech_token');}catch(e){}currentTech=null;selectedPin='';document.getElementById('appScreen').classList.remove('active');document.getElementById('loginScreen').classList.add('active');document.querySelectorAll('.tech-btn').forEach(b=>b.classList.remove('selected'));updatePinDots();document.getElementById('loginError').textContent='';resetForm();}
