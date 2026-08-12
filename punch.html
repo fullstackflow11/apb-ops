@@ -150,11 +150,31 @@
   <div class="rule"></div>
   <div class="fill">
     <div id="clock" class="stamp" style="color:var(--hull);text-align:center;font-size:72px">--:--</div>
-    <div class="hint">The clock knows whether you're coming or going. Just punch.</div>
+    <div class="site" id="whoAmI" style="font-size:24px;text-align:center;margin-top:14px">&nbsp;</div>
+    <div class="hint" id="stateHint">&nbsp;</div>
   </div>
   <div class="foot">
-    <button class="action" id="punchBtn">Punch</button>
+    <button class="action" id="punchBtn">Punch In</button>
+    <button class="action" id="lunchBtn" style="margin-top:10px;background:var(--brass)" hidden>Lunch</button>
     <button class="ghost" id="switchBtn">Not you? Change PIN</button>
+  </div>
+</section>
+
+<!-- ---------- 2b. CONFIRM ---------- -->
+<section id="confirm" class="screen">
+  <header>
+    <div class="eyebrow">Confirm</div>
+    <div class="site" id="confirmAction">Punch In</div>
+  </header>
+  <div class="rule"></div>
+  <div class="fill" style="text-align:center">
+    <div class="eyebrow" style="margin-bottom:10px">You are punching as</div>
+    <div class="site" id="confirmName" style="font-size:42px;line-height:1.05">&mdash;</div>
+    <div class="hint">This goes on their attendance record. If that isn't you, go back.</div>
+  </div>
+  <div class="foot">
+    <button class="action" id="confirmBtn">Yes, that's me</button>
+    <button class="ghost" id="cancelBtn">Not me &mdash; go back</button>
   </div>
 </section>
 
@@ -188,6 +208,19 @@
   const QUEUE_KEY  = "apb_punch_queue";
   const PIN_KEY    = "apb_punch_pin";
   const REJECT_KEY = "apb_punch_rejected";
+  const DEVICE_KEY = "apb_punch_device";
+
+  // A random per-handset id. It identifies the phone, not the person,
+  // and exists so one phone punching several techs is visible.
+  function deviceId(){
+    let d = localStorage.getItem(DEVICE_KEY);
+    if(!d){
+      d = (crypto && crypto.randomUUID) ? crypto.randomUUID()
+        : "dev-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,10);
+      localStorage.setItem(DEVICE_KEY, d);
+    }
+    return d;
+  }
   const locId     = new URLSearchParams(location.search).get("loc");
 
   let pin = localStorage.getItem(PIN_KEY) || "";
@@ -243,10 +276,57 @@
   }
 
   /* ---------- ready ---------- */
+  // The page cannot guess whether a clocked-in tech is going to lunch or
+  // going home, so the server tells us the state and we show the buttons
+  // that make sense from it.
+  let state = "out";
+  let techName = "";
+  let pendingAction = null;
+
   function toReady(){
     show("ready");
     tickClock();
     loadSiteName();
+    loadState();
+  }
+
+  function paintButtons(){
+    const punch = $("punchBtn"), lunch = $("lunchBtn"), hint = $("stateHint");
+    if(state === "in"){
+      punch.textContent = "Punch Out";  punch.dataset.action = "out";
+      lunch.textContent = "Lunch";      lunch.dataset.action = "lunch";
+      lunch.hidden = false;
+      hint.textContent = sinceText("Clocked in since");
+    }else if(state === "lunch"){
+      punch.textContent = "Back from Lunch"; punch.dataset.action = "back";
+      lunch.hidden = true;
+      hint.textContent = sinceText("At lunch since");
+    }else{
+      punch.textContent = "Punch In";   punch.dataset.action = "in";
+      lunch.hidden = true;
+      hint.textContent = "Tap to start your day.";
+    }
+  }
+
+  let sinceAt = null;
+  function sinceText(label){
+    return sinceAt ? label + " " + timeNow(new Date(sinceAt)) : "\u00a0";
+  }
+
+  async function loadState(){
+    try{
+      const out = await send("punch_status", {p_pin: pin});
+      if(out && out.ok){
+        state  = out.state || "out";
+        sinceAt = out.since || null;
+        techName = out.tech_name || "";
+      }else if(out && out.error === "bad_pin"){
+        localStorage.removeItem(PIN_KEY);
+        pin = ""; entry = ""; paintPips(); show("pin"); return;
+      }
+    }catch(e){ state = "out"; sinceAt = null; }
+    $("whoAmI").textContent = techName || "\u00a0";
+    paintButtons();
   }
 
   // The header said "You are at —" forever, because nothing ever set it.
@@ -275,6 +355,7 @@
   });
   $("doneBtn").addEventListener("click", () => {
     document.body.className = "";
+    $("note").style.whiteSpace = "";
     toReady();
   });
 
@@ -302,7 +383,7 @@
   }
 
   /* ---------- punch ---------- */
-  $("punchBtn").addEventListener("click", async () => {
+  async function doPunch(action){
     if(busy) return;
     busy = true;
     $("workingMsg").textContent = "Checking your location";
@@ -334,10 +415,12 @@
 
     const payload = {
       p_pin: pin,
+      p_action: action,
       p_location_id: locId,
       p_lat: fix.ok ? fix.lat : null,
       p_lng: fix.ok ? fix.lng : null,
-      p_accuracy: fix.ok ? Math.round(fix.acc) : null
+      p_accuracy: fix.ok ? Math.round(fix.acc) : null,
+      p_device_id: deviceId()
     };
 
     try{
@@ -355,6 +438,27 @@
           "Could not record that punch. Try once more, then see a manager.");
       }
     }
+  }
+
+  // Every punch passes a name check first. It kills the mistyped-PIN
+  // case outright, and makes punching for someone else a deliberate act
+  // rather than something that happens by accident.
+  const ACTION_LABEL = {in:"Punch In", out:"Punch Out", lunch:"Go to Lunch", back:"Back from Lunch"};
+
+  function askConfirm(action){
+    pendingAction = action;
+    $("confirmAction").textContent = ACTION_LABEL[action] || "Punch";
+    $("confirmName").textContent = techName || "this PIN";
+    show("confirm");
+  }
+
+  $("punchBtn").addEventListener("click", () => askConfirm($("punchBtn").dataset.action || "in"));
+  $("lunchBtn").addEventListener("click", () => askConfirm("lunch"));
+  $("confirmBtn").addEventListener("click", () => { if(pendingAction) doPunch(pendingAction); });
+  $("cancelBtn").addEventListener("click", () => {
+    pendingAction = null;
+    localStorage.removeItem(PIN_KEY);
+    pin = ""; entry = ""; techName = ""; paintPips(); show("pin");
   });
 
   // Distinguishes "the phone could not reach the server" from "the
@@ -410,6 +514,15 @@
         localStorage.removeItem(PIN_KEY);
         paint("flag-state","Check PIN","","","", (out && out.message) || "That PIN isn't recognized. Try again, or see a manager.");
         setTimeout(() => { document.body.className=""; pin=""; entry=""; paintPips(); show("pin"); }, 2600);
+      }else if(code === "bad_sequence"){
+        paint("flag-state", "Out of step", "", "", "",
+          (out && out.message) || "Refresh and try again.");
+        state = (out && out.state) || "out";
+        paintButtons();
+      }else if(code === "unknown_location"){
+        paint("fault-state", "Unknown site", "", "", "",
+          (out && out.message) || "You are not at a known APB site. Nothing was recorded.");
+        $("doneBtn").textContent = "Try again";
       }else if(code === "out_of_range"){
         paint("fault-state", "Too far", "", "", "",
           (out && out.message) || "You are not at the job site. Nothing was recorded.");
@@ -423,15 +536,19 @@
       }
       return;
     }
-    const isIn = out.direction === "in";
+    const label = {in:"In", lunch_out:"Lunch", lunch_in:"Back", out:"Out"}[out.direction] || "Done";
+    const green = (out.direction === "in" || out.direction === "lunch_in");
     paint(
-      out.flagged ? "flag-state" : (isIn ? "in-state" : "out-state"),
-      isIn ? "In" : "Out",
+      out.flagged ? "flag-state" : (green ? "in-state" : "out-state"),
+      label,
       timeNow(),
       out.tech_name || "",
       out.location || "",
-      out.flagged ? out.message : ""
+      out.flagged ? (out.message || "") : ""
     );
+    // Keep local state in step so the next screen shows the right buttons.
+    state = {in:"in", lunch_out:"lunch", lunch_in:"in", out:"out"}[out.direction] || "out";
+    sinceAt = out.event_at || null;
   }
 
   function blockedNoLocation(){
