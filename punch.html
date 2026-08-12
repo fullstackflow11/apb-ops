@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#0D1B21">
+<title>Punch — All Points Boats</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --hull:#0D1B21;          /* antifouling, near-black teal */
+    --fiberglass:#EDEFE9;    /* weathered deck */
+    --starboard:#0F8A4A;     /* IN  — starboard green */
+    --port:#C2352B;          /* OUT — port red */
+    --brass:#B08D3F;         /* needs review */
+    --fog:#67777E;           /* secondary text */
+    --display:"Barlow Condensed","Oswald","Arial Narrow",system-ui,sans-serif;
+    --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0}
+  body{
+    background:var(--fiberglass);color:var(--hull);font-family:var(--body);
+    display:flex;flex-direction:column;overflow:hidden;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    -webkit-user-select:none;user-select:none;
+  }
+  .screen{flex:1;display:none;flex-direction:column;min-height:0}
+  .screen.on{display:flex}
+
+  /* ---- masthead ---- */
+  header{padding:22px 22px 0;flex:none}
+  .eyebrow{
+    font-family:var(--display);font-weight:600;font-size:13px;
+    letter-spacing:.22em;text-transform:uppercase;color:var(--fog);
+  }
+  .site{
+    font-family:var(--display);font-weight:700;font-size:34px;line-height:1.02;
+    letter-spacing:-.01em;margin-top:4px;
+  }
+  .rule{height:2px;background:var(--hull);opacity:.14;margin:16px 22px 0;flex:none}
+
+  /* ---- shared ---- */
+  .fill{flex:1;display:flex;flex-direction:column;justify-content:center;padding:20px 22px;min-height:0}
+  .foot{padding:0 18px 18px;flex:none}
+  button{font-family:inherit;font-size:inherit;border:0;background:none;color:inherit;cursor:pointer}
+
+  .action{
+    width:100%;background:var(--hull);color:var(--fiberglass);
+    font-family:var(--display);font-weight:700;font-size:38px;letter-spacing:.06em;
+    text-transform:uppercase;padding:30px 0;border-radius:4px;
+    transition:transform .1s ease,opacity .15s ease;
+  }
+  .action:active{transform:scale(.985)}
+  .action[disabled]{opacity:.45}
+  .ghost{
+    display:block;width:100%;text-align:center;color:var(--fog);
+    font-size:15px;padding:16px 0;text-decoration:underline;text-underline-offset:3px;
+  }
+  .hint{color:var(--fog);font-size:14.5px;line-height:1.45;text-align:center;margin:14px 4px 0}
+
+  /* ---- keypad ---- */
+  .pinrow{display:flex;justify-content:center;gap:16px;margin-bottom:28px}
+  .pip{width:17px;height:17px;border-radius:50%;border:2px solid var(--hull);opacity:.3;transition:opacity .12s}
+  .pip.set{opacity:1;background:var(--hull)}
+  .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .key{
+    font-family:var(--display);font-weight:600;font-size:36px;
+    background:#fff;border:1.5px solid rgba(13,27,33,.13);border-radius:4px;
+    padding:20px 0;font-variant-numeric:tabular-nums;
+  }
+  .key:active{background:var(--hull);color:var(--fiberglass)}
+  .key.blank{background:none;border:0}
+
+  /* ---- result ---- */
+  #result{color:#fff}
+  #result .fill{justify-content:flex-start;padding-top:34px}
+  .verdict{
+    font-family:var(--display);font-weight:700;font-size:112px;line-height:.86;
+    letter-spacing:-.02em;text-transform:uppercase;
+  }
+  .stamp{
+    font-family:var(--display);font-weight:600;font-size:56px;line-height:1;
+    font-variant-numeric:tabular-nums;margin-top:14px;
+  }
+  .who{font-size:19px;margin-top:22px;opacity:.9}
+  .where{font-size:16px;margin-top:4px;opacity:.7}
+  .note{
+    font-size:15.5px;line-height:1.45;margin-top:24px;padding-top:18px;
+    border-top:1.5px solid rgba(255,255,255,.3);opacity:.95;
+  }
+  #result .action{background:rgba(255,255,255,.16);color:#fff;font-size:24px;padding:22px 0}
+
+  .in-state{background:var(--starboard)}
+  .out-state{background:var(--port)}
+  .flag-state{background:var(--brass)}
+  .fault-state{background:var(--hull)}
+
+  .spin{
+    width:52px;height:52px;margin:0 auto 22px;border-radius:50%;
+    border:4px solid rgba(13,27,33,.15);border-top-color:var(--hull);
+    animation:rot .8s linear infinite;
+  }
+  @keyframes rot{to{transform:rotate(360deg)}}
+  .reveal{animation:up .28s cubic-bezier(.2,.7,.3,1) both}
+  @keyframes up{from{opacity:0;transform:translateY(14px)}}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+  .pending{
+    position:fixed;left:0;right:0;bottom:0;background:var(--brass);color:#fff;
+    font-size:14px;text-align:center;padding:11px;display:none;z-index:9;
+  }
+  .pending.on{display:block}
+  @media (max-height:680px){
+    .verdict{font-size:84px}.stamp{font-size:44px}
+    .action{font-size:32px;padding:24px 0}.key{font-size:31px;padding:16px 0}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ CONFIG — set these two, nothing else ============ -->
+<script>
+  const SUPABASE_URL = "https://aanrxyiocxxndkvkeocv.supabase.co";
+  const SUPABASE_ANON_KEY = "PASTE_YOUR_ANON_KEY_HERE";
+</script>
+
+<!-- ---------- 1. PIN ---------- -->
+<section id="pin" class="screen">
+  <header>
+    <div class="eyebrow">All Points Boats</div>
+    <div class="site" id="pinSite">Time Clock</div>
+  </header>
+  <div class="rule"></div>
+  <div class="fill">
+    <div class="eyebrow" style="text-align:center;margin-bottom:20px">Enter your PIN</div>
+    <div class="pinrow" id="pips"></div>
+    <div class="pad" id="pad"></div>
+  </div>
+</section>
+
+<!-- ---------- 2. READY ---------- -->
+<section id="ready" class="screen">
+  <header>
+    <div class="eyebrow">You are at</div>
+    <div class="site" id="siteName">—</div>
+  </header>
+  <div class="rule"></div>
+  <div class="fill">
+    <div id="clock" class="stamp" style="color:var(--hull);text-align:center;font-size:72px">--:--</div>
+    <div class="hint">The clock knows whether you're coming or going. Just punch.</div>
+  </div>
+  <div class="foot">
+    <button class="action" id="punchBtn">Punch</button>
+    <button class="ghost" id="switchBtn">Not you? Change PIN</button>
+  </div>
+</section>
+
+<!-- ---------- 3. WORKING ---------- -->
+<section id="working" class="screen">
+  <div class="fill" style="text-align:center">
+    <div class="spin"></div>
+    <div class="eyebrow" id="workingMsg">Checking your location</div>
+  </div>
+</section>
+
+<!-- ---------- 4. RESULT ---------- -->
+<section id="result" class="screen">
+  <div class="fill">
+    <div class="verdict reveal" id="verdict">IN</div>
+    <div class="stamp reveal" id="stamp">--:--</div>
+    <div class="who reveal" id="who"></div>
+    <div class="where reveal" id="where"></div>
+    <div class="note reveal" id="note" hidden></div>
+  </div>
+  <div class="foot"><button class="action" id="doneBtn">Done</button></div>
+</section>
+
+<div class="pending" id="pending"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  const $  = id => document.getElementById(id);
+  const QUEUE_KEY  = "apb_punch_queue";
+  const PIN_KEY    = "apb_punch_pin";
+  const REJECT_KEY = "apb_punch_rejected";
+  const locId     = new URLSearchParams(location.search).get("loc");
+
+  let pin = localStorage.getItem(PIN_KEY) || "";
+  let entry = "";
+  let busy = false;
+
+  /* ---------- screens ---------- */
+  function show(id){
+    document.querySelectorAll(".screen").forEach(s => s.classList.toggle("on", s.id === id));
+  }
+  function timeNow(d){
+    return (d || new Date()).toLocaleTimeString([], {hour:"numeric", minute:"2-digit"});
+  }
+
+  /* ---------- no location in the URL ---------- */
+  if(!locId){
+    document.body.classList.add("fault-state");
+    show("result");
+    $("verdict").textContent = "No site";
+    $("stamp").hidden = true;
+    $("who").textContent = "This link is missing its location code.";
+    $("where").textContent = "Scan the sticker posted at the job site, not a saved link.";
+    $("doneBtn").hidden = true;
+    return;
+  }
+
+  /* ---------- keypad ---------- */
+  const pips = $("pips");
+  for(let i=0;i<4;i++) pips.appendChild(Object.assign(document.createElement("div"),{className:"pip"}));
+
+  ["1","2","3","4","5","6","7","8","9","","0","⌫"].forEach(label => {
+    const b = document.createElement("button");
+    b.className = "key" + (label === "" ? " blank" : "");
+    b.textContent = label;
+    if(label === "") b.disabled = true;
+    b.addEventListener("click", () => tapKey(label));
+    $("pad").appendChild(b);
+  });
+
+  function tapKey(k){
+    if(k === "⌫") entry = entry.slice(0,-1);
+    else if(entry.length < 4) entry += k;
+    paintPips();
+    if(entry.length === 4){
+      pin = entry;
+      localStorage.setItem(PIN_KEY, pin);
+      entry = "";
+      setTimeout(() => { paintPips(); toReady(); }, 140);
+    }
+  }
+  function paintPips(){
+    [...pips.children].forEach((p,i) => p.classList.toggle("set", i < entry.length));
+  }
+
+  /* ---------- ready ---------- */
+  function toReady(){
+    show("ready");
+    tickClock();
+    loadSiteName();
+  }
+
+  // The header said "You are at —" forever, because nothing ever set it.
+  // punch_site() returns the name only, never coordinates or radius.
+  let siteLoaded = false;
+  async function loadSiteName(){
+    if(siteLoaded) return;
+    try{
+      const out = await send("punch_site", {p_location_id: locId});
+      if(out && out.ok && out.name){
+        $("siteName").textContent = out.name;
+        siteLoaded = true;
+      }
+    }catch(e){ /* offline — the punch itself still works */ }
+  }
+  let clockTimer;
+  function tickClock(){
+    clearInterval(clockTimer);
+    $("clock").textContent = timeNow();
+    clockTimer = setInterval(() => { $("clock").textContent = timeNow(); }, 15000);
+  }
+
+  $("switchBtn").addEventListener("click", () => {
+    localStorage.removeItem(PIN_KEY);
+    pin = ""; entry = ""; paintPips(); show("pin");
+  });
+  $("doneBtn").addEventListener("click", () => {
+    document.body.className = "";
+    toReady();
+  });
+
+  /* ---------- geolocation ----------
+     Must be called from inside the tap handler. iOS Safari will not
+     show the permission prompt for a call made on page load.        */
+  function getFix(){
+    return new Promise(resolve => {
+      if(!navigator.geolocation) return resolve(null);
+      navigator.geolocation.getCurrentPosition(
+        p => resolve({
+          lat: p.coords.latitude,
+          lng: p.coords.longitude,
+          acc: p.coords.accuracy
+        }),
+        () => resolve(null),
+        {enableHighAccuracy:true, timeout:15000, maximumAge:0}
+      );
+    });
+  }
+
+  /* ---------- punch ---------- */
+  $("punchBtn").addEventListener("click", async () => {
+    if(busy) return;
+    busy = true;
+    $("workingMsg").textContent = "Checking your location";
+    show("working");
+
+    const fix = await getFix();
+    $("workingMsg").textContent = "Recording";
+
+    const payload = {
+      p_pin: pin,
+      p_location_id: locId,
+      p_lat: fix ? fix.lat : null,
+      p_lng: fix ? fix.lng : null,
+      p_accuracy: fix ? Math.round(fix.acc) : null
+    };
+
+    try{
+      const out = await send("punch", payload);
+      busy = false;
+      render(out);
+    }catch(err){
+      busy = false;
+      if(err && err.offline){
+        queue(payload);
+        renderQueued();
+      }else{
+        // The server answered with an error. Do not queue it.
+        paint("flag-state","Hold up","","","",
+          "Could not record that punch. Try once more, then see a manager.");
+      }
+    }
+  });
+
+  // Distinguishes "the phone could not reach the server" from "the
+  // server answered and said no". Only the former may be queued.
+  function NetworkDown(){ const e = new Error("offline"); e.offline = true; return e; }
+
+  async function send(fn, body){
+    // Marina wifi that associates but does not route will otherwise
+    // hang this forever: spinner up, nothing queued, tech walks away.
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 10000);
+    let res;
+    try{
+      res = await fetch(SUPABASE_URL + "/rest/v1/rpc/" + fn, {
+        method:"POST",
+        headers:{
+          "apikey": SUPABASE_ANON_KEY,
+          "Authorization": "Bearer " + SUPABASE_ANON_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(body),
+        signal: ctl.signal
+      });
+    }catch(e){
+      throw NetworkDown();            // abort, DNS, or no route
+    }finally{
+      clearTimeout(timer);
+    }
+    if(res.status >= 500 || res.status === 0) throw NetworkDown();
+    if(!res.ok){
+      // 4xx: the server heard us and refused. Queueing would retry a
+      // request that can never succeed.
+      const e = new Error("http " + res.status);
+      e.offline = false;
+      throw e;
+    }
+    return res.json();
+  }
+
+  /* ---------- results ---------- */
+  function render(out){
+    // A duplicate is a SUCCESS that created nothing — punch() returns
+    // ok:true with duplicate:true, so it is handled before the failure
+    // branch, not inside it.
+    if(out && out.ok && out.duplicate){
+      paint("flag-state", "Got it", "", out.tech_name || "", out.location || "",
+        out.message || "That punch was already recorded a moment ago.");
+      return;
+    }
+    if(!out || out.ok === false){
+      const code = out ? out.error : "unknown";
+      if(code === "bad_pin"){
+        localStorage.removeItem(PIN_KEY);
+        paint("flag-state","Check PIN","","","", (out && out.message) || "That PIN isn't recognized. Try again, or see a manager.");
+        setTimeout(() => { document.body.className=""; pin=""; entry=""; paintPips(); show("pin"); }, 2600);
+      }else{
+        paint("flag-state","Hold up","","","", (out && out.message) || "Something went wrong. Show this to a manager.");
+      }
+      return;
+    }
+    const isIn = out.direction === "in";
+    paint(
+      out.flagged ? "flag-state" : (isIn ? "in-state" : "out-state"),
+      isIn ? "In" : "Out",
+      timeNow(),
+      out.tech_name || "",
+      out.location || "",
+      out.flagged ? out.message : ""
+    );
+  }
+
+  function renderQueued(){
+    paint("flag-state","Saved", timeNow(), "", "",
+      "No signal down here. This punch is saved on your phone and sends itself once you're back in service. Don't scan again.");
+    refreshPendingBar();
+  }
+
+  function paint(state, verdict, stamp, who, where, note){
+    document.body.className = state;
+    $("verdict").textContent = verdict;
+    $("stamp").hidden = !stamp;
+    $("stamp").textContent = stamp || "";
+    $("who").textContent = who || "";
+    $("where").textContent = where || "";
+    $("note").hidden = !note;
+    $("note").textContent = note || "";
+    $("doneBtn").hidden = false;
+    show("result");
+  }
+
+  /* ---------- offline queue ----------
+     Queued punches carry their own timestamp and go to punch_queued(),
+     so a punch made at 4pm in an engine room is still recorded at 4pm
+     even if the phone only finds signal at 7pm.                       */
+  function readQueue(){
+    try{ return JSON.parse(localStorage.getItem(QUEUE_KEY)) || []; }catch{ return []; }
+  }
+  function queue(payload){
+    const q = readQueue();
+    q.push({...payload, p_event_at:new Date().toISOString()});
+    localStorage.setItem(QUEUE_KEY, JSON.stringify(q));
+  }
+  function refreshPendingBar(){
+    const n = readQueue().length;
+    const bad = parseInt(localStorage.getItem(REJECT_KEY) || "0", 10);
+    const bar = $("pending");
+    if(bad > 0){
+      bar.classList.add("on");
+      bar.style.background = "var(--port)";
+      bar.textContent = bad === 1
+        ? "1 saved punch could not be sent — see a manager"
+        : bad + " saved punches could not be sent — see a manager";
+      return;
+    }
+    bar.style.background = "";
+    bar.classList.toggle("on", n > 0);
+    bar.textContent = n === 1
+      ? "1 punch waiting to send"
+      : n + " punches waiting to send";
+  }
+
+  async function flush(){
+    const q = readQueue();
+    if(!q.length || !navigator.onLine) return;
+    const left = [];
+    let rejected = 0;
+    for(const item of q){
+      try{
+        const out = await send("punch_queued", item);
+        // The server accepted the request but refused the punch — too
+        // old, bad PIN, dead location. Retrying can never fix it, so
+        // drop it and make sure somebody is told.
+        if(out && out.ok === false) rejected++;
+      }catch(err){
+        if(err && err.offline) left.push(item);   // still no signal
+        else rejected++;                          // permanent refusal
+      }
+    }
+    localStorage.setItem(QUEUE_KEY, JSON.stringify(left));
+    if(rejected){
+      const prior = parseInt(localStorage.getItem(REJECT_KEY) || "0", 10);
+      localStorage.setItem(REJECT_KEY, String(prior + rejected));
+    }
+    refreshPendingBar();
+  }
+
+  window.addEventListener("online", flush);
+  document.addEventListener("visibilitychange", () => { if(!document.hidden) flush(); });
+
+  // Tap to acknowledge once a manager has entered the missed punch.
+  $("pending").addEventListener("click", () => {
+    if(parseInt(localStorage.getItem(REJECT_KEY) || "0", 10) > 0){
+      localStorage.removeItem(REJECT_KEY);
+      refreshPendingBar();
+    }
+  });
+
+  /* ---------- start ---------- */
+  refreshPendingBar();
+  flush();
+  if(pin.length === 4) toReady(); else show("pin");
+})();
+</script>
+</body>
+</html>
