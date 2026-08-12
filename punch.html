@@ -283,14 +283,19 @@
      show the permission prompt for a call made on page load.        */
   function getFix(){
     return new Promise(resolve => {
-      if(!navigator.geolocation) return resolve(null);
+      // No geolocation support at all is an unavailable fix, not a refusal.
+      if(!navigator.geolocation) return resolve({ok:false, denied:false});
       navigator.geolocation.getCurrentPosition(
         p => resolve({
+          ok:true,
           lat: p.coords.latitude,
           lng: p.coords.longitude,
           acc: p.coords.accuracy
         }),
-        () => resolve(null),
+        // code 1 = PERMISSION_DENIED — a choice, and the only one we block on.
+        // codes 2 and 3 = POSITION_UNAVAILABLE / TIMEOUT — a dead signal in an
+        // engine room, which must still record or the tech stops using the clock.
+        err => resolve({ok:false, denied: !!(err && err.code === 1)}),
         {enableHighAccuracy:true, timeout:15000, maximumAge:0}
       );
     });
@@ -304,14 +309,23 @@
     show("working");
 
     const fix = await getFix();
+
+    // Refusing the prompt stops here. Nothing is sent, nothing is recorded —
+    // otherwise a tech learns that saying No is a way around the geofence.
+    if(fix && fix.ok === false && fix.denied){
+      busy = false;
+      blockedNoLocation();
+      return;
+    }
+
     $("workingMsg").textContent = "Recording";
 
     const payload = {
       p_pin: pin,
       p_location_id: locId,
-      p_lat: fix ? fix.lat : null,
-      p_lng: fix ? fix.lng : null,
-      p_accuracy: fix ? Math.round(fix.acc) : null
+      p_lat: fix.ok ? fix.lat : null,
+      p_lng: fix.ok ? fix.lng : null,
+      p_accuracy: fix.ok ? Math.round(fix.acc) : null
     };
 
     try{
@@ -400,6 +414,18 @@
     );
   }
 
+  function blockedNoLocation(){
+    const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    paint("fault-state", "Location off", "", "", "",
+      "This clock records where you punch. It can't record without your location.\n\n"
+      + (ios
+          ? "Settings › Privacy & Security › Location Services › Safari Websites › While Using the App. Then come back and punch again."
+          : "Tap the lock icon in the address bar › Permissions › Location › Allow. Then come back and punch again.")
+      + "\n\nNothing was recorded. See a manager if you can't turn it on.");
+    $("note").style.whiteSpace = "pre-line";
+    $("doneBtn").textContent = "Try again";
+  }
+
   function renderQueued(){
     paint("flag-state","Saved", timeNow(), "", "",
       "No signal down here. This punch is saved on your phone and sends itself once you're back in service. Don't scan again.");
@@ -415,6 +441,7 @@
     $("where").textContent = where || "";
     $("note").hidden = !note;
     $("note").textContent = note || "";
+    $("doneBtn").textContent = "Done";
     $("doneBtn").hidden = false;
     show("result");
   }
