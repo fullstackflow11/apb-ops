@@ -598,6 +598,8 @@ function _ptoHoursForWeek(slug,keys){
     }});
   return h;
 }
+function _ymd(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function _usDate(iso){ const p=String(iso).slice(0,10).split('-'); return p.length===3?(p[1]+'/'+p[2]+'/'+p[0].slice(2)):''; }
 function _holidayHoursForWeek(keys){ let h=0; keys.forEach(k=>{ const dow=_parseYMD(k).getDay(); if(dow!==0&&dow!==6&&HOLIDAYS[k]) h+=8; }); return h; }
 function _vdate(v){ return String(v&&v.visit_date||'').slice(0,10); } // date-only key, robust to a timestamp
 // A visit counts as approved only when it has lines and EVERY line is reviewed.
@@ -1237,67 +1239,94 @@ function exportExcel(){
 // Uses the From/To date filters to pick the range (each Mon–Sun week = one tab);
 // if no range is set, exports the week currently shown in the grid. Hire Date and
 // Salary Actual are intentionally left blank (the app doesn't hold that data).
-function exportWeeklyLabor(){
-  if(typeof XLSX==='undefined'){ showToast('Excel tools still loading — try again in a second'); return; }
-  const from=document.getElementById('dateFrom').value, to=document.getElementById('dateTo').value;
-  let weeks=[];
-  if(from&&to){
-    let m=_mondayOf(_parseYMD(from)); const end=_parseYMD(to); let guard=0;
-    while(m<=end && guard++<120){ weeks.push(new Date(m)); m=new Date(m.getFullYear(),m.getMonth(),m.getDate()+7); }
-  }
-  if(!weeks.length){ showToast('Set the From and To dates to pick the payroll period'); return; }
-  const inRangePre=k=>(!from||k>=from)&&(!to||k<=to);
-  const groups=_buildRows(null);           // same employee list on every tab
-  const wm=_workedMap(true);                // APPROVED hours only, by name-slug|date
+async function exportWeeklyLabor(){
+  // Builds FrankCrum's own Payroll Time Entry Worksheet, populated.
+  // The pay logic lives in payroll_week() on the server: approved hours
+  // only, salaried paid in whole days rather than by the clock, leave
+  // deduped per calendar day, unpaid leave kept out of PTO.
+  const from=document.getElementById('dateFrom').value;
+  const to=document.getElementById('dateTo').value;
+  if(!from||!to){ showToast('Set the From and To dates to pick the payroll period'); return; }
 
-  // Anything still awaiting review inside the range is withheld from payroll.
-  // Say so loudly rather than quietly exporting a short number.
-  const held=visits.filter(v=>{ const d=_vdate(v); return d && inRangePre(d) && !_visitApproved(v); });
-  const heldHrs=held.reduce((a,v)=>a+parseFloat(v.total_hours||0),0);
-  if(held.length){
-    const who=[...new Set(held.map(v=>v.tech_name).filter(Boolean))].sort();
-    if(!confirm(`${held.length} timesheet${held.length!==1?'s':''} in this range (${heldHrs.toFixed(2)} h) have not been fully approved and will NOT be included:\n\n`
-      + who.join(', ')
-      + `\n\nExport approved hours only?`)) return;
+  const mondays=[];
+  let cur=_mondayOf(_parseYMD(from));
+  const last=_parseYMD(to);
+  while(cur<=last){ mondays.push(_ymd(cur)); cur=new Date(cur.getFullYear(),cur.getMonth(),cur.getDate()+7); }
+  if(!mondays.length){ showToast('That range does not cover a full week'); return; }
+
+  showToast('Building payroll worksheet\u2026');
+
+  // Warn before building, not after — withheld hours change the numbers.
+  const held=[];
+  for(const m of mondays){
+    const {data,error}=await sb.rpc('payroll_week_pending',{p_monday:m});
+    if(!error&&data) data.forEach(r=>held.push(Object.assign({week:m},r)));
   }
-  const header=['Last','First','Hire Date','Mon','Tue','Wed','Thu','Fri','Sat','Sun','Total','Holiday','PTO','Total w/PTO/Hldy','Salary Actual'];
-  const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-  const num=n=>Math.round((n||0)*100)/100;
-  const splitName=nm=>{ const t=String(nm||'').trim().split(/\s+/); return t.length>1?[t[t.length-1],t.slice(0,-1).join(' ')]:[nm||'','']; };
+  if(held.length){
+    const hrs=held.reduce((a,r)=>a+parseFloat(r.hours||0),0);
+    const who=[...new Set(held.map(r=>r.tech_name))].sort().join(', ');
+    if(!confirm(hrs.toFixed(2)+' h are not fully approved and will NOT be included:\n\n'+who+'\n\nExport approved hours only?')) return;
+  }
+
+  const HDR=['Emp #','Employee Name','Hire Date','H/S','Job Code','WC State','Dept #',
+             'REGH','OT','SALRY','PTO','HOL','RETOT'];
   const wb=XLSX.utils.book_new();
-  // Only days inside the From/To range are paid on this run — a Mon–Sun tab that
-  // straddles the boundary is emitted with the out-of-range days blanked, so the
-  // same day can never be exported twice across two pay periods.
-  const inRange=k=>(!from||k>=from)&&(!to||k<=to);
-  weeks.forEach(mon=>{
-    const keys=_weekKeys(mon), payKeys=keys.filter(inRange);
-    const holWk=_holidayHoursForWeek(payKeys);
-    const s=_parseYMD(keys[0]), e=_parseYMD(keys[6]);
-    const partial=payKeys.length<7;
-    const ps=payKeys.length?_parseYMD(payKeys[0]):s, pe=payKeys.length?_parseYMD(payKeys[payKeys.length-1]):e;
-    const aoa=[['Week of', `${fmt(s)} – ${fmt(e)}, ${e.getFullYear()}`
-      + (partial?`  (partial — paid ${fmt(ps)} – ${fmt(pe)})`:'')
-      + '  · approved hours only'], [], header];
-    const emitRow=row=>{
-      const [last,first]=splitName(row.name);
-      let worked=0; const days=keys.map(k=>{ if(!inRange(k)) return ''; const h=_rowDayHours(row,k,wm); worked+=h; return num(h); });
-      const pto=_rowPtoHours(row,payKeys), totalAll=worked+pto+holWk;
-      aoa.push([last,first,'',...days,num(worked),num(holWk),num(pto),num(totalAll),'']);
-    };
-    aoa.push(['HOURLY']); groups.hourly.forEach(emitRow);
-    aoa.push(['SALARIED']); groups.salaried.forEach(emitRow);
-    // production-hours total row across everyone
-    const allRows=[...groups.hourly,...groups.salaried];
-    const dayTot=keys.map(k=>inRange(k)?allRows.reduce((a,row)=>a+_rowDayHours(row,k,wm),0):null);
-    aoa.push([]);
-    aoa.push(['Total Production Hours','','',...dayTot.map(d=>d===null?'':num(d)),num(dayTot.reduce((a,b)=>a+(b||0),0))]);
+  const review=[['Week','Employee','Issue']];
+  const fmt=d=>(d.getMonth()+1)+'/'+d.getDate();
+
+  for(const m of mondays){
+    const {data:rows,error}=await sb.rpc('payroll_week',{p_monday:m});
+    if(error){ showToast('Payroll lookup failed: '+error.message); return; }
+
+    const wkKeys=_weekKeys(_parseYMD(m));
+    const inRange=k=>k>=from&&k<=to;
+    let holWk=0;
+    wkKeys.forEach(k=>{ const d=_parseYMD(k).getDay();
+      if(d!==0&&d!==6&&HOLIDAYS[k]&&inRange(k)) holWk+=8; });
+
+    const s0=_parseYMD(wkKeys[0]), e0=_parseYMD(wkKeys[6]);
+    const pay=wkKeys.filter(inRange);
+    const partial=pay.length<7;
+
+    const aoa=[
+      ['60801-ALL POINTS BOATS INC \u2014 Payroll Time Entry Worksheet'],
+      ['Pay Period: '+fmt(s0)+' \u2013 '+fmt(e0)+', '+e0.getFullYear()
+        +(partial?'   (partial \u2014 paid '+fmt(_parseYMD(pay[0]))+' \u2013 '+fmt(_parseYMD(pay[pay.length-1]))+')':'')
+        +'   \u00b7 approved hours only'],
+      [],
+      HDR
+    ];
+
+    (rows||[]).forEach(r=>{
+      const isSal=r.hs==='S';
+      aoa.push([
+        r.emp_no, r.legal_name,
+        r.hire_date?_usDate(r.hire_date):'',
+        r.hs, r.job_code||'', r.wc_state||'FL', r.dept_no||'',
+        num(r.regh), isSal?'':num(r.ot), '',
+        num(r.pto), holWk?num(holWk):'', ''
+      ]);
+      const bits=[];
+      if(r.notes) bits.push(r.notes);
+      if(parseFloat(r.unpaid_ti||0)>0) bits.push('post '+num(r.unpaid_ti)+' h as TI (unpaid)');
+      if(bits.length) review.push([fmt(s0)+' \u2013 '+fmt(e0), r.legal_name, bits.join('; ')]);
+    });
+
     const ws=XLSX.utils.aoa_to_sheet(aoa);
-    ws['!cols']=[{wch:16},{wch:14},{wch:11}].concat(Array(7).fill({wch:6})).concat([{wch:8},{wch:8},{wch:7},{wch:15},{wch:12}]);
-    let nm=`${fmt(s)} - ${fmt(e)}`.replace(/[\\\/\?\*\[\]:]/g,'').slice(0,28), base=nm, i=2;
-    while(wb.SheetNames.includes(nm)){ nm=(base+' '+i++).slice(0,31); }
-    XLSX.utils.book_append_sheet(wb,ws,nm||'Week');
-  });
-  XLSX.writeFile(wb, (from&&to)?`APB-FrankCrum-Payroll_${from}_to_${to}.xlsx`:`APB-FrankCrum-Payroll.xlsx`);
+    ws['!cols']=[{wch:11},{wch:28},{wch:10},{wch:5},{wch:9},{wch:9},{wch:8},
+                 {wch:9},{wch:8},{wch:9},{wch:9},{wch:8},{wch:9}];
+    XLSX.utils.book_append_sheet(wb, ws, (s0.getMonth()+1)+'-'+s0.getDate()+' wk');
+  }
+
+  held.forEach(r=>review.push([r.week, r.tech_name,
+    'withheld \u2014 '+r.hours+' h not approved']));
+  if(review.length>1){
+    const rs=XLSX.utils.aoa_to_sheet(review);
+    rs['!cols']=[{wch:16},{wch:28},{wch:70}];
+    XLSX.utils.book_append_sheet(wb, rs, 'Review notes');
+  }
+
+  XLSX.writeFile(wb, 'APB-FrankCrum-Payroll_'+from+'_to_'+to+'.xlsx');
   showToast('FrankCrum payroll sheet downloaded');
 }
 
