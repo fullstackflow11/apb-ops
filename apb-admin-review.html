@@ -521,14 +521,19 @@ async function loadRosterAndPTO(){
 }
 
 function updateSummary(){
-  const total=visits.reduce((s,v)=>s+parseFloat(v.total_hours||0),0);
+  // Scoped to the current filters (date range, tech, vessel, status) so the cards
+  // never describe a wider set of data than the list underneath them.
+  const fv=_filteredVisits();
+  const ids=new Set(fv.map(v=>v.id));
+  const fl=lines.filter(l=>ids.has(l.timesheet_id));
+  const total=fv.reduce((s,v)=>s+parseFloat(v.total_hours||0),0);
   // Daily OT: per visit, reg = min(hours,8), ot = max(0, hours-8)
   let reg=0,ot=0;
-  visits.forEach(v=>{const h=parseFloat(v.total_hours||0);reg+=Math.min(h,8);ot+=Math.max(0,h-8);});
-  const pending=lines.filter(l=>!l.reviewed).length;
-  const reviewed=lines.filter(l=>l.reviewed).length;
-  const total_lines=lines.length;
-  document.getElementById('statVisits').textContent=visits.length;
+  fv.forEach(v=>{const h=parseFloat(v.total_hours||0);reg+=Math.min(h,8);ot+=Math.max(0,h-8);});
+  const pending=fl.filter(l=>!l.reviewed).length;
+  const reviewed=fl.filter(l=>l.reviewed).length;
+  const total_lines=fl.length;
+  document.getElementById('statVisits').textContent=fv.length;
   document.getElementById('statHours').textContent=total.toFixed(1)+'h';
   document.getElementById('statReg').textContent=reg.toFixed(1)+'h';
   document.getElementById('statOT').textContent=ot.toFixed(1)+'h';
@@ -756,14 +761,14 @@ function visitOnVessel(v,vesselF){
   return lines.some(l=>l.timesheet_id===v.id && effLineVessel(l,v)===vesselF);
 }
 
-function renderVisits(){
+// Single source of truth for "which visits are on screen right now" — the list
+// AND the stat cards both read this, so the numbers always describe what you see.
+function _filteredVisits(){
   const techF=document.getElementById('techFilter').value;
   const vesselF=document.getElementById('vesselFilter').value;
   const dateFrom=document.getElementById('dateFrom').value;
   const dateTo=document.getElementById('dateTo').value;
-  const grouped=document.getElementById('groupByWeek').checked;
-
-  let filtered=visits.filter(v=>{
+  return visits.filter(v=>{
     if(techF&&v.tech_name!==techF)return false;
     if(!visitOnVessel(v,vesselF))return false;
     if(dateFrom&&v.visit_date<dateFrom)return false;
@@ -774,6 +779,13 @@ function renderVisits(){
     if(currentFilter==='nonbillable')return vLines.some(l=>!isBillable(l));
     return true;
   });
+}
+
+function renderVisits(){
+  const vesselF=document.getElementById('vesselFilter').value;
+  const grouped=document.getElementById('groupByWeek').checked;
+  let filtered=_filteredVisits();
+  updateSummary();
 
   if(!filtered.length){document.getElementById('visitList').innerHTML='<div class="empty-state">No entries match this filter.</div>';return;}
 
@@ -1237,23 +1249,31 @@ function exportWeeklyLabor(){
   const num=n=>Math.round((n||0)*100)/100;
   const splitName=nm=>{ const t=String(nm||'').trim().split(/\s+/); return t.length>1?[t[t.length-1],t.slice(0,-1).join(' ')]:[nm||'','']; };
   const wb=XLSX.utils.book_new();
+  // Only days inside the From/To range are paid on this run — a Mon–Sun tab that
+  // straddles the boundary is emitted with the out-of-range days blanked, so the
+  // same day can never be exported twice across two pay periods.
+  const inRange=k=>(!from||k>=from)&&(!to||k<=to);
   weeks.forEach(mon=>{
-    const keys=_weekKeys(mon), holWk=_holidayHoursForWeek(keys);
+    const keys=_weekKeys(mon), payKeys=keys.filter(inRange);
+    const holWk=_holidayHoursForWeek(payKeys);
     const s=_parseYMD(keys[0]), e=_parseYMD(keys[6]);
-    const aoa=[['Week of', `${fmt(s)} – ${fmt(e)}, ${e.getFullYear()}`], [], header];
+    const partial=payKeys.length<7;
+    const ps=payKeys.length?_parseYMD(payKeys[0]):s, pe=payKeys.length?_parseYMD(payKeys[payKeys.length-1]):e;
+    const aoa=[['Week of', `${fmt(s)} – ${fmt(e)}, ${e.getFullYear()}`
+      + (partial?`  (partial — paid ${fmt(ps)} – ${fmt(pe)})`:'')], [], header];
     const emitRow=row=>{
       const [last,first]=splitName(row.name);
-      let worked=0; const days=keys.map(k=>{ const h=_rowDayHours(row,k,wm); worked+=h; return num(h); });
-      const pto=_rowPtoHours(row,keys), totalAll=worked+pto+holWk;
+      let worked=0; const days=keys.map(k=>{ if(!inRange(k)) return ''; const h=_rowDayHours(row,k,wm); worked+=h; return num(h); });
+      const pto=_rowPtoHours(row,payKeys), totalAll=worked+pto+holWk;
       aoa.push([last,first,'',...days,num(worked),num(holWk),num(pto),num(totalAll),'']);
     };
     aoa.push(['HOURLY']); groups.hourly.forEach(emitRow);
     aoa.push(['SALARIED']); groups.salaried.forEach(emitRow);
     // production-hours total row across everyone
     const allRows=[...groups.hourly,...groups.salaried];
-    const dayTot=keys.map(k=>allRows.reduce((a,row)=>a+_rowDayHours(row,k,wm),0));
+    const dayTot=keys.map(k=>inRange(k)?allRows.reduce((a,row)=>a+_rowDayHours(row,k,wm),0):null);
     aoa.push([]);
-    aoa.push(['Total Production Hours','','',...dayTot.map(num),num(dayTot.reduce((a,b)=>a+b,0))]);
+    aoa.push(['Total Production Hours','','',...dayTot.map(d=>d===null?'':num(d)),num(dayTot.reduce((a,b)=>a+(b||0),0))]);
     const ws=XLSX.utils.aoa_to_sheet(aoa);
     ws['!cols']=[{wch:16},{wch:14},{wch:11}].concat(Array(7).fill({wch:6})).concat([{wch:8},{wch:8},{wch:7},{wch:15},{wch:12}]);
     let nm=`${fmt(s)} - ${fmt(e)}`.replace(/[\\\/\?\*\[\]:]/g,'').slice(0,28), base=nm, i=2;
