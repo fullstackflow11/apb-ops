@@ -600,7 +600,11 @@ function _ptoHoursForWeek(slug,keys){
 }
 function _holidayHoursForWeek(keys){ let h=0; keys.forEach(k=>{ const dow=_parseYMD(k).getDay(); if(dow!==0&&dow!==6&&HOLIDAYS[k]) h+=8; }); return h; }
 function _vdate(v){ return String(v&&v.visit_date||'').slice(0,10); } // date-only key, robust to a timestamp
-function _workedMap(){ const m={}; visits.forEach(v=>{ const dk=_vdate(v); if(!dk)return; const k=gSlug(v.tech_name)+'|'+dk; m[k]=(m[k]||0)+parseFloat(v.total_hours||0); }); return m; }
+// A visit counts as approved only when it has lines and EVERY line is reviewed.
+// A partially-reviewed visit is not approved — it stays out of payroll entirely
+// rather than exporting a fraction of its hours.
+function _visitApproved(v){ const vl=lines.filter(l=>l.timesheet_id===v.id); return vl.length>0 && vl.every(l=>l.reviewed); }
+function _workedMap(approvedOnly){ const m={}; visits.forEach(v=>{ if(approvedOnly&&!_visitApproved(v))return; const dk=_vdate(v); if(!dk)return; const k=gSlug(v.tech_name)+'|'+dk; m[k]=(m[k]||0)+parseFloat(v.total_hours||0); }); return m; }
 
 function shiftGridWeek(n){
   if(!gridWeekStart) gridWeekStart=_mondayOf(new Date());
@@ -1242,8 +1246,20 @@ function exportWeeklyLabor(){
     while(m<=end && guard++<120){ weeks.push(new Date(m)); m=new Date(m.getFullYear(),m.getMonth(),m.getDate()+7); }
   }
   if(!weeks.length){ showToast('Set the From and To dates to pick the payroll period'); return; }
+  const inRangePre=k=>(!from||k>=from)&&(!to||k<=to);
   const groups=_buildRows(null);           // same employee list on every tab
-  const wm=_workedMap();                    // hours by name-slug|date (week-independent)
+  const wm=_workedMap(true);                // APPROVED hours only, by name-slug|date
+
+  // Anything still awaiting review inside the range is withheld from payroll.
+  // Say so loudly rather than quietly exporting a short number.
+  const held=visits.filter(v=>{ const d=_vdate(v); return d && inRangePre(d) && !_visitApproved(v); });
+  const heldHrs=held.reduce((a,v)=>a+parseFloat(v.total_hours||0),0);
+  if(held.length){
+    const who=[...new Set(held.map(v=>v.tech_name).filter(Boolean))].sort();
+    if(!confirm(`${held.length} timesheet${held.length!==1?'s':''} in this range (${heldHrs.toFixed(2)} h) have not been fully approved and will NOT be included:\n\n`
+      + who.join(', ')
+      + `\n\nExport approved hours only?`)) return;
+  }
   const header=['Last','First','Hire Date','Mon','Tue','Wed','Thu','Fri','Sat','Sun','Total','Holiday','PTO','Total w/PTO/Hldy','Salary Actual'];
   const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
   const num=n=>Math.round((n||0)*100)/100;
@@ -1260,7 +1276,8 @@ function exportWeeklyLabor(){
     const partial=payKeys.length<7;
     const ps=payKeys.length?_parseYMD(payKeys[0]):s, pe=payKeys.length?_parseYMD(payKeys[payKeys.length-1]):e;
     const aoa=[['Week of', `${fmt(s)} – ${fmt(e)}, ${e.getFullYear()}`
-      + (partial?`  (partial — paid ${fmt(ps)} – ${fmt(pe)})`:'')], [], header];
+      + (partial?`  (partial — paid ${fmt(ps)} – ${fmt(pe)})`:'')
+      + '  · approved hours only'], [], header];
     const emitRow=row=>{
       const [last,first]=splitName(row.name);
       let worked=0; const days=keys.map(k=>{ if(!inRange(k)) return ''; const h=_rowDayHours(row,k,wm); worked+=h; return num(h); });
