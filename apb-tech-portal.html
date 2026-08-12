@@ -210,6 +210,18 @@ html,body{height:100%;background:var(--bg);color:var(--ink);font-family:Inter,-a
     </div>
     <button class="signout-btn" onclick="logout()">Sign Out</button>
   </div>
+  <div id="punchBar" style="margin:0 0 14px;background:#fff;border:1px solid #DDE1E8;border-left:3px solid #C7CED9;border-radius:12px;padding:13px 15px">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div style="flex:1;min-width:150px">
+        <div id="punchState" style="font-size:14px;font-weight:700;color:#0D1626">Clock</div>
+        <div id="punchSince" style="font-size:12px;color:#6B7A92;margin-top:2px">&nbsp;</div>
+      </div>
+      <button id="punchMain" style="border:0;border-radius:10px;padding:12px 20px;font-size:14px;font-weight:700;background:#0B9E6A;color:#fff;font-family:inherit">Punch In</button>
+      <button id="punchLunch" style="display:none;border:1px solid #DDE1E8;border-radius:10px;padding:12px 16px;font-size:14px;font-weight:700;background:#FBF0E2;color:#B86A00;font-family:inherit">Lunch</button>
+    </div>
+    <div id="punchNote" style="display:none;font-size:12.5px;line-height:1.45;margin-top:10px;padding-top:9px;border-top:1px solid #F0F2F6;color:#6B7A92"></div>
+  </div>
+
   <div class="tabs">
     <div class="tab active" onclick="switchTab('log')">Log Time</div>
     <div class="tab" onclick="switchTab('tasks')">My Tasks <span class="tk-badge" id="tasksBadge" style="display:none">0</span></div>
@@ -461,8 +473,120 @@ async function checkPin(){
 }
 function showApp(){document.getElementById('loginScreen').classList.remove('active');document.getElementById('appScreen').classList.add('active');document.getElementById('headerName').textContent=currentTech.name;document.getElementById('headerRole').textContent=currentTech.role||'Tech';bootstrapPortal();}
 // One call returns everything the portal needs (active list, tasks, team, my hours).
+/* ---------- punch clock ----------
+   Identity comes from the portal session, not a PIN. Punching as
+   someone else means logging in as them. */
+const PUNCH_DEVICE_KEY='apb_punch_device';
+let punchState='out', punchSince=null, punchBusy=false;
+
+function punchDeviceId(){
+  let d=null;
+  try{ d=localStorage.getItem(PUNCH_DEVICE_KEY); }catch(e){}
+  if(!d){
+    d=(window.crypto&&crypto.randomUUID)?crypto.randomUUID()
+      :'dev-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10);
+    try{ localStorage.setItem(PUNCH_DEVICE_KEY,d); }catch(e){}
+  }
+  return d;
+}
+function punchTime(d){ return new Date(d).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}); }
+
+function paintPunch(){
+  const bar=document.getElementById('punchBar');
+  const main=document.getElementById('punchMain'), lunch=document.getElementById('punchLunch');
+  const st=document.getElementById('punchState'), si=document.getElementById('punchSince');
+  if(!bar) return;
+  if(punchState==='in'){
+    bar.style.borderLeftColor='#0B9E6A';
+    st.textContent='Clocked in';
+    si.textContent=punchSince?('Since '+punchTime(punchSince)):'\u00a0';
+    main.textContent='Punch Out'; main.dataset.a='out'; main.style.background='#C43030';
+    lunch.style.display=''; lunch.textContent='Lunch'; lunch.dataset.a='lunch';
+  }else if(punchState==='lunch'){
+    bar.style.borderLeftColor='#B86A00';
+    st.textContent='At lunch';
+    si.textContent=punchSince?('Since '+punchTime(punchSince)):'\u00a0';
+    main.textContent='Back from Lunch'; main.dataset.a='back'; main.style.background='#0B9E6A';
+    lunch.style.display='none';
+  }else{
+    bar.style.borderLeftColor='#C7CED9';
+    st.textContent='Not clocked in';
+    si.textContent='Punch in when you get to the shop.';
+    main.textContent='Punch In'; main.dataset.a='in'; main.style.background='#0B9E6A';
+    lunch.style.display='none';
+  }
+}
+
+function punchNote(msg,bad){
+  const n=document.getElementById('punchNote');
+  if(!n) return;
+  n.style.display=msg?'':'none';
+  n.style.color=bad?'#C43030':'#6B7A92';
+  n.textContent=msg||'';
+}
+
+async function loadPunchState(){
+  if(!apbToken) return;
+  try{
+    const{data:r}=await sb.rpc('punch_status_token',{p_token:apbToken});
+    if(r&&r.ok){ punchState=r.state||'out'; punchSince=r.since||null; }
+  }catch(e){}
+  paintPunch();
+}
+
+// Must run inside the tap handler — iOS will not prompt for a fix
+// requested on page load.
+function punchFix(){
+  return new Promise(function(res){
+    if(!navigator.geolocation) return res({ok:false,denied:false});
+    navigator.geolocation.getCurrentPosition(
+      function(p){ res({ok:true,lat:p.coords.latitude,lng:p.coords.longitude,acc:p.coords.accuracy}); },
+      function(err){ res({ok:false,denied:!!(err&&err.code===1)}); },
+      {enableHighAccuracy:true,timeout:15000,maximumAge:0});
+  });
+}
+
+async function doPortalPunch(action){
+  if(punchBusy||!apbToken) return;
+  punchBusy=true;
+  const main=document.getElementById('punchMain');
+  const label=main.textContent; main.textContent='Checking\u2026';
+  punchNote('');
+
+  const fix=await punchFix();
+  if(fix.denied){
+    main.textContent=label; punchBusy=false;
+    punchNote('This clock records where you punch. Turn location on for this site in your browser settings, then try again. Nothing was recorded.',true);
+    return;
+  }
+  try{
+    const{data:r,error}=await sb.rpc('punch_token',{
+      p_token:apbToken, p_action:action,
+      p_lat:fix.ok?fix.lat:null, p_lng:fix.ok?fix.lng:null,
+      p_accuracy:fix.ok?Math.round(fix.acc):null,
+      p_device_id:punchDeviceId()
+    });
+    if(error) throw error;
+    if(r&&r.ok){
+      punchState={'in':'in','lunch_out':'lunch','lunch_in':'in','out':'out'}[r.direction]||'out';
+      punchSince=r.event_at||new Date().toISOString();
+      paintPunch();
+      punchNote(r.message||(r.location?('Recorded at '+r.location):''), !!r.flagged);
+    }else{
+      main.textContent=label;
+      punchNote((r&&r.message)||'Could not record that punch.',true);
+      if(r&&r.error==='bad_sequence') loadPunchState();
+    }
+  }catch(e){
+    main.textContent=label;
+    punchNote('No connection. Nothing was recorded — try again when you have signal.',true);
+  }
+  punchBusy=false;
+}
+
 async function bootstrapPortal(){
   if(!apbToken)return;
+  loadPunchState();
   const{data:B,error}=await sb.rpc('apb_tech_bootstrap',{p_token:apbToken});
   if(error||!B){ return; }
   const activeEng=new Set((B.jobs||[]).filter(j=>j.engagement_id&&!j.archived&&LEAD_STATUSES.indexOf(j.status)<0).map(j=>j.engagement_id));
@@ -546,6 +670,13 @@ function renderTeamBoard(){
     return '<div class="tm-card'+(isMe?' me':'')+'"><div class="tm-name">'+tkEsc(g.name)+(isMe?' <span class="tm-you">You</span>':'')+'<span class="tm-count">'+open.length+'</span></div>'+rows+'</div>';
   }).join('');
 }
+document.addEventListener('DOMContentLoaded',function(){
+  var m=document.getElementById('punchMain'), l=document.getElementById('punchLunch');
+  if(m) m.addEventListener('click',function(){ doPortalPunch(m.dataset.a||'in'); });
+  if(l) l.addEventListener('click',function(){ doPortalPunch('lunch'); });
+  paintPunch();
+});
+
 function logout(){try{if(apbToken)sb.rpc('apb_tech_logout',{p_token:apbToken});}catch(e){}apbToken=null;try{sessionStorage.removeItem('apb_tech_token');}catch(e){}currentTech=null;selectedPin='';document.getElementById('appScreen').classList.remove('active');document.getElementById('loginScreen').classList.add('active');document.querySelectorAll('.tech-btn').forEach(b=>b.classList.remove('selected'));updatePinDots();document.getElementById('loginError').textContent='';resetForm();}
 function switchTab(tab){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');document.getElementById('tab'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active');if(tab==='history')loadHistory();if(tab==='log')refreshLogData();if(tab==='tasks')loadMyTasks();if(tab==='team')loadTeamBoard();}
 
