@@ -247,7 +247,7 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
   <button class="btn btn-export" onclick="exportExcel()" title="Full timesheet review as a formatted Excel workbook">⬇ Export Excel</button>
   <button class="btn btn-export" onclick="exportCSV()">⬇ Export CSV</button>
   <button class="btn btn-export" onclick="exportQuickBooks()" title="Reviewed, billable lines in Chelsea's QuickBooks format">⬇ Export for QuickBooks</button>
-  <button class="btn btn-export" onclick="exportWeeklyLabor()" title="Weekly Labor sheet (Mon–Sun by employee). Set the From/To dates to pick the range — one tab per week; otherwise exports the week shown in the grid.">⬇ Weekly Labor Sheet</button>
+  <button class="btn btn-export" onclick="exportWeeklyLabor()" title="FrankCrum payroll worksheet (Mon–Sun by employee). Set the From/To dates to pick the range — one tab per week; otherwise exports the week shown in the grid.">⬇ Export for FrankCrum</button>
   <button class="btn btn-primary" onclick="batchApproveAll()" id="batchAllBtn" style="display:none">✓ Approve All Pending</button>
   <span id="userEmail" style="font-size:11px;color:var(--ink-3);font-family:var(--mono);"></span>
   <button class="btn btn-ghost" id="signOutBtn" style="display:none" onclick="APBAuth.signOut().then(()=>location.reload())">Sign out</button>
@@ -491,7 +491,7 @@ async function loadData(){
     sb.from('apb_timesheet_lines').select('*').order('created_at',{ascending:true}),
     sb.from('apb_punches').select('timesheet_id,punch_in,punch_out,duration_hours'),
     sb.from('apb_engagements').select('id,name').order('name'),
-    sb.from('apb_jobs').select('id,engagement_id,job_number,job_name,status,archived')
+    sb.from('apb_jobs').select('id,engagement_id,job_number,job_name,status,archived').limit(5000)
   ]);
   visits=vRes.data||[]; lines=lRes.data||[]; punches=pRes.data||[]; engagements=eRes.data||[]; jobsAll=jRes.data||[];
   const techs=[...new Set(visits.map(v=>v.tech_name).filter(Boolean))].sort();
@@ -1129,9 +1129,18 @@ function revVesselOptions(sel){
   return '<option value="">— vessel / project —</option>'+engagements.map(e=>`<option value="${e.id}"${e.id===sel?' selected':''}>${rvEsc(e.name)}</option>`).join('');
 }
 function revJobOptions(engId,sel){
-  const js=jobsAll.filter(j=>j.engagement_id===engId && !j.archived && REV_LEAD_ST.indexOf(j.status)<0);
-  if(!js.length) return '<option value="">— no active jobs —</option>';
-  return '<option value="">— job —</option>'+js.map(j=>{const lbl=(j.job_number&&j.job_name&&!String(j.job_name).startsWith(j.job_number))?`${j.job_number} — ${j.job_name}`:(j.job_name||j.job_number||'—');return `<option value="${j.id}" data-num="${rvEsc(j.job_number||'')}" data-name="${rvEsc(j.job_name||'')}"${j.id===sel?' selected':''}>${rvEsc(lbl)}</option>`;}).join('');
+  const all=jobsAll.filter(j=>j.engagement_id===engId);
+  let js=all.filter(j=>!j.archived && REV_LEAD_ST.indexOf(j.status)<0);
+  // keep the line's current job selectable even if it's archived or still a lead
+  if(sel && !js.some(j=>j.id===sel)){ const cur=all.find(j=>j.id===sel); if(cur) js=[cur].concat(js); }
+  // never hand back a dead dropdown — fall back to every job on this vessel
+  if(!js.length) js=all;
+  if(!js.length) return '<option value="">— no jobs on this vessel —</option>';
+  return '<option value="">— job —</option>'+js.map(j=>{
+    const base=(j.job_number&&j.job_name&&!String(j.job_name).startsWith(j.job_number))?`${j.job_number} — ${j.job_name}`:(j.job_name||j.job_number||'—');
+    const flag=j.archived?' (archived)':(REV_LEAD_ST.indexOf(j.status)>=0?` (${j.status})`:'');
+    return `<option value="${j.id}" data-num="${rvEsc(j.job_number||'')}" data-name="${rvEsc(j.job_name||'')}"${j.id===sel?' selected':''}>${rvEsc(base+flag)}</option>`;
+  }).join('');
 }
 function startEditJob(lineId){document.getElementById('job-'+lineId).style.display='none';document.getElementById('job-edit-'+lineId).style.display='block';}
 function cancelEditJob(lineId){document.getElementById('job-'+lineId).style.display='';document.getElementById('job-edit-'+lineId).style.display='none';}
@@ -1251,8 +1260,8 @@ function exportWeeklyLabor(){
     while(wb.SheetNames.includes(nm)){ nm=(base+' '+i++).slice(0,31); }
     XLSX.utils.book_append_sheet(wb,ws,nm||'Week');
   });
-  XLSX.writeFile(wb, (from&&to)?`APB-Weekly-Labor_${from}_to_${to}.xlsx`:`APB-Weekly-Labor.xlsx`);
-  showToast('Weekly Labor sheet downloaded');
+  XLSX.writeFile(wb, (from&&to)?`APB-FrankCrum-Payroll_${from}_to_${to}.xlsx`:`APB-FrankCrum-Payroll.xlsx`);
+  showToast('FrankCrum payroll sheet downloaded');
 }
 
 // ── Final invoice description (Chelsea's format: MM-DD-YY TECHCODE: description) ──
