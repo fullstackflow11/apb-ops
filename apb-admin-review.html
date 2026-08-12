@@ -487,9 +487,9 @@ function _unlock(email){
 async function loadData(){
   document.getElementById('visitList').innerHTML='<div class="spinner"></div>';
   const [vRes,lRes,pRes,eRes,jRes]=await Promise.all([
-    sb.from('apb_timesheets').select('*, apb_engagements(name)').order('visit_date',{ascending:false}).limit(500),
-    sb.from('apb_timesheet_lines').select('*').order('created_at',{ascending:true}),
-    sb.from('apb_punches').select('timesheet_id,punch_in,punch_out,duration_hours'),
+    sb.from('apb_timesheets').select('*, apb_engagements(name)').order('visit_date',{ascending:false}).limit(5000),
+    sb.from('apb_timesheet_lines').select('*').order('created_at',{ascending:true}).limit(20000),
+    sb.from('apb_punches').select('timesheet_id,punch_in,punch_out,duration_hours').limit(20000),
     sb.from('apb_engagements').select('id,name').order('name'),
     sb.from('apb_jobs').select('id,engagement_id,job_number,job_name,status,archived').limit(5000)
   ]);
@@ -1229,7 +1229,7 @@ function exportWeeklyLabor(){
     let m=_mondayOf(_parseYMD(from)); const end=_parseYMD(to); let guard=0;
     while(m<=end && guard++<120){ weeks.push(new Date(m)); m=new Date(m.getFullYear(),m.getMonth(),m.getDate()+7); }
   }
-  if(!weeks.length) weeks=[gridWeekStart||_mondayOf(new Date())];
+  if(!weeks.length){ showToast('Set the From and To dates to pick the payroll period'); return; }
   const groups=_buildRows(null);           // same employee list on every tab
   const wm=_workedMap();                    // hours by name-slug|date (week-independent)
   const header=['Last','First','Hire Date','Mon','Tue','Wed','Thu','Fri','Sat','Sun','Total','Holiday','PTO','Total w/PTO/Hldy','Salary Actual'];
