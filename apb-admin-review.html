@@ -1240,6 +1240,16 @@ function exportExcel(){
 // if no range is set, exports the week currently shown in the grid. Hire Date and
 // Salary Actual are intentionally left blank (the app doesn't hold that data).
 async function exportWeeklyLabor(){
+  try{ await _exportWeeklyLabor(); }
+  catch(e){ console.error('FrankCrum export failed:', e);
+            showToast('Export failed: '+(e && e.message ? e.message : e)); }
+}
+
+async function _exportWeeklyLabor(){
+  // Rounds for the sheet: blank rather than a zero, so an empty cell
+  // reads as "nothing here" instead of "we measured zero".
+  const num = v => { const n = parseFloat(v); return (!n || isNaN(n)) ? '' : Math.round(n*100)/100; };
+
   // Builds FrankCrum's own Payroll Time Entry Worksheet, populated.
   // The pay logic lives in payroll_week() on the server: approved hours
   // only, salaried paid in whole days rather than by the clock, leave
