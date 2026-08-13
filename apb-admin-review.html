@@ -310,9 +310,9 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
     <div class="ctrl-sep"></div>
     <div class="date-range">
       <label>From</label>
-      <input type="date" id="dateFrom" onchange="renderVisits()">
+      <input type="date" id="dateFrom" onchange="reloadWithPunches()">
       <label>To</label>
-      <input type="date" id="dateTo" onchange="renderVisits()">
+      <input type="date" id="dateTo" onchange="reloadWithPunches()">
       <button onclick="clearDates()" style="font-size:11px;color:var(--ink-4);background:none;border:none;cursor:pointer;padding:2px 4px">✕</button>
     </div>
     <div class="ctrl-spacer"></div>
@@ -507,6 +507,7 @@ async function loadData(){
   document.getElementById('techFilter').innerHTML='<option value="">All Techs</option>'+techs.map(t=>`<option>${rvEsc(t)}</option>`).join('');
   document.getElementById('vesselFilter').innerHTML='<option value="">All Vessels</option>'+vessels.map(v=>`<option>${rvEsc(v)}</option>`).join('');
   await loadRosterAndPTO();
+  await loadPunchDays();
   updateSummary(); renderTechTable(); renderWeekGrid(); renderVisits();
   _wireGridNav();
 }
@@ -662,6 +663,27 @@ function _lastTok(n){ const p=String(n||'').trim().toLowerCase().replace(/\./g,'
 function _sameEmp(a,b){ if(_first(a)!==_first(b)) return false; const la=_lastTok(a),lb=_lastTok(b); if(!la||!lb) return true; return la===lb||la.startsWith(lb)||lb.startsWith(la); }
 // A merged row can have several name spellings (aliases); sum/match across all of them.
 function _rowDayHours(row,k,wm){ let h=0; row.aliases.forEach(a=>{ h+=wm[a+'|'+k]||0; }); return h; }
+// The punch clock records attendance independently of timesheets, so the
+// only thing the two share is who and which day. PUNCHDAY is that bridge.
+let PUNCHDAY={};
+async function loadPunchDays(){
+  const from=document.getElementById('dateFrom').value
+    || _ymd(new Date(Date.now()-45*864e5));
+  const to=document.getElementById('dateTo').value || _ymd(new Date());
+  try{
+    const {data,error}=await sb.rpc('punch_day_hours',{p_from:from,p_to:to});
+    if(error) throw error;
+    PUNCHDAY={};
+    (data||[]).forEach(r=>{ PUNCHDAY[gSlug(r.tech_name)+'|'+r.work_date]=r; });
+  }catch(e){ PUNCHDAY={}; }
+}
+async function reloadWithPunches(){ await loadPunchDays(); renderVisits(); }
+
+function punchFor(v){
+  const d=_vdate(v); if(!d||!v.tech_name) return null;
+  return PUNCHDAY[gSlug(v.tech_name)+'|'+d]||null;
+}
+
 function _rowOnPTO(row,k){ return PTOREQS.some(r=>r&&String(r.status||'').toLowerCase()==='approved'&&r.start<=k&&k<=r.end&&_sameEmp(r.name,row.name)); }
 // "Unpaid" is one of the leave types on the PTO page, and it is approved the
 // same way as vacation or sick — but it is not paid time off, and Jerry posts
@@ -862,7 +884,20 @@ function renderCard(v,vesselF){
   const dateStr=v.visit_date?new Date(v.visit_date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'}):'—';
   const submittedStr=v.created_at?new Date(v.created_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
   const _p=punchFor(v.id);
-  const clockStr=(_p&&(_p.punch_in||_p.punch_out))?(fmtPunch(_p.punch_in)+(_p.punch_out?' – '+fmtPunch(_p.punch_out):'')):'';
+  const _pc=punchFor(v);
+  let clockStr='', clockTitle='Clock in / out', clockNote='';
+  if(_pc && (_pc.punch_in||_pc.punch_out)){
+    clockStr=fmtPunch(_pc.punch_in)+(_pc.punch_out?' \u2013 '+fmtPunch(_pc.punch_out):' \u2013 still in');
+    const w=_pc.shift_open?null:Number(_pc.worked_hours||0);
+    const submitted=Number(v.total_hours||0);
+    if(w!=null){
+      clockTitle='Clocked '+w.toFixed(2)+' h'+(_pc.lunch_hours?' (lunch '+Number(_pc.lunch_hours).toFixed(2)+' h)':'');
+      const diff=submitted-w;
+      if(Math.abs(diff)>0.25) clockNote=(diff>0?'+':'')+diff.toFixed(2)+' h vs clock';
+    }
+  }else if(_p&&(_p.punch_in||_p.punch_out)){
+    clockStr=fmtPunch(_p.punch_in)+(_p.punch_out?' \u2013 '+fmtPunch(_p.punch_out):'');
+  }
   const photos=v.photo_urls?v.photo_urls.split(',').filter(Boolean):[];
   const selected=selectedVisits.has(v.id);
 
@@ -933,7 +968,8 @@ function renderCard(v,vesselF){
       <div class="visit-meta">
         <span class="visit-tech-pill">${rvEsc(v.tech_name||'—')}</span>
         <span class="visit-date">${dateStr} <span class="edit-icon" onclick="event.stopPropagation();startEditDate('${v.id}')">✎</span></span>
-        ${clockStr?`<span class="visit-date" style="opacity:.65" title="Clock in / out">⏱ ${clockStr}</span>`:''}
+        ${clockStr?`<span class="visit-date" style="opacity:.65" title="${rvEsc(clockTitle)}">⏱ ${clockStr}</span>`:''}
+        ${clockNote?`<span class="visit-date" style="color:#C43030;font-weight:600" title="Submitted hours against the clock">${rvEsc(clockNote)}</span>`:''}
         ${submittedStr?`<span class="visit-date" style="opacity:.65" title="When this timecard was submitted">🕑 submitted ${submittedStr}</span>`:''}
         <span class="visit-hours">${shownHours.toFixed(1)}h</span>
         <span class="status-pill ${allReviewed?'done':'pending'}">${allReviewed?'✓ Done':'Pending'}</span>
@@ -1524,7 +1560,7 @@ Object.assign(window, {
   openReviewModal, saveDesc, saveHours, setFilter, startEditDesc, startEditHours,
   toggleBillable, toggleCard, toggleReviewed, toggleTechSummary, renderVisits,
   startEditJob, cancelEditJob, onRevVesselChange, saveJobLine, startEditDate, saveVisitDate,
-  shiftGridWeek, gridThisWeek, gridPickTech, frankcrumFill
+  shiftGridWeek, gridThisWeek, gridPickTech, frankcrumFill, reloadWithPunches
 });
 })();
 </script>
