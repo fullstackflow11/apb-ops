@@ -691,7 +691,8 @@ function _rowOnPTO(row,k){ return PTOREQS.some(r=>r&&String(r.status||'').toLowe
 function _leaveOn(row,k,unpaidOnly){
   return PTOREQS.some(r=>r && String(r.status||'').toLowerCase()==='approved'
     && r.start<=k && k<=r.end && _sameEmp(r.name,row.name)
-    && ((String(r.type||'')==='unpaid') === !!unpaidOnly));
+    // Pay status is its own field now; older requests used type='unpaid'.
+    && ((r.paid!==undefined ? r.paid===false : String(r.type||'')==='unpaid') === !!unpaidOnly));
 }
 function _leaveHours(row,keys,unpaidOnly){
   let h=0;
