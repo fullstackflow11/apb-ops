@@ -219,7 +219,11 @@ tbody tr:hover{background:var(--panel-2)}
     </div>
     <div class="f2">
       <div class="fg"><label>Department *</label><select id="rDept"></select></div>
-      <div class="fg"><label>Type *</label><select id="rType"></select></div>
+      <div class="fg"><label>Reason *</label><select id="rType"></select></div>
+      <div class="fg"><label>Paid? *</label><select id="rPay">
+        <option value="paid">Paid</option>
+        <option value="unpaid">Unpaid</option>
+      </select></div>
     </div>
     <div class="f2">
       <div class="fg"><label>First day *</label><input id="rStart" type="date" onchange="syncDates()"></div>
@@ -274,16 +278,19 @@ const DEPTS=['Fabrication / Shop','Welding','Field / Service','Project Managemen
 // Not everyone accrues PTO, so whether a request is paid has to be obvious
 // at the point of asking and at the point of approving — not worked out
 // later from the type name.
+// The reason and whether it is paid are two separate facts \u2014 sick leave can
+// be unpaid, and not everyone accrues PTO. One combined list forced a wrong
+// answer on one of them.
 const TYPES={
-  vacation:{label:'Vacation \u2014 PAID', paid:true},
-  sick:{label:'Sick \u2014 PAID', paid:true},
-  personal:{label:'Personal \u2014 PAID', paid:true},
-  bereavement:{label:'Bereavement \u2014 PAID', paid:true},
-  jury:{label:'Jury Duty \u2014 PAID', paid:true},
-  unpaid:{label:'Unpaid time off \u2014 NOT PAID', paid:false}
+  vacation:{label:'Vacation'}, sick:{label:'Sick'}, personal:{label:'Personal'},
+  bereavement:{label:'Bereavement'}, jury:{label:'Jury Duty'}, other:{label:'Other'},
+  unpaid:{label:'Time off'}      // legacy rows filed before pay status was separate
 };
-const isPaid=t=>!(TYPES[t]&&TYPES[t].paid===false);
-const payBadge=t=>isPaid(t)
+
+// Requests filed before this change carry no `paid` field; those used the
+// type 'unpaid' to mean it.
+const isPaid=r=>(r && r.paid!==undefined) ? !!r.paid : String(r&&r.type)!=='unpaid';
+const payBadge=r=>isPaid(r)
   ? '<span class="paytag pay-yes">Paid</span>'
   : '<span class="paytag pay-no">Unpaid</span>';
 
@@ -421,7 +428,7 @@ function renderApprovals(){
     <h3>⏳ Waiting on you <span class="pill">${pend.length} to review</span></h3>
     ${pend.map(r=>`<div class="areq">
       <span class="who">${esc(r.name)}</span>
-      <span class="det">${esc(TYPES[r.type]?TYPES[r.type].label:r.type)}${payBadge(r.type)} · ${esc(fmtRange(r.start,r.end))} · ${bizDays(r)%1?bizDays(r).toFixed(1):bizDays(r)} day${bizDays(r)===1?'':'s'}${r.notes?' · "'+esc(r.notes)+'"':''}</span>
+      <span class="det">${esc(TYPES[r.type]?TYPES[r.type].label:r.type)}${payBadge(r)} · ${esc(fmtRange(r.start,r.end))} · ${bizDays(r)%1?bizDays(r).toFixed(1):bizDays(r)} day${bizDays(r)===1?'':'s'}${r.notes?' · "'+esc(r.notes)+'"':''}</span>
       <span class="acts">
         <button class="mini ok" onclick="decide('${r.id}','approved',event)">✓ Approve</button>
         <button class="mini no" onclick="decide('${r.id}','denied',event)">✕ Deny</button>
@@ -500,7 +507,7 @@ function listHTML(){
       : (canDelete(r)?`<button class="mini no" onclick="cancelReq('${r.id}',event)">Cancel</button>`:'');
     return `<tr onclick="openDetail('${r.id}')">
       <td><div class="tname">${esc(r.name)}</div><div class="tdept">${esc(r.dept||'')}</div></td>
-      <td>${esc(TYPES[r.type]?TYPES[r.type].label:r.type)}${payBadge(r.type)}</td>
+      <td>${esc(TYPES[r.type]?TYPES[r.type].label:r.type)}${payBadge(r)}</td>
       <td>${esc(fmtRange(r.start,r.end))}</td>
       <td>${d}</td>
       <td><span class="badge st-${r.status}">${r.status}</span></td>
@@ -518,12 +525,14 @@ function canDelete(r){ return role==='admin' || (me() && r.name===me() && r.stat
 function openReq(){
   document.getElementById('rosterList').innerHTML=team().map(m=>`<option value="${esc(m.name)}">`).join('');
   document.getElementById('rDept').innerHTML=DEPTS.map(d=>`<option>${d}</option>`).join('');
-  document.getElementById('rType').innerHTML=Object.keys(TYPES).map(k=>`<option value="${k}">${TYPES[k].label}</option>`).join('');
+  document.getElementById('rType').innerHTML=Object.keys(TYPES).filter(k=>k!=='unpaid')
+    .map(k=>`<option value="${k}">${TYPES[k].label}</option>`).join('');
   document.getElementById('rName').value=me()||'';
   // guess dept from roster role
   const t=team().find(m=>m.name===me());
   if(t) document.getElementById('rDept').value = t.role==='pm'?'Project Management':(t.role==='accounting'?'Accounting':(t.role==='purchasing'?'Purchasing':'Fabrication / Shop'));
   document.getElementById('rType').value='vacation';
+  document.getElementById('rPay').value='paid';
   const tk=todayKey();
   document.getElementById('rStart').value=tk; document.getElementById('rEnd').value=tk;
   document.getElementById('rHalf').checked=false;
@@ -550,7 +559,9 @@ function saveReq(){
   if(e<s){ toast('Last day is before the first day','red'); return; }
   const half=document.getElementById('rHalf').checked && s===e;
   const r={ id:uid(), name, dept:document.getElementById('rDept').value,
-    type:document.getElementById('rType').value, start:s, end:e, half,
+    type:document.getElementById('rType').value,
+    paid:document.getElementById('rPay').value==='paid',
+    start:s, end:e, half,
     notes:document.getElementById('rNotes').value.trim(),
     status:'pending', submittedBy:(window.APBRoles?APBRoles.label():'')||name, submittedAt:Date.now() };
   // auto-add unknown name to roster so they show up next time
@@ -582,7 +593,7 @@ function openDetail(id){
   const ytd=reqs().filter(x=>x.name===r.name && x.status==='approved' && x.start.slice(0,4)===String(viewY)).reduce((a,x)=>a+bizDays(x),0);
   document.getElementById('detTitle').textContent=r.name;
   document.getElementById('detSub').textContent=(r.dept||'')+' \u00b7 '+(TYPES[r.type]?TYPES[r.type].label:r.type)
-    +' \u00b7 '+(isPaid(r.type)?'PAID':'UNPAID');
+    +' \u00b7 '+(isPaid(r)?'PAID':'UNPAID');
   document.getElementById('detBody').innerHTML=`
     <div class="drow"><span class="k">Status</span><span class="v"><span class="badge st-${r.status}">${r.status}</span></span></div>
     <div class="drow"><span class="k">Dates</span><span class="v">${esc(fmtRange(r.start,r.end))}${r.half?' (half day)':''}</span></div>
@@ -614,7 +625,7 @@ function openDay(key){
   if(list.length){
     html+=list.map(r=>`<div class="di" onclick="closeMod('dayModal');openDetail('${r.id}')">
       <span class="dot t-${r.type}"></span>
-      <span style="flex:1"><b>${esc(r.name)}</b> <span style="color:var(--ink-3);font-size:12px">· ${esc(TYPES[r.type]?TYPES[r.type].label:r.type)}</span>${payBadge(r.type)}</span>
+      <span style="flex:1"><b>${esc(r.name)}</b> <span style="color:var(--ink-3);font-size:12px">· ${esc(TYPES[r.type]?TYPES[r.type].label:r.type)}</span>${payBadge(r)}</span>
       <span class="badge st-${r.status}">${r.status}</span>
     </div>`).join('');
   } else if(!hol){
@@ -631,4 +642,4 @@ function toast(msg,cls){ const el=document.getElementById('toast'); el.textConte
 document.querySelectorAll('.modal-bg').forEach(bg=>bg.addEventListener('click',e=>{ if(e.target===bg) bg.classList.remove('open'); }));
 </script>
 </body>
-</html> 
+</html>
