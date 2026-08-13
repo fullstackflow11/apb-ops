@@ -47,6 +47,8 @@ header{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.92);backdr
 .qb-chip{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:6px;cursor:pointer;border:1px solid transparent;white-space:nowrap;user-select:none}
 .qb-in{background:#E4F5EE;color:#0B9E6A;border-color:#BFE6D5}
 .qb-out{background:#F5F6FA;color:#9BA9BE;border-color:#E2E6EE}
+.qb-na{background:transparent;color:#C3CBD8;border-color:transparent;cursor:default;font-weight:600}
+.qb-na:hover{filter:none}
 .qb-chip:hover{filter:brightness(.96)}
 
 #fcDrop{cursor:pointer}
@@ -985,7 +987,16 @@ function renderCard(v,vesselF){
         ${clockStr?`<span class="visit-date" style="opacity:.65" title="${rvEsc(clockTitle)}">⏱ ${clockStr}</span>`:''}
         ${clockNote?`<span class="visit-date" style="color:#C43030;font-weight:600" title="Submitted hours against the clock">${rvEsc(clockNote)}</span>`:''}
         ${(()=>{ const q=vLines.filter(l=>l.reviewed&&isBillable(l));
-            if(!q.length) return '';
+            // Every card says something. A blank space reads as "the feature
+            // is broken here" when it actually means "nothing to key".
+            if(!q.length){
+              if(!vLines.length) return '';
+              const why = vLines.some(l=>!l.reviewed) ? 'Not reviewed yet' : 'Non-billable';
+              const tip = why==='Non-billable'
+                ? 'Non-billable time is never keyed into QuickBooks'
+                : 'Review these lines first \u2014 only reviewed billable time goes to QuickBooks';
+              return `<span class="qb-chip qb-na" title="${tip}">\u2014 ${why}</span>`;
+            }
             const inq=q.filter(l=>l.qb_entered).length;
             const cls=inq===q.length?'qb-in':'qb-out';
             const txt=inq===q.length?'\u2713 In QB':(inq?inq+'/'+q.length+' in QB':'\u25cb Not in QB');
