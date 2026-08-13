@@ -108,7 +108,8 @@
   </header>
 
   <div class="tabs" id="tabs">
-    <button class="tab on" data-v="ex">Needs review <span class="n" id="n-ex"></span></button>
+    <button class="tab on" data-v="all">Clocked vs logged <span class="n" id="n-all"></span></button>
+    <button class="tab" data-v="ex">Needs review <span class="n" id="n-ex"></span></button>
     <button class="tab" data-v="fl">Flagged punches <span class="n" id="n-fl"></span></button>
     <button class="tab" data-v="rf">Turned away <span class="n" id="n-rf"></span></button>
     <button class="tab" data-v="dv">Shared phones <span class="n" id="n-dv"></span></button>
@@ -135,7 +136,7 @@ const clock=t=>t?new Date(t).toLocaleTimeString([],{hour:'numeric',minute:'2-dig
 const day=t=>t?new Date(t).toLocaleDateString([],{month:'short',day:'numeric'}):'—';
 const hrs=v=>(v==null||v==='')?'—':Number(v).toFixed(2);
 
-let view='ex', data={ex:[],fl:[],rf:[],dv:[]};
+let view='all', data={all:[],ex:[],fl:[],rf:[],dv:[]};
 
 function setRange(days){
   const to=new Date(); const from=new Date();
@@ -146,19 +147,61 @@ function setRange(days){
 // ---- rendering -------------------------------------------------------------
 function paint(){
   const rows=data[view]||[];
-  ['ex','fl','rf','dv'].forEach(k=>$('n-'+k).textContent=(data[k]||[]).length||'');
+  ['all','ex','fl','rf','dv'].forEach(k=>$('n-'+k).textContent=(data[k]||[]).length||'');
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.v===view));
   $('panes').innerHTML = rows.length ? RENDER[view](rows) : EMPTY[view];
 }
 
 const EMPTY={
+  all:`<div class="card"><div class="empty"><b>No days yet</b>Nobody has clocked in during this period.</div></div>`,
   ex:`<div class="card"><div class="empty"><b>Nothing to review</b>Every clock record matches the hours submitted.</div></div>`,
   fl:`<div class="card"><div class="empty"><b>No flagged punches</b>Everyone punched from a known site with a good location fix.</div></div>`,
   rf:`<div class="card"><div class="empty"><b>Nobody turned away</b>No one was refused a punch in this period.</div></div>`,
   dv:`<div class="card"><div class="empty"><b>No shared phones</b>Every handset punched one person only.</div></div>`
 };
 
+const STATUS={
+  'match':               ['p-green','Matches'],
+  'submitted over clock':['p-red',  'Over the clock'],
+  'submitted under clock':['p-amber','Under the clock'],
+  'no punch':            ['p-red',  'No punch'],
+  'no timesheet':        ['p-amber','No timesheet'],
+  'open punch':          ['p-amber','Still clocked in'],
+  'lunch not closed':    ['p-amber','Lunch not closed']
+};
+
 const RENDER={
+  // Grouped by day, newest first — the way somebody actually reads a week.
+  all(rows){
+    const days={};
+    rows.forEach(r=>{ (days[r.work_date]=days[r.work_date]||[]).push(r); });
+    return Object.keys(days).sort().reverse().map(d=>{
+      const list=days[d];
+      const clocked=list.reduce((a,r)=>a+Number(r.worked_hours||0),0);
+      const logged =list.reduce((a,r)=>a+Number(r.submitted_hours||0),0);
+      const body=list.map(r=>{
+        const v=Number(r.variance_hours||0);
+        const cls=v>0.25?'over':(v<-0.25?'under':'');
+        const st=STATUS[r.status]||['p-grey',r.status];
+        return `<tr>
+          <td class="who">${esc(r.tech_name)}</td>
+          <td class="num muted">${clock(r.punch_in)}</td>
+          <td class="num muted">${clock(r.punch_out)}</td>
+          <td class="num">${hrs(r.lunch_hours)}</td>
+          <td class="num">${hrs(r.worked_hours)}</td>
+          <td class="num">${hrs(r.submitted_hours)}</td>
+          <td class="num delta ${cls}">${v?(v>0?'+':'')+v.toFixed(2):'—'}</td>
+          <td><span class="pill ${st[0]}">${st[1]}</span></td>
+        </tr>`;}).join('');
+      return `<div class="card">
+        <h2>${day(d+'T12:00')}<span>${list.length} ${list.length===1?'person':'people'} ·
+          ${clocked.toFixed(2)} h clocked · ${logged.toFixed(2)} h logged</span></h2>
+        <table><thead><tr>
+          <th>Tech</th><th>In</th><th>Out</th><th>Lunch</th>
+          <th>Clocked</th><th>Logged</th><th>Difference</th><th>Status</th>
+        </tr></thead><tbody>${body}</tbody></table>
+      </div>`;}).join('');
+  },
   ex(rows){
     const body=rows.map(r=>{
       const v=Number(r.variance_hours||0);
@@ -246,6 +289,7 @@ async function load(){
   if(!from||!to) return;
   $('sub').textContent='Loading…';
   const calls=[
+    ['all','punch_vs_timesheet_list'],
     ['ex','punch_exceptions_list'],
     ['fl','punch_flagged_list'],
     ['rf','punch_refused_list'],
