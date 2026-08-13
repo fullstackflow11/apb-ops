@@ -253,7 +253,7 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
   <div class="header-sep"></div>
   <a href="index.html" class="btn btn-ghost" style="font-size:12px;">⌂ Home</a>
   <div class="hdr-spacer"></div>
-  <button class="btn btn-export" onclick="exportQuickBooks()" title="Reviewed, billable lines not yet keyed into QuickBooks">⬇ Export for QuickBooks</button>
+  <button class="btn btn-export" onclick="exportQuickBooks()" title="Reviewed time not yet keyed into QuickBooks — billable and non-billable">⬇ Export for QuickBooks</button>
   <span id="qbPending" style="display:none;font-size:12.5px;color:var(--ink-3);align-self:center;margin-left:2px"></span>
   <label class="btn btn-export" id="fcDrop" for="fcFile"
     title="Drop in the worksheet FrankCrum sent this week. Their layout, their people, their pay period — filled in and handed back.">⬆ FrankCrum worksheet</label>
@@ -312,7 +312,7 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
     <div class="filter-chip" onclick="setFilter('pending',this)">Pending</div>
     <div class="filter-chip" onclick="setFilter('reviewed',this)">Reviewed</div>
     <div class="filter-chip" onclick="setFilter('nonbillable',this)">Non-Billable</div>
-    <div class="filter-chip" onclick="setFilter('notinqb',this)" title="Reviewed and billable, but not yet keyed into QuickBooks">Not in QB</div>
+    <div class="filter-chip" onclick="setFilter('notinqb',this)" title="Reviewed, but not yet keyed into QuickBooks">Not in QB</div>
     <div class="ctrl-sep"></div>
     <select class="ctrl-select" id="techFilter" onchange="renderVisits()"><option value="">All Techs</option></select>
     <select class="ctrl-select" id="vesselFilter" onchange="renderVisits()"><option value="">All Vessels</option></select>
@@ -853,7 +853,7 @@ function _filteredVisits(){
     if(currentFilter==='pending')return vLines.some(l=>!l.reviewed);
     if(currentFilter==='reviewed')return vLines.length&&vLines.every(l=>l.reviewed);
     if(currentFilter==='nonbillable')return vLines.some(l=>!isBillable(l));
-    if(currentFilter==='notinqb')return vLines.some(l=>l.reviewed&&isBillable(l)&&!l.qb_entered);
+    if(currentFilter==='notinqb')return vLines.some(l=>l.reviewed&&!l.qb_entered);
     return true;
   });
 }
@@ -968,7 +968,7 @@ function renderCard(v,vesselF){
             </div>
           </td>
           <td><button class="review-btn ${l.reviewed?'done':'pending'}" onclick="${l.reviewed?`toggleReviewed('${l.id}',false,this)`:`openReviewModal('${l.id}')`}">${l.reviewed?'✓ Done':'Review'}</button><div class="approved-by" id="appr-${l.id}" style="${l.reviewed&&l.reviewed_by?'':'display:none'}">${apprLabel(l)}</div>
-            ${isBillable(l)&&l.reviewed?`<div style="margin-top:5px"><span class="qb-chip ${l.qb_entered?'qb-in':'qb-out'}" id="qb-${l.id}"
+            ${l.reviewed?`<div style="margin-top:5px"><span class="qb-chip ${l.qb_entered?'qb-in':'qb-out'}" id="qb-${l.id}"
               title="${l.qb_entered?('Entered in QuickBooks'+(l.qb_entered_by?' by '+rvEsc(l.qb_entered_by):'')+' \u2014 click to undo'):'Not in QuickBooks yet \u2014 click when you have keyed it'}"
               onclick="event.stopPropagation();qbToggle('${l.id}')">${l.qb_entered?'\u2713 In QB':'\u25cb Not in QB'}</span></div>`:''}
           </td>
@@ -986,21 +986,16 @@ function renderCard(v,vesselF){
         <span class="visit-date">${dateStr} <span class="edit-icon" onclick="event.stopPropagation();startEditDate('${v.id}')">✎</span></span>
         ${clockStr?`<span class="visit-date" style="opacity:.65" title="${rvEsc(clockTitle)}">⏱ ${clockStr}</span>`:''}
         ${clockNote?`<span class="visit-date" style="color:#C43030;font-weight:600" title="Submitted hours against the clock">${rvEsc(clockNote)}</span>`:''}
-        ${(()=>{ const q=vLines.filter(l=>l.reviewed&&isBillable(l));
-            // Every card says something. A blank space reads as "the feature
-            // is broken here" when it actually means "nothing to key".
+        ${(()=>{ const q=vLines.filter(l=>l.reviewed);
+            // Every card says something, so a blank never reads as broken.
             if(!q.length){
               if(!vLines.length) return '';
-              const why = vLines.some(l=>!l.reviewed) ? 'Not reviewed yet' : 'Non-billable';
-              const tip = why==='Non-billable'
-                ? 'Non-billable time is never keyed into QuickBooks'
-                : 'Review these lines first \u2014 only reviewed billable time goes to QuickBooks';
-              return `<span class="qb-chip qb-na" title="${tip}">\u2014 ${why}</span>`;
+              return `<span class="qb-chip qb-na" title="Review these lines first \u2014 reviewed time is what gets keyed">\u2014 Not reviewed yet</span>`;
             }
             const inq=q.filter(l=>l.qb_entered).length;
             const cls=inq===q.length?'qb-in':'qb-out';
             const txt=inq===q.length?'\u2713 In QB':(inq?inq+'/'+q.length+' in QB':'\u25cb Not in QB');
-            return `<span class="qb-chip ${cls}" title="Click to mark all ${q.length} billable line(s) on this visit"
+            return `<span class="qb-chip ${cls}" title="Click to mark all ${q.length} line(s) on this visit as entered"
               onclick="event.stopPropagation();qbToggleVisit('${v.id}')">${txt}</span>`; })()}
         ${submittedStr?`<span class="visit-date" style="opacity:.65" title="When this timecard was submitted">🕑 submitted ${submittedStr}</span>`:''}
         <span class="visit-hours">${shownHours.toFixed(1)}h</span>
@@ -1495,10 +1490,29 @@ function finalInvoiceDesc(l,v){ const desc=l.work_description||l.description||''
 async function exportQuickBooks(){
   // Only lines nobody has keyed yet. A timesheet that lands after a day was
   // already entered comes through here next time, instead of disappearing.
-  const {data:allRows,error} = await sb.from('apb_invoice_lines_ready')
-    .select('*').order('work_date',{ascending:false});
+  // All reviewed time, billable or not — non-billable hours still get keyed,
+  // they just carry Billable = N.
+  //
+  // The From/To dates on screen bound the export. Without that it dumped the
+  // whole history every time, which is useless when you are keying one week.
+  const qbFrom=document.getElementById('dateFrom').value;
+  const qbTo=document.getElementById('dateTo').value;
+  const qbTech=document.getElementById('techFilter').value;
+
+  let qq=sb.from('apb_qb_time_ready').select('*').order('work_date',{ascending:false});
+  if(qbFrom) qq=qq.gte('work_date',qbFrom);
+  if(qbTo)   qq=qq.lte('work_date',qbTo);
+  if(qbTech) qq=qq.eq('tech_name',qbTech);
+
+  const {data:allRows,error} = await qq;
   if(error){ showToast('Error: '+error.message); return; }
-  if(!allRows || !allRows.length){ showToast('No reviewed, billable lines ready to invoice'); return; }
+
+  const scope=(qbFrom||qbTo) ? ((qbFrom||'start')+' to '+(qbTo||'today')) : 'all dates';
+  if(!allRows || !allRows.length){ showToast('No reviewed lines to enter for '+scope); return; }
+  if(!qbFrom && !qbTo){
+    if(!confirm('No date range is set, so this covers every reviewed line on record ('
+      +allRows.length+').\n\nSet From and To first if you only want one period.\n\nContinue anyway?')) return;
+  }
 
   const ids=allRows.map(r=>r.id);
   let entered={};
@@ -1511,8 +1525,23 @@ async function exportQuickBooks(){
   const data=allRows.filter(r=>!entered[r.id]);
   const already=allRows.length-data.length;
   if(!data.length){
-    showToast('Nothing new — all '+allRows.length+' billable lines are already in QuickBooks');
+    showToast('Nothing new for '+scope+' — all '+allRows.length+' line(s) already in QuickBooks');
     return;
+  }
+
+  // Anyone with no timesheet in for a working day in this period. She needs
+  // this before she keys, not after their hours turn up.
+  if(qbFrom && qbTo){
+    try{
+      const {data:miss}=await sb.rpc('missing_timesheets',{p_from:qbFrom,p_to:qbTo});
+      if(miss && miss.length){
+        const total=miss.reduce((a,r)=>a+Number(r.n||0),0);
+        const detail=miss.slice(0,10).map(r=>'  '+r.work_date+' \u2014 '+r.techs).join('\n');
+        if(!confirm('Heads up: '+total+' missing timesheet(s) in this period.\n\n'
+          +detail+(miss.length>10?'\n  …and '+(miss.length-10)+' more day(s)':'')
+          +'\n\nThose hours are not in this export and will have to be keyed later.\n\nExport anyway?')) return;
+      }
+    }catch(e){}
   }
 
   // Late arrivals are the ones worth calling out by name.
@@ -1596,12 +1625,15 @@ async function exportQuickBooks(){
   const rows=[header, ...data.map(r=>[
     r.work_date||'', r.tech_name||'',
     qbCustomerProject(r),
-    (+r.hours||0).toFixed(2), 'Y', r.work_description||r.invoice_line||''
+    (+r.hours||0).toFixed(2), (r.billable===false?'N':'Y'), r.work_description||r.invoice_line||''
   ])];
   const csv=rows.map(r=>r.map(c=>'"'+csvSafe(c).replace(/"/g,'""')+'"').join(',')).join('\n');
   const blob=new Blob([csv],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download=`apb-quickbooks-${new Date().toISOString().split('T')[0]}.csv`;a.click();
+  a.download=(qbFrom||qbTo)
+    ? `apb-quickbooks_${qbFrom||'start'}_to_${qbTo||'today'}.csv`
+    : `apb-quickbooks-all_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
 
   // Stamp only after she confirms it actually went in, so a download she
   // abandons does not quietly mark work as done.
@@ -1613,7 +1645,7 @@ async function exportQuickBooks(){
     if(me) showToast('Exported, but could not mark them: '+me.message);
     else { showToast(data.length+' line(s) exported and marked entered'); qbBadge(); return; }
   }
-  showToast(`QuickBooks export downloaded · ${data.length} line${data.length!==1?'s':''} · not marked`);
+  showToast(`QuickBooks export downloaded · ${data.length} line${data.length!==1?'s':''} · ${scope} · not marked`);
 }
 
 // She keys QuickBooks by hand, so she needs to mark a line herself as well
@@ -1639,7 +1671,7 @@ async function qbDays(){ /* day tiles removed — status lives on each card */ }
 
 // Marking a whole visit at once, because she keys a timesheet at a time.
 async function qbToggleVisit(vid){
-  const q=lines.filter(l=>l.timesheet_id===vid&&l.reviewed&&isBillable(l));
+  const q=lines.filter(l=>l.timesheet_id===vid&&l.reviewed);
   if(!q.length) return;
   const now=!q.every(l=>l.qb_entered);
   const by=(window.APBRoles&&APBRoles.label&&APBRoles.label())||'admin';
