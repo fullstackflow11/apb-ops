@@ -161,6 +161,7 @@ const EMPTY={
 };
 
 const STATUS={
+  'in progress':         ['p-grey', 'On the clock'],
   'match':               ['p-green','Matches'],
   'submitted over clock':['p-red',  'Over the clock'],
   'submitted under clock':['p-amber','Under the clock'],
@@ -188,9 +189,9 @@ const RENDER={
           <td class="num muted">${clock(r.punch_in)}</td>
           <td class="num muted">${clock(r.punch_out)}</td>
           <td class="num">${hrs(r.lunch_hours)}</td>
-          <td class="num">${hrs(r.worked_hours)}</td>
+          <td class="num">${r.status==='in progress'?'<span class="muted">running</span>':hrs(r.worked_hours)}</td>
           <td class="num">${hrs(r.submitted_hours)}</td>
-          <td class="num delta ${cls}">${v?(v>0?'+':'')+v.toFixed(2):'—'}</td>
+          <td class="num delta ${cls}">${(r.variance_hours==null)?'—':(v?(v>0?'+':'')+v.toFixed(2):'—')}</td>
           <td><span class="pill ${st[0]}">${st[1]}</span></td>
         </tr>`;}).join('');
       return `<div class="card">
