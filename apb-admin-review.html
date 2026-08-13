@@ -48,12 +48,7 @@ header{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.92);backdr
 .qb-in{background:#E4F5EE;color:#0B9E6A;border-color:#BFE6D5}
 .qb-out{background:#F5F6FA;color:#9BA9BE;border-color:#E2E6EE}
 .qb-chip:hover{filter:brightness(.96)}
-#qbDays{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 12px}
-.qbd{font-size:12px;padding:6px 10px;border-radius:9px;border:1px solid var(--line);background:#fff;white-space:nowrap}
-.qbd b{font-weight:700}
-.qbd.done{background:#E4F5EE;border-color:#BFE6D5;color:#0B7A52}
-.qbd.late{background:#FBEAEA;border-color:#F2C9C9;color:#C43030}
-.qbd.todo{background:#FBF0E2;border-color:#F0DCBE;color:#B86A00}
+
 #fcDrop{cursor:pointer}
 #fcDrop.drag{border-color:var(--green);color:var(--green);background:#EAF7F0;border-style:dashed}
 
@@ -258,7 +253,6 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
   <div class="hdr-spacer"></div>
   <button class="btn btn-export" onclick="exportQuickBooks()" title="Reviewed, billable lines not yet keyed into QuickBooks">⬇ Export for QuickBooks</button>
   <span id="qbPending" style="display:none;font-size:12.5px;color:var(--ink-3);align-self:center;margin-left:2px"></span>
-  <div id="qbDays" style="width:100%"></div>
   <label class="btn btn-export" id="fcDrop" for="fcFile"
     title="Drop in the worksheet FrankCrum sent this week. Their layout, their people, their pay period — filled in and handed back.">⬆ FrankCrum worksheet</label>
   <input type="file" id="fcFile" accept=".xlsx,.xls" style="display:none">
@@ -316,6 +310,7 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
     <div class="filter-chip" onclick="setFilter('pending',this)">Pending</div>
     <div class="filter-chip" onclick="setFilter('reviewed',this)">Reviewed</div>
     <div class="filter-chip" onclick="setFilter('nonbillable',this)">Non-Billable</div>
+    <div class="filter-chip" onclick="setFilter('notinqb',this)" title="Reviewed and billable, but not yet keyed into QuickBooks">Not in QB</div>
     <div class="ctrl-sep"></div>
     <select class="ctrl-select" id="techFilter" onchange="renderVisits()"><option value="">All Techs</option></select>
     <select class="ctrl-select" id="vesselFilter" onchange="renderVisits()"><option value="">All Vessels</option></select>
@@ -856,6 +851,7 @@ function _filteredVisits(){
     if(currentFilter==='pending')return vLines.some(l=>!l.reviewed);
     if(currentFilter==='reviewed')return vLines.length&&vLines.every(l=>l.reviewed);
     if(currentFilter==='nonbillable')return vLines.some(l=>!isBillable(l));
+    if(currentFilter==='notinqb')return vLines.some(l=>l.reviewed&&isBillable(l)&&!l.qb_entered);
     return true;
   });
 }
@@ -988,6 +984,13 @@ function renderCard(v,vesselF){
         <span class="visit-date">${dateStr} <span class="edit-icon" onclick="event.stopPropagation();startEditDate('${v.id}')">✎</span></span>
         ${clockStr?`<span class="visit-date" style="opacity:.65" title="${rvEsc(clockTitle)}">⏱ ${clockStr}</span>`:''}
         ${clockNote?`<span class="visit-date" style="color:#C43030;font-weight:600" title="Submitted hours against the clock">${rvEsc(clockNote)}</span>`:''}
+        ${(()=>{ const q=vLines.filter(l=>l.reviewed&&isBillable(l));
+            if(!q.length) return '';
+            const inq=q.filter(l=>l.qb_entered).length;
+            const cls=inq===q.length?'qb-in':'qb-out';
+            const txt=inq===q.length?'\u2713 In QB':(inq?inq+'/'+q.length+' in QB':'\u25cb Not in QB');
+            return `<span class="qb-chip ${cls}" title="Click to mark all ${q.length} billable line(s) on this visit"
+              onclick="event.stopPropagation();qbToggleVisit('${v.id}')">${txt}</span>`; })()}
         ${submittedStr?`<span class="visit-date" style="opacity:.65" title="When this timecard was submitted">🕑 submitted ${submittedStr}</span>`:''}
         <span class="visit-hours">${shownHours.toFixed(1)}h</span>
         <span class="status-pill ${allReviewed?'done':'pending'}">${allReviewed?'✓ Done':'Pending'}</span>
@@ -1621,24 +1624,18 @@ async function qbToggle(id){
   qbBadge(); qbDays();
 }
 
-// One tile per day: done, not started, or part-keyed with more since.
-async function qbDays(){
-  const wrap=document.getElementById('qbDays'); if(!wrap) return;
-  const from=document.getElementById('dateFrom').value || _ymd(new Date(Date.now()-13*864e5));
-  const to=document.getElementById('dateTo').value || _ymd(new Date());
-  try{
-    const {data,error}=await sb.rpc('qb_day_status',{p_from:from,p_to:to});
-    if(error||!data||!data.length){ wrap.innerHTML=''; return; }
-    wrap.innerHTML=data.map(d=>{
-      const cls=d.state==='done'?'done':(d.state==='late arrivals'?'late':'todo');
-      const dd=_parseYMD(d.work_date);
-      const lbl=(dd.getMonth()+1)+'/'+dd.getDate();
-      const tail=d.state==='done'
-        ? d.lines_entered+' in QB'
-        : d.lines_pending+' to enter'+(d.state==='late arrivals'?' \u00b7 came in late':'');
-      return `<span class="qbd ${cls}" title="${rvEsc(d.techs_pending||'all entered')}"><b>${lbl}</b> \u00b7 ${tail}</span>`;
-    }).join('');
-  }catch(e){ wrap.innerHTML=''; }
+async function qbDays(){ /* day tiles removed — status lives on each card */ }
+
+// Marking a whole visit at once, because she keys a timesheet at a time.
+async function qbToggleVisit(vid){
+  const q=lines.filter(l=>l.timesheet_id===vid&&l.reviewed&&isBillable(l));
+  if(!q.length) return;
+  const now=!q.every(l=>l.qb_entered);
+  const by=(window.APBRoles&&APBRoles.label&&APBRoles.label())||'admin';
+  const {error}=await sb.rpc('qb_mark_entered',{p_ids:q.map(l=>l.id),p_by:by,p_entered:now});
+  if(error){ showToast('Could not save that: '+error.message); return; }
+  q.forEach(l=>l.qb_entered=now);
+  renderVisits(); qbBadge();
 }
 
 // A standing count of what is waiting to be keyed, with late arrivals called
@@ -1675,7 +1672,7 @@ Object.assign(window, {
   openReviewModal, saveDesc, saveHours, setFilter, startEditDesc, startEditHours,
   toggleBillable, toggleCard, toggleReviewed, toggleTechSummary, renderVisits,
   startEditJob, cancelEditJob, onRevVesselChange, saveJobLine, startEditDate, saveVisitDate,
-  shiftGridWeek, gridThisWeek, gridPickTech, frankcrumFill, reloadWithPunches, qbBadge, qbDays, qbToggle
+  shiftGridWeek, gridThisWeek, gridPickTech, frankcrumFill, reloadWithPunches, qbBadge, qbDays, qbToggle, qbToggleVisit
 });
 })();
 </script>
