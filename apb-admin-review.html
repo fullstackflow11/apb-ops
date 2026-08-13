@@ -255,6 +255,8 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
   <div class="hdr-spacer"></div>
   <button class="btn btn-export" onclick="exportQuickBooks()" title="Reviewed time not yet keyed into QuickBooks — billable and non-billable">⬇ Export for QuickBooks</button>
   <span id="qbPending" style="display:none;font-size:12.5px;color:var(--ink-3);align-self:center;margin-left:2px"></span>
+  <button class="btn btn-export" onclick="qbMarkShown(true)" title="Mark every reviewed line currently shown as keyed into QuickBooks">✓ Mark shown as in QB</button>
+  <button class="btn btn-export" onclick="qbMarkShown(false)" title="Undo — put every reviewed line currently shown back on the to-enter list">↺ Undo shown</button>
   <label class="btn btn-export" id="fcDrop" for="fcFile"
     title="Drop in the worksheet FrankCrum sent this week. Their layout, their people, their pay period — filled in and handed back.">⬆ FrankCrum worksheet</label>
   <input type="file" id="fcFile" accept=".xlsx,.xls" style="display:none">
@@ -1648,6 +1650,34 @@ async function exportQuickBooks(){
   showToast(`QuickBooks export downloaded · ${data.length} line${data.length!==1?'s':''} · ${scope} · not marked`);
 }
 
+// Bulk-mark whatever the current filters are showing. Chelsea keys a week at
+// a time, so clicking 80 cards is not the job — set the dates, key the week,
+// mark it. Deliberately scoped to what is on screen so it can never stamp
+// something she has not looked at.
+async function qbMarkShown(entered){
+  const shown=_filteredVisits();
+  const vesselF=document.getElementById('vesselFilter').value;
+  const ids=[];
+  shown.forEach(v=>linesForVisit(v,vesselF).forEach(l=>{
+    if(l.reviewed && !!l.qb_entered !== !!entered) ids.push(l.id);
+  }));
+  if(!ids.length){ showToast(entered?'Everything shown is already marked in QB':'Nothing shown is marked yet'); return; }
+
+  const from=document.getElementById('dateFrom').value, to=document.getElementById('dateTo').value;
+  const range=(from||to)?((from||'start')+' to '+(to||'today')):'ALL DATES';
+  if(!confirm((entered?'Mark ':'Un-mark ')+ids.length+' line(s) as entered in QuickBooks?\n\nCovers what is on screen right now: '+range
+    +(document.getElementById('techFilter').value?'\nTech: '+document.getElementById('techFilter').value:'')
+    +'\n\nThis only changes the tracking flag — it does not touch QuickBooks itself.')) return;
+
+  const by=(window.APBRoles&&APBRoles.label&&APBRoles.label())||'admin';
+  const {data,error}=await sb.rpc('qb_mark_entered',{p_ids:ids,p_by:by,p_entered:!!entered});
+  if(error){ showToast('Could not save that: '+error.message); return; }
+  const set=new Set(ids);
+  lines.forEach(l=>{ if(set.has(l.id)) l.qb_entered=!!entered; });
+  renderVisits(); qbBadge();
+  showToast((data||ids.length)+' line(s) '+(entered?'marked in QB':'put back on the list'));
+}
+
 // She keys QuickBooks by hand, so she needs to mark a line herself as well
 // as have the export do it. Optimistic flip, reverted if the write fails.
 async function qbToggle(id){
@@ -1715,7 +1745,7 @@ Object.assign(window, {
   openReviewModal, saveDesc, saveHours, setFilter, startEditDesc, startEditHours,
   toggleBillable, toggleCard, toggleReviewed, toggleTechSummary, renderVisits,
   startEditJob, cancelEditJob, onRevVesselChange, saveJobLine, startEditDate, saveVisitDate,
-  shiftGridWeek, gridThisWeek, gridPickTech, frankcrumFill, reloadWithPunches, qbBadge, qbDays, qbToggle, qbToggleVisit
+  shiftGridWeek, gridThisWeek, gridPickTech, frankcrumFill, reloadWithPunches, qbBadge, qbDays, qbToggle, qbToggleVisit, qbMarkShown
 });
 })();
 </script>
