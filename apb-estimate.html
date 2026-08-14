@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>APB · Quick Estimate</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="apb-roles.js"></script>
 <script src="apb-demo.js"></script>
 <script>APBRoles.guard('pm','Quick Estimate');</script>
@@ -50,6 +51,8 @@ body{font-family:Inter,-apple-system,"Segoe UI",sans-serif;background:var(--bg);
 .abtn.amber:hover{background:#994F00}
 .abtn svg{width:14px;height:14px;stroke-width:2.2;flex-shrink:0}
 
+.no-print{}
+@media print{.no-print{display:none!important}}
 /* ── Draft restore banner ── */
 .draft-banner{display:none;align-items:center;gap:10px;background:#FFF8EC;border:1px solid var(--amber-line);border-radius:10px;padding:10px 16px;font-size:13px;color:var(--ink-2);margin:20px auto 0;max-width:820px}
 .draft-banner.show{display:flex}
@@ -202,6 +205,9 @@ body{font-family:Inter,-apple-system,"Segoe UI",sans-serif;background:var(--bg);
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg>
     Upgrade to Full Proposal →
   </a>
+  <span id="openEst" class="abadge" hidden style="background:#EEF4FF;color:#0b5cab;border-color:#cdddff"></span>
+  <button class="abtn ghost" id="btnDrafts">Drafts</button>
+  <button class="abtn ghost" id="btnSaveNew" hidden>Save as copy</button>
   <button class="abtn ghost" id="btnSave">
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
     Save Draft
@@ -212,14 +218,19 @@ body{font-family:Inter,-apple-system,"Segoe UI",sans-serif;background:var(--bg);
   </button>
 </div>
 
-<!-- ── Draft restore banner ── -->
-<div id="draftBanner" class="draft-banner">
-  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-  <span>Draft found — restore where you left off?</span>
-  <div class="sp"></div>
-  <button class="restore" id="btnRestore">Restore</button>
-  <button class="fresh" id="btnFresh">Start Fresh</button>
+<div id="estDraftsModal" style="display:none;position:fixed;inset:0;background:rgba(13,22,38,.45);z-index:60;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:14px;width:min(620px,calc(100% - 24px));max-height:80vh;overflow:auto;box-shadow:0 20px 60px rgba(13,22,38,.3)">
+    <div style="padding:15px 18px;border-bottom:1px solid #eef2f6;display:flex;align-items:center">
+      <b style="font-size:16px">Saved estimates</b>
+      <span style="flex:1"></span>
+      <button class="tbtn" id="estDraftsClose">Close</button>
+    </div>
+    <div id="estDraftsList" style="padding:8px 12px 16px"></div>
+  </div>
 </div>
+
+<!-- ── Draft restore banner ── -->
+<!-- Draft restore banner removed: estimates are saved rows now, opened from Drafts. -->
 
 <!-- ── Main document ── -->
 <main class="wrap">
@@ -260,6 +271,10 @@ body{font-family:Inter,-apple-system,"Segoe UI",sans-serif;background:var(--bg);
       <div class="info-field">
         <label for="preparedBy">Prepared By</label>
         <input type="text" id="preparedBy" placeholder="Christopher Collins">
+      </div>
+      <div class="info-field no-print">
+        <label for="jobLink">Linked job (optional)</label>
+        <select id="jobLink"><option value="">Not linked to a job</option></select>
       </div>
       <div class="info-field">
         <label for="validUntil">Valid Until</label>
@@ -375,13 +390,8 @@ function toast(msg) {
   toastTimer = setTimeout(() => t.classList.remove("show"), 2400);
 }
 
-/* ── Estimate number (auto-incremented from localStorage) ── */
-function genEstNum() {
-  const seq = parseInt(localStorage.getItem("apb_est_seq") || "0", 10) + 1;
-  localStorage.setItem("apb_est_seq", String(seq));
-  const year = new Date().getFullYear();
-  return "EST-" + year + "-" + String(seq).padStart(4, "0");
-}
+/* Estimate numbers now come from one server-side sequence (next_estimate_no),
+   not a per-browser counter. See newEstimateNumber() below. */
 
 /* Set today's date and default valid-until (+30 days) */
 (function initDates() {
@@ -451,8 +461,31 @@ addRow(); addRow(); addRow();
 
 $("btnAddRow").addEventListener("click", () => addRow());
 
-/* ── Draft save / restore ── */
-const DRAFT_KEY = "apb_draft_estimate";
+/* ── Shared estimates (Supabase apb_estimates) ─────────────────────────────
+   Was: one localStorage slot per browser, so a second estimate overwrote the
+   first and nobody else could see either. Numbers came from a per-browser
+   counter, so two people generated the same number without knowing.
+   Now: every estimate is its own row, numbered from one server sequence,
+   optionally linked to a job, with a conflict check on save.              */
+const ES_URL="https://aanrxyiocxxndkvkeocv.supabase.co";
+const ES_KEY="sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw";
+let ES_TOKEN=ES_KEY, ES_ME={name:"",email:""};
+const _essb=(window.supabase&&window.supabase.createClient)
+  ? window.supabase.createClient(ES_URL,ES_KEY,{auth:{persistSession:true,autoRefreshToken:true}}) : null;
+
+function esHeaders(extra){
+  return Object.assign({apikey:ES_KEY,Authorization:"Bearer "+ES_TOKEN,"Content-Type":"application/json"}, extra||{});
+}
+
+let ESTS=[], CURR=null;          // CURR = {id,name,updated_at}
+
+function setOpenEstimate(e){
+  CURR = e ? {id:e.id, name:e.name, updated_at:e.updated_at} : null;
+  const chip=$("openEst"), copy=$("btnSaveNew");
+  if(CURR){ chip.hidden=false; chip.textContent="Editing: "+(CURR.name||CURR.id);
+            copy.hidden=false; $("btnSave").lastChild.nodeValue=" Update Estimate "; }
+  else    { chip.hidden=true; copy.hidden=true; $("btnSave").lastChild.nodeValue=" Save Draft "; }
+}
 
 function collectState() {
   return {
@@ -466,6 +499,7 @@ function collectState() {
     contactInfo: $("contactInfo").value,
     scope: $("scopeBox").innerHTML,
     splitNote: $("splitNote").value,
+    jobId: $("jobLink").value || null,
     rows: rows.map(r => ({ desc: r.desc, qty: r.qty, price: r.price, total: r.total })),
     savedAt: new Date().toISOString()
   };
@@ -482,49 +516,162 @@ function applyState(s) {
   if (s.contactInfo != null) $("contactInfo").value = s.contactInfo;
   if (s.scope != null) $("scopeBox").innerHTML = s.scope;
   if (s.splitNote != null) $("splitNote").value = s.splitNote;
+  if (s.jobId != null) $("jobLink").value = s.jobId;
   if (s.rows && s.rows.length) {
     rows = s.rows.map(r => ({ desc: r.desc || "", qty: r.qty || "1", price: r.price || "", total: r.total || 0 }));
     renderRows();
   }
 }
 
-function saveDraft() {
-  try {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(collectState()));
-    toast("Draft saved.");
-  } catch (e) {
-    toast("Could not save draft.");
-  }
+async function loadJobPicker(){
+  try{
+    const r=await fetch(ES_URL+"/rest/v1/apb_job_picker?select=id,label&order=label",{headers:esHeaders()});
+    if(!r.ok) return;
+    const rows=await r.json();
+    const sel=$("jobLink"), keep=sel.value;
+    sel.innerHTML='<option value="">Not linked to a job</option>'+
+      rows.map(j=>'<option value="'+j.id+'">'+String(j.label).replace(/</g,"&lt;")+'</option>').join("");
+    if(keep) sel.value=keep;
+  }catch(e){}
 }
 
-$("btnSave").addEventListener("click", saveDraft);
-$("btnPrint").addEventListener("click", () => window.print());
+async function newEstimateNumber(){
+  try{
+    const r=await fetch(ES_URL+"/rest/v1/rpc/next_estimate_no",{method:"POST",headers:esHeaders(),body:"{}"});
+    if(r.ok){ const v=await r.json(); if(v) return String(v).replace(/"/g,""); }
+  }catch(e){}
+  return "EST-"+new Date().getFullYear()+"-DRAFT";
+}
 
-/* ── Check for existing draft on load ── */
-(function checkDraft() {
-  let draft = null;
-  try { draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch (e) {}
-  if (!draft) {
-    /* No draft — generate a fresh estimate number */
-    $("estNumDisplay").textContent = genEstNum();
+async function loadEstimates(){
+  try{
+    const r=await fetch(ES_URL+"/rest/v1/apb_estimates?select=id,estimate_no,name,client,prepared_by,status,job_id,data,updated_at,last_edited_by&order=updated_at.desc",{headers:esHeaders()});
+    if(!r.ok) throw new Error("http "+r.status);
+    ESTS=await r.json();
+  }catch(e){ ESTS=[]; }
+  return ESTS;
+}
+
+async function saveEstimate(asNew){
+  const updating = CURR && !asNew;
+  const state=collectState();
+  const dflt = updating ? CURR.name : ($("clientName").value||$("vesselName").value||"Untitled estimate");
+  const name = prompt(updating?"Update this estimate — name:":"Name this estimate:", dflt);
+  if(name===null) return;
+
+  const body={ name:name||dflt, client:$("clientName").value||null,
+               prepared_by:$("preparedBy").value||ES_ME.name||null,
+               job_id:$("jobLink").value||null, data:state,
+               last_edited_by:ES_ME.name||$("preparedBy").value||null,
+               last_edited_email:ES_ME.email||null };
+
+  if(updating){
+    // Conflict check: only write if the row still carries the timestamp we
+    // loaded. If somebody else saved in the meantime the filter matches
+    // nothing, and we say who it was rather than silently overwriting them.
+    try{
+      const url=ES_URL+"/rest/v1/apb_estimates?id=eq."+encodeURIComponent(CURR.id)
+               +"&updated_at=eq."+encodeURIComponent(CURR.updated_at);
+      const r=await fetch(url,{method:"PATCH",headers:esHeaders({Prefer:"return=representation"}),body:JSON.stringify(body)});
+      if(!r.ok) throw new Error("http "+r.status);
+      const back=await r.json();
+      if(!back.length){
+        const cur=(await (await fetch(ES_URL+"/rest/v1/apb_estimates?select=last_edited_by,updated_at&id=eq."+encodeURIComponent(CURR.id),{headers:esHeaders()})).json())[0];
+        const who=(cur&&cur.last_edited_by)||"someone else";
+        if(!confirm(who+" saved this estimate at "
+            +(cur?new Date(cur.updated_at).toLocaleString():"a later time")
+            +", after you opened it.\n\nOK = overwrite their version with yours.\nCancel = keep theirs and leave yours unsaved.")) return;
+        const r2=await fetch(ES_URL+"/rest/v1/apb_estimates?id=eq."+encodeURIComponent(CURR.id),
+          {method:"PATCH",headers:esHeaders({Prefer:"return=representation"}),body:JSON.stringify(body)});
+        if(!r2.ok) throw new Error("http "+r2.status);
+        const b2=await r2.json();
+        setOpenEstimate(b2[0]); toast("Overwrote "+who+"'s version.");
+        return;
+      }
+      setOpenEstimate(back[0]);
+      toast("Estimate updated.");
+    }catch(e){ toast("Could not save — "+e.message); }
     return;
   }
-  /* Show restore banner */
-  const banner = $("draftBanner");
-  banner.classList.add("show");
 
-  $("btnRestore").addEventListener("click", () => {
-    applyState(draft);
-    banner.classList.remove("show");
-    toast("Draft restored.");
-  });
+  const id="e"+Date.now()+Math.random().toString(36).slice(2,6);
+  const no=$("estNumDisplay").textContent||await newEstimateNumber();
+  try{
+    const r=await fetch(ES_URL+"/rest/v1/apb_estimates",{method:"POST",
+      headers:esHeaders({Prefer:"return=representation"}),
+      body:JSON.stringify(Object.assign({id:id,estimate_no:no,status:"draft"},body))});
+    if(!r.ok) throw new Error("http "+r.status);
+    const back=await r.json();
+    setOpenEstimate(back[0]);
+    toast("Estimate saved and shared.");
+  }catch(e){ toast("Could not save — "+e.message); }
+}
 
-  $("btnFresh").addEventListener("click", () => {
-    localStorage.removeItem(DRAFT_KEY);
-    banner.classList.remove("show");
-    $("estNumDisplay").textContent = genEstNum();
-    toast("Starting fresh.");
+async function openEstDrafts(){
+  const box=$("estDraftsModal"), list=$("estDraftsList");
+  box.style.display="flex";
+  list.innerHTML='<div style="padding:18px;color:#71808f">Loading…</div>';
+  await loadEstimates();
+  list.innerHTML = ESTS.length ? ESTS.map(function(e){
+    return '<div style="display:flex;align-items:center;gap:12px;padding:11px 8px;border-bottom:1px solid #eef2f6">'
+      +'<div><div style="font-weight:600;font-size:14px">'+String(e.name||"Untitled").replace(/</g,"&lt;")+'</div>'
+      +'<div style="font-size:11.5px;color:#71808f;font-family:ui-monospace,Menlo,monospace">'
+      +(e.estimate_no||"")+" · "+(e.updated_at?new Date(e.updated_at).toLocaleString():"")
+      +(e.last_edited_by?" · "+String(e.last_edited_by).replace(/</g,"&lt;"):"")
+      +(e.job_id?" · linked to a job":"")+'</div></div>'
+      +'<div style="flex:1"></div>'
+      +'<button class="tbtn" data-load="'+e.id+'">Load</button>'
+      +'<button class="tbtn" style="color:#d14343" data-del="'+e.id+'">Delete</button></div>';
+  }).join("") : '<div style="padding:18px;color:#71808f">No saved estimates yet.</div>';
+
+  list.querySelectorAll("[data-load]").forEach(function(b){
+    b.onclick=function(){
+      const e=ESTS.find(function(x){return x.id===b.dataset.load;});
+      if(!e) return;
+      applyState(e.data||{});
+      if(e.estimate_no) $("estNumDisplay").textContent=e.estimate_no;
+      if(e.job_id) $("jobLink").value=e.job_id;
+      setOpenEstimate(e);
+      box.style.display="none";
+      toast("Editing "+(e.name||e.estimate_no)+" — Save updates it.");
+    };
   });
+  list.querySelectorAll("[data-del]").forEach(function(b){
+    b.onclick=async function(){
+      if(!confirm("Delete this estimate for everyone?")) return;
+      try{ await fetch(ES_URL+"/rest/v1/apb_estimates?id=eq."+encodeURIComponent(b.dataset.del),
+                       {method:"DELETE",headers:esHeaders()}); }catch(e){}
+      if(CURR&&CURR.id===b.dataset.del) setOpenEstimate(null);
+      openEstDrafts();
+    };
+  });
+}
+
+$("btnSave").addEventListener("click", function(){ saveEstimate(false); });
+$("btnSaveNew").addEventListener("click", function(){ saveEstimate(true); });
+$("btnDrafts").addEventListener("click", openEstDrafts);
+$("estDraftsClose").addEventListener("click", function(){ $("estDraftsModal").style.display="none"; });
+$("estDraftsModal").addEventListener("click", function(ev){ if(ev.target.id==="estDraftsModal") ev.currentTarget.style.display="none"; });
+$("btnPrint").addEventListener("click", function(){ window.print(); });
+
+/* ── Boot: require a signed-in admin/pm, then fill the number and pickers ── */
+(async function boot(){
+  if(!_essb){ location.replace("index.html"); return; }
+  try{
+    const s=await _essb.auth.getSession();
+    const session=s&&s.data&&s.data.session;
+    if(!session){ location.replace("index.html"); return; }
+    ES_TOKEN=session.access_token;
+    ES_ME.email=(session.user&&session.user.email)||"";
+    const r=await _essb.from("apb_people").select("name,role").eq("email",ES_ME.email.toLowerCase()).maybeSingle();
+    const me=r&&r.data;
+    if(!me||["admin","pm"].indexOf(me.role)<0){ location.replace("index.html"); return; }
+    ES_ME.name=me.name||"";
+    if(!$("preparedBy").value) $("preparedBy").value=ES_ME.name;
+    await loadJobPicker();
+    $("estNumDisplay").textContent = await newEstimateNumber();
+    setOpenEstimate(null);
+  }catch(e){ location.replace("index.html"); }
 })();
 </script>
 </body>
