@@ -252,6 +252,9 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
   </div>
   <div class="header-sep"></div>
   <a href="index.html" class="btn btn-ghost" style="font-size:12px;">⌂ Home</a>
+  <a href="apb-punch-review.html" class="btn btn-ghost" id="punchLink"
+     style="font-size:12px;display:none"
+     title="Clock-in records checked against these timesheets">◷ Punch review</a>
   <div class="hdr-spacer"></div>
   <button class="btn btn-export" onclick="exportQuickBooks()" title="Reviewed time not yet keyed into QuickBooks — billable and non-billable">⬇ Export for QuickBooks</button>
   <span id="qbPending" style="display:none;font-size:12.5px;color:var(--ink-3);align-self:center;margin-left:2px"></span>
@@ -413,7 +416,16 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
 <script>
 const SUPABASE_URL = 'https://aanrxyiocxxndkvkeocv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw';
-const ALLOWED_MANAGERS = ['christina@apb1.com','jerry@apb1.com','nate@apb1.com','christopher@apb1.com','chelsea@apb1.com','brandonw@apb1.com','jhuber@apb1.com','bryce@apb1.com','randall_kline@outlook.com','joetoscano4@gmail.com'];
+// Access is decided by apb_people.role in the database — one list, not two.
+// Kept only as an offline fallback if the lookup itself fails.
+const ALLOWED_MANAGERS = [];
+async function _isAdmin(em){
+  if(!em) return false;
+  try{
+    const {data:me} = await sb.from('apb_people').select('role').eq('email',em.toLowerCase()).maybeSingle();
+    return !!(me && me.role === 'admin');
+  }catch(e){ return false; }
+}
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
 APBAuth.init(sb);   // real Supabase Auth — PIN validated server-side
 
@@ -465,11 +477,8 @@ async function _enter(){
     const res = await APBAuth.signIn(email, pin);
     if(!res.ok){ _msg(res.message||'Wrong name/email or PIN.'); return; }
     const who = (res.user && res.user.email) || email;
-    let isMgr = ALLOWED_MANAGERS.includes(who);
-    if(!isMgr){
-      try{ const {data:me}=await sb.from('apb_people').select('is_manager').eq('email',who).maybeSingle(); isMgr=!!(me&&me.is_manager===true); }catch(e){}
-    }
-    if(!isMgr){ await APBAuth.signOut(); _msg('Access restricted to managers.'); return; }
+    if(!(await _isAdmin(who))){ await APBAuth.signOut();
+      _msg('Timesheet review is restricted to admins.'); return; }
     _unlock(who);
   } finally { _go.disabled=false;_go.textContent='Continue →'; }
 }
@@ -482,6 +491,11 @@ function _unlock(email){
   document.getElementById('userEmail').textContent=email;
   document.getElementById('signOutBtn').style.display='';
   document.getElementById('batchAllBtn').style.display='';
+  // Attendance records are gated more tightly than this page. Only surface the
+  // link if the database will actually let this person read them.
+  (async()=>{ try{ const {data:ok}=await sb.rpc('punch_can_view');
+    if(ok===true) document.getElementById('punchLink').style.display='';
+  }catch(e){} })();
   loadData();
 }
 
@@ -490,9 +504,7 @@ function _unlock(email){
   try{
     const em = await APBAuth.email();
     if(!em) return;
-    let isMgr = ALLOWED_MANAGERS.includes(em);
-    if(!isMgr){ try{ const {data:me}=await sb.from('apb_people').select('is_manager').eq('email',em).maybeSingle(); isMgr=!!(me&&me.is_manager===true); }catch(e){} }
-    if(isMgr) _unlock(em); else await APBAuth.signOut();
+    if(await _isAdmin(em)) _unlock(em); else await APBAuth.signOut();
   }catch(e){}
 })();
 
