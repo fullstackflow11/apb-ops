@@ -327,8 +327,8 @@ function approver(){ return AUTH_NAME || AUTH_EMAIL || (window.APBRoles?APBRoles
   if(!session){ location.replace('index.html'); return; }
   const _em=(session.user&&session.user.email)||'';
   AUTH_EMAIL=_em;
-  let _mgr=false; try{ const r=await sb.from('apb_people').select('name,is_manager').eq('email',_em).maybeSingle();
-    _mgr=!!(r&&r.data&&r.data.is_manager);
+  let _mgr=false; try{ const r=await sb.from('apb_people').select('name,role').eq('email',_em).maybeSingle();
+    _mgr=!!(r&&r.data&&['admin','pm'].includes(r.data.role));
     if(r&&r.data&&r.data.name) AUTH_NAME=r.data.name;
   }catch(e){}
   if(!_mgr){ location.replace('index.html'); return; }
