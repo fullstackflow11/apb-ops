@@ -81,6 +81,41 @@
   .gate h2{font-size:17px;margin-bottom:8px;border:0;padding:0}
   .gate p{font-size:14px;color:var(--ink-3);line-height:1.5}
   .hide{display:none}
+
+  /* --- corrections --- */
+  button.mini{padding:4px 9px;font-size:12px;border-radius:6px}
+  button.warn{color:var(--red);border-color:#EED3D3}
+  td.fix{text-align:right;white-space:nowrap}
+  .tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.04em;
+    text-transform:uppercase;padding:2px 6px;border-radius:5px;margin-left:7px;vertical-align:1px}
+  .tag-edit{background:var(--amber-soft);color:var(--amber)}
+  .tag-add{background:var(--accent-soft);color:var(--accent)}
+  tr.gone td{opacity:.45}
+  tr.gone .strike{text-decoration:line-through}
+
+  dialog{border:0;padding:0;border-radius:14px;width:min(560px,calc(100% - 24px));
+    box-shadow:0 20px 60px rgba(13,22,38,.3);color:var(--ink)}
+  dialog::backdrop{background:rgba(13,22,38,.45)}
+  .dh{padding:16px 18px 12px;border-bottom:1px solid var(--line-2)}
+  .dh h3{font-size:16px;font-weight:700}
+  .dh p{font-size:12.5px;color:var(--ink-3);margin-top:3px}
+  .db{max-height:52vh;overflow:auto}
+  .db table{font-size:13px}
+  .db th,.db td{padding:9px 18px}
+  .df{padding:12px 18px;display:flex;gap:8px;align-items:center;
+    border-top:1px solid var(--line-2);background:var(--panel-2)}
+  .df .sp{margin-left:auto}
+  .fld{padding:14px 18px 0}
+  .fld label{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--ink-4);font-weight:600;margin-bottom:5px}
+  .fld input,.fld select,.fld textarea{font:inherit;font-size:14px;width:100%;padding:8px 10px;
+    border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+  .fld textarea{resize:vertical;min-height:70px}
+  .row2{display:flex;gap:10px}.row2>*{flex:1}
+  .derr{margin:12px 18px 0;padding:9px 12px;border-radius:8px;font-size:13px;
+    background:var(--red-soft);color:var(--red);display:none}
+  .derr.on{display:block}
+
   @media (max-width:640px){
     th:nth-child(n+5),td:nth-child(n+5){display:none}
     .wrap{padding:16px 12px 50px}
@@ -113,6 +148,7 @@
     <button class="tab" data-v="fl">Flagged punches <span class="n" id="n-fl"></span></button>
     <button class="tab" data-v="rf">Turned away <span class="n" id="n-rf"></span></button>
     <button class="tab" data-v="dv">Shared phones <span class="n" id="n-dv"></span></button>
+    <button class="tab hide" data-v="cx" id="tab-cx">Corrections <span class="n" id="n-cx"></span></button>
   </div>
 
   <div id="gate" class="gate hide">
@@ -122,6 +158,48 @@
 
   <div id="panes"></div>
 </div>
+
+<!-- Day editor: opened from a Fix button on any row -->
+<dialog id="fixDlg">
+  <div class="dh">
+    <h3 id="fixWho">Punches</h3>
+    <p>The original is never erased. Every change is saved with your name and reason.</p>
+  </div>
+  <div class="db" id="fixBody"></div>
+  <div class="df">
+    <button class="mini" id="fixAdd">Add a missing punch</button>
+    <button class="sp" id="fixClose">Done</button>
+  </div>
+</dialog>
+
+<!-- Reason prompt: every correction goes through here -->
+<dialog id="askDlg">
+  <div class="dh"><h3 id="askTitle"></h3><p id="askSub"></p></div>
+  <div class="fld row2" id="askInputs">
+    <div id="askDirWrap" class="hide">
+      <label for="askDir">Punch type</label>
+      <select id="askDir">
+        <option value="in">Clock in</option>
+        <option value="lunch_out">Lunch out</option>
+        <option value="lunch_in">Lunch in</option>
+        <option value="out">Clock out</option>
+      </select>
+    </div>
+    <div id="askTimeWrap">
+      <label for="askTime">Time</label>
+      <input type="time" id="askTime" step="60">
+    </div>
+  </div>
+  <div class="fld">
+    <label for="askReason">Reason — required</label>
+    <textarea id="askReason" placeholder="What actually happened, in a sentence."></textarea>
+  </div>
+  <div class="derr" id="askErr"></div>
+  <div class="df">
+    <button class="sp" id="askCancel">Cancel</button>
+    <button class="primary" id="askGo">Save change</button>
+  </div>
+</dialog>
 
 <script>
 const SUPABASE_URL='https://aanrxyiocxxndkvkeocv.supabase.co';
@@ -136,7 +214,126 @@ const clock=t=>t?new Date(t).toLocaleTimeString([],{hour:'numeric',minute:'2-dig
 const day=t=>t?new Date(t).toLocaleDateString([],{month:'short',day:'numeric'}):'—';
 const hrs=v=>(v==null||v==='')?'—':Number(v).toFixed(2);
 
-let view='all', data={all:[],ex:[],fl:[],rf:[],dv:[]};
+let view='all', data={all:[],ex:[],fl:[],rf:[],dv:[],cx:[]};
+let canEdit=false, fixing=null;
+
+const PUNCH={in:'Clock in',out:'Clock out',lunch_out:'Lunch out',lunch_in:'Lunch in'};
+const TZ='America/New_York';
+// Rebuild a UTC instant from the work date plus a shop-local HH:MM
+function atShop(dateStr,hhmm){
+  const guess=new Date(`${dateStr}T${hhmm}:00Z`);
+  const shown=new Date(guess.toLocaleString('en-US',{timeZone:TZ}));
+  return new Date(guess.getTime()+(guess-shown)).toISOString();
+}
+const hhmm=t=>new Date(t).toLocaleTimeString('en-GB',{timeZone:TZ,hour:'2-digit',minute:'2-digit'});
+
+function fixBtn(name,date){
+  if(!canEdit) return '';
+  return ` <button class="mini fixbtn" data-name="${esc(name)}" data-date="${esc(date)}">Fix</button>`;
+}
+
+const WHY={
+  not_signed_in:'Sign in again — your session expired.',
+  not_authorized_to_edit_punches:'Your account cannot change clock records.',
+  reason_required:'Write a reason before saving.',
+  punch_already_voided:'That punch was already removed.',
+  punch_not_found:'That punch is gone — reopen the day.',
+  new_time_in_future:"That time hasn't happened yet.",
+  time_in_future:"That time hasn't happened yet.",
+  bad_direction:'Pick a punch type.'
+};
+const why=m=>WHY[String(m||'').trim()]||m||'Something went wrong.';
+
+// ---- day editor ------------------------------------------------------------
+async function openFix(name,date){
+  fixing={name,date,techId:null};
+  $('fixWho').textContent=`${name} — ${day(date+'T12:00')}`;
+  $('fixBody').innerHTML='<div class="empty">Loading…</div>';
+  $('fixDlg').showModal();
+  await paintFix();
+}
+
+async function paintFix(){
+  const {data:rows,error}=await sb.rpc('punch_day_events',
+    {p_tech_name:fixing.name,p_date:fixing.date});
+  if(error){ $('fixBody').innerHTML=`<div class="empty">${esc(why(error.message))}</div>`; return; }
+  if(rows.length) fixing.techId=rows[0].tech_id;
+
+  const body=rows.map(r=>{
+    const tag=r.origin==='correction'?'<span class="tag tag-edit">edited</span>'
+             :r.origin==='manual'    ?'<span class="tag tag-add">added</span>':'';
+    const where=r.origin==='manual'?'entered by hand'
+      :(r.distance_m!=null?Math.round(r.distance_m)+' m out':'—');
+    return `<tr class="${r.voided?'gone':''}">
+      <td class="who">${PUNCH[r.direction]||r.direction}${tag}</td>
+      <td class="num strike">${clock(r.event_at)}</td>
+      <td class="num muted">${where}</td>
+      <td class="fix">${r.voided?'<span class="muted">removed</span>':
+        `<button class="mini" data-do="edit" data-id="${r.id}" data-at="${r.event_at}">Change time</button>
+         <button class="mini warn" data-do="void" data-id="${r.id}" data-at="${r.event_at}"
+           data-dir="${r.direction}">Remove</button>`}</td>
+    </tr>`;}).join('');
+
+  $('fixBody').innerHTML = rows.length
+    ? `<table><thead><tr><th>Punch</th><th>Time</th><th>Where</th><th></th></tr></thead>
+       <tbody>${body}</tbody></table>`
+    : `<div class="empty"><b>No punches</b>Nothing was recorded for this person on this day.</div>`;
+
+  $('fixBody').querySelectorAll('button[data-do]').forEach(b=>{
+    b.onclick=()=>b.dataset.do==='edit'?askEdit(b.dataset):askVoid(b.dataset);
+  });
+}
+
+// ---- reason prompt ---------------------------------------------------------
+let pending=null;
+function ask({title,sub,dir,time,run}){
+  $('askTitle').textContent=title; $('askSub').textContent=sub;
+  $('askDirWrap').classList.toggle('hide',!dir);
+  $('askTimeWrap').classList.toggle('hide',time===false);
+  if(time) $('askTime').value=time;
+  $('askReason').value=''; $('askErr').classList.remove('on');
+  pending=run; $('askDlg').showModal();
+  setTimeout(()=>$('askReason').focus(),40);
+}
+$('askCancel').onclick=()=>$('askDlg').close();
+$('askGo').onclick=async()=>{
+  const reason=$('askReason').value.trim();
+  if(reason.length<3){ $('askErr').textContent='Write a reason before saving.';
+    $('askErr').classList.add('on'); return; }
+  $('askGo').disabled=true;
+  const {error}=await pending(reason);
+  $('askGo').disabled=false;
+  if(error){ $('askErr').textContent=why(error.message); $('askErr').classList.add('on'); return; }
+  $('askDlg').close();
+  await paintFix(); await load();
+};
+
+function askEdit(d){
+  ask({title:'Change this punch time',
+    sub:`${fixing.name} — the original stays on file, struck through.`,
+    time:hhmm(d.at),
+    run:reason=>sb.rpc('punch_edit_time',
+      {p_event_id:d.id,p_new_at:atShop(fixing.date,$('askTime').value),p_reason:reason})});
+}
+function askVoid(d){
+  ask({title:'Remove this punch',
+    sub:`${PUNCH[d.dir]||d.dir} at ${clock(d.at)} — it stays visible, struck through.`,
+    time:false,
+    run:reason=>sb.rpc('punch_void',{p_event_id:d.id,p_reason:reason})});
+}
+$('fixAdd').onclick=()=>{
+  if(!fixing.techId){ alert('Open a day that already has at least one punch, or add the tech from the portal first.'); return; }
+  ask({title:'Add a missing punch',
+    sub:`${fixing.name} — saved as added by you, with no location.`,
+    dir:true,time:'12:00',
+    run:reason=>sb.rpc('punch_insert',{p_tech_id:fixing.techId,p_direction:$('askDir').value,
+      p_at:atShop(fixing.date,$('askTime').value),p_reason:reason})});
+};
+$('fixClose').onclick=()=>$('fixDlg').close();
+$('panes').addEventListener('click',e=>{
+  const b=e.target.closest('.fixbtn'); if(!b) return;
+  openFix(b.dataset.name,b.dataset.date);
+});
 
 function setRange(days){
   const to=new Date(); const from=new Date();
@@ -147,7 +344,7 @@ function setRange(days){
 // ---- rendering -------------------------------------------------------------
 function paint(){
   const rows=data[view]||[];
-  ['all','ex','fl','rf','dv'].forEach(k=>$('n-'+k).textContent=(data[k]||[]).length||'');
+  ['all','ex','fl','rf','dv','cx'].forEach(k=>$('n-'+k).textContent=(data[k]||[]).length||'');
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.v===view));
   $('panes').innerHTML = rows.length ? RENDER[view](rows) : EMPTY[view];
 }
@@ -157,7 +354,8 @@ const EMPTY={
   ex:`<div class="card"><div class="empty"><b>Nothing to review</b>Every clock record matches the hours submitted.</div></div>`,
   fl:`<div class="card"><div class="empty"><b>No flagged punches</b>Everyone punched from a known site with a good location fix.</div></div>`,
   rf:`<div class="card"><div class="empty"><b>Nobody turned away</b>No one was refused a punch in this period.</div></div>`,
-  dv:`<div class="card"><div class="empty"><b>No shared phones</b>Every handset punched one person only.</div></div>`
+  dv:`<div class="card"><div class="empty"><b>No shared phones</b>Every handset punched one person only.</div></div>`,
+  cx:`<div class="card"><div class="empty"><b>No corrections</b>Nobody's clock record has been changed in this period.</div></div>`
 };
 
 const STATUS={
@@ -185,7 +383,7 @@ const RENDER={
         const cls=v>0.25?'over':(v<-0.25?'under':'');
         const st=STATUS[r.status]||['p-grey',r.status];
         return `<tr>
-          <td class="who">${esc(r.tech_name)}</td>
+          <td class="who">${esc(r.tech_name)}${fixBtn(r.tech_name,r.work_date)}</td>
           <td class="num muted">${clock(r.punch_in)}</td>
           <td class="num muted">${clock(r.punch_out)}</td>
           <td class="num">${hrs(r.lunch_hours)}</td>
@@ -209,7 +407,7 @@ const RENDER={
       const cls=v>0.25?'over':(v<-0.25?'under':'');
       const sign=v>0?'+':'';
       return `<tr>
-        <td class="who"><span class="sev s${r.severity}"></span>${esc(r.tech_name)}</td>
+        <td class="who"><span class="sev s${r.severity}"></span>${esc(r.tech_name)}${fixBtn(r.tech_name,r.work_date)}</td>
         <td class="num muted">${day(r.work_date+'T12:00')}</td>
         <td>${esc(r.issue)}</td>
         <td class="num">${hrs(r.worked_hours)}</td>
@@ -281,6 +479,28 @@ const RENDER={
       </tr></thead><tbody>${body}</tbody></table>
       <div class="note">A borrowed or replaced phone looks the same as one person punching for another. Worth asking about, not acting on alone.</div>
     </div>`;
+  },
+  cx(rows){
+    const body=rows.map(r=>{
+      let what;
+      if(r.action==='void')        what=`Removed ${PUNCH[r.old_direction]} ${clock(r.old_event_at)}`;
+      else if(r.action==='insert') what=`Added ${PUNCH[r.new_direction]} ${clock(r.new_event_at)}`;
+      else                         what=`${PUNCH[r.old_direction]} ${clock(r.old_event_at)} &rarr; ${clock(r.new_event_at)}`;
+      return `<tr>
+        <td class="who">${esc(r.tech_name)}</td>
+        <td class="num muted">${day(r.work_date+'T12:00')}</td>
+        <td>${what}</td>
+        <td>${esc(r.reason)}</td>
+        <td class="who">${esc(r.corrected_by_name)}</td>
+        <td class="num muted">${day(r.corrected_at)} ${clock(r.corrected_at)}</td>
+      </tr>`;}).join('');
+    return `<div class="card">
+      <h2>Corrections <span>every change made to a clock record</span></h2>
+      <table><thead><tr>
+        <th>Tech</th><th>Work day</th><th>Change</th><th>Reason</th><th>Made by</th><th>When</th>
+      </tr></thead><tbody>${body}</tbody></table>
+      <div class="note">Corrected punches keep their original on file. Nothing here can be deleted.</div>
+    </div>`;
   }
 };
 
@@ -294,7 +514,8 @@ async function load(){
     ['ex','punch_exceptions_list'],
     ['fl','punch_flagged_list'],
     ['rf','punch_refused_list'],
-    ['dv','punch_shared_devices']
+    ['dv','punch_shared_devices'],
+    ['cx','punch_corrections_list']
   ];
   let denied=false;
   for(const [key,fn] of calls){
@@ -322,8 +543,14 @@ $('week').addEventListener('click',()=>{setRange(6);load();});
 $('from').addEventListener('change',load);
 $('to').addEventListener('change',load);
 
-setRange(6);
-load();
+async function boot(){
+  const {data:ok}=await sb.rpc('punch_can_edit');
+  canEdit=ok===true;
+  $('tab-cx').classList.toggle('hide',!canEdit);
+  setRange(6);
+  load();
+}
+boot();
 </script>
 </body>
 </html>
