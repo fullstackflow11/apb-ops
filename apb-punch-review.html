@@ -139,6 +139,7 @@
       <button id="today">Today</button>
       <button id="week">Last 7 days</button>
       <button class="primary" id="load">Refresh</button>
+      <button class="hide" id="whoBtn">Enter punches for someone</button>
     </div>
   </header>
 
@@ -158,6 +159,28 @@
 
   <div id="panes"></div>
 </div>
+
+<!-- Tech picker: reaches people who have no punches at all on a date -->
+<dialog id="whoDlg">
+  <div class="dh">
+    <h3>Whose day are you entering?</h3>
+    <p>Anyone can be picked, including people who never clocked in.</p>
+  </div>
+  <div class="fld row2">
+    <div>
+      <label for="whoDate">Work day</label>
+      <input type="date" id="whoDate">
+    </div>
+    <div>
+      <label for="whoTech">Tech</label>
+      <select id="whoTech"></select>
+    </div>
+  </div>
+  <div class="df">
+    <button class="sp" id="whoCancel">Cancel</button>
+    <button class="primary" id="whoGo">Open day</button>
+  </div>
+</dialog>
 
 <!-- Day editor: opened from a Fix button on any row -->
 <dialog id="fixDlg">
@@ -245,8 +268,8 @@ const WHY={
 const why=m=>WHY[String(m||'').trim()]||m||'Something went wrong.';
 
 // ---- day editor ------------------------------------------------------------
-async function openFix(name,date){
-  fixing={name,date,techId:null};
+async function openFix(name,date,techId){
+  fixing={name,date,techId:techId||null};
   $('fixWho').textContent=`${name} — ${day(date+'T12:00')}`;
   $('fixBody').innerHTML='<div class="empty">Loading…</div>';
   $('fixDlg').showModal();
@@ -322,13 +345,39 @@ function askVoid(d){
     run:reason=>sb.rpc('punch_void',{p_event_id:d.id,p_reason:reason})});
 }
 $('fixAdd').onclick=()=>{
-  if(!fixing.techId){ alert('Open a day that already has at least one punch, or add the tech from the portal first.'); return; }
+  if(!fixing.techId){ openWho(fixing.date); return; }
   ask({title:'Add a missing punch',
     sub:`${fixing.name} — saved as added by you, with no location.`,
     dir:true,time:'12:00',
     run:reason=>sb.rpc('punch_insert',{p_tech_id:fixing.techId,p_direction:$('askDir').value,
       p_at:atShop(fixing.date,$('askTime').value),p_reason:reason})});
 };
+
+// ---- picking someone with no punches at all -------------------------------
+async function openWho(date){
+  const d = date || $('to').value || new Date().toLocaleDateString('en-CA',{timeZone:TZ});
+  $('whoDate').value = d;
+  await fillWho(d);
+  $('whoDlg').showModal();
+}
+async function fillWho(d){
+  const sel=$('whoTech');
+  sel.innerHTML='<option>Loading…</option>';
+  const {data:rows,error}=await sb.rpc('punch_techs_list',{p_date:d});
+  if(error){ sel.innerHTML=`<option value="">${esc(why(error.message))}</option>`; return; }
+  sel.innerHTML=rows.map(r=>
+    `<option value="${r.tech_id}" data-name="${esc(r.name)}">${esc(r.name)}${
+      r.punches?` — ${r.punches} punch${r.punches>1?'es':''}`:' — no punches'}</option>`).join('');
+}
+$('whoDate').onchange=()=>fillWho($('whoDate').value);
+$('whoCancel').onclick=()=>$('whoDlg').close();
+$('whoGo').onclick=()=>{
+  const o=$('whoTech').selectedOptions[0]; if(!o||!o.value) return;
+  const d=$('whoDate').value;
+  $('whoDlg').close();
+  openFix(o.dataset.name, d, o.value);
+};
+$('whoBtn').onclick=()=>openWho();
 $('fixClose').onclick=()=>$('fixDlg').close();
 $('panes').addEventListener('click',e=>{
   const b=e.target.closest('.fixbtn'); if(!b) return;
@@ -547,6 +596,7 @@ async function boot(){
   const {data:ok}=await sb.rpc('punch_can_edit');
   canEdit=ok===true;
   $('tab-cx').classList.toggle('hide',!canEdit);
+  $('whoBtn').classList.toggle('hide',!canEdit);
   setRange(6);
   load();
 }
