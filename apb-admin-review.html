@@ -257,6 +257,7 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
      title="Clock-in records checked against these timesheets">◷ Punch review</a>
   <div class="hdr-spacer"></div>
   <button class="btn btn-export" onclick="exportQuickBooks()" title="Reviewed time not yet keyed into QuickBooks — billable and non-billable">⬇ Export for QuickBooks</button>
+  <button class="btn btn-export" onclick="exportQuickBooks(false)" title="Same file, but never offers to mark anything as entered — for a trial run or a second copy">⬇ Export only (no marking)</button>
   <span id="qbPending" style="display:none;font-size:12.5px;color:var(--ink-3);align-self:center;margin-left:2px"></span>
   <button class="btn btn-export" onclick="qbMarkShown(true)" title="Mark every reviewed line currently shown as keyed into QuickBooks">✓ Mark shown as in QB</button>
   <button class="btn btn-export" onclick="qbMarkShown(false)" title="Undo — put every reviewed line currently shown back on the to-enter list">↺ Undo shown</button>
@@ -1507,7 +1508,8 @@ function fmtInvDate(d){ if(!d) return ''; const p=String(d).slice(0,10).split('-
 function finalInvoiceDesc(l,v){ const desc=l.work_description||l.description||''; if(!desc) return ''; const date=fmtInvDate(v&&v.visit_date?v.visit_date:(l.created_at?l.created_at.split('T')[0]:'')); const code=techCode(l.tech_name||(v&&v.tech_name)||''); return (date?date+' ':'')+(code?code+': ':'')+desc; }
 
 // ── Export for QuickBooks (Chelsea's format: MM-DD-YY TECHCODE: description) ──
-async function exportQuickBooks(){
+async function exportQuickBooks(offerToMark){
+  if(offerToMark===undefined) offerToMark=true;
   // Only lines nobody has keyed yet. A timesheet that lands after a day was
   // already entered comes through here next time, instead of disappearing.
   // All reviewed time, billable or not — non-billable hours still get keyed,
@@ -1789,7 +1791,12 @@ async function exportQuickBooks(){
     : `apb-quickbooks-all_${new Date().toISOString().split('T')[0]}.xlsx`);
 
   // Stamp only after she confirms it actually went in, so a download she
-  // abandons does not quietly mark work as done.
+  // abandons does not quietly mark work as done. "Export only" skips this
+  // entirely — a trial run or a second copy should never touch the queue.
+  if(!offerToMark){
+    showToast(data.length+' line(s) exported \u00b7 '+scope+' \u00b7 NOT marked as entered');
+    return;
+  }
   if(confirm(data.length+' line(s) exported'
       +(already?' ('+already+' already entered previously were left out)':'')
       +'.\n\nMark them as entered in QuickBooks?\n\nSay no if you have not keyed them yet — they will come through again next time.')){
