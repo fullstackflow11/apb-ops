@@ -613,6 +613,8 @@ textarea:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 4px va
       <button class="btn primary" id="pdSaveMeta" style="width:100%">Save project details</button>
 
       <div class="pd-jobs-h">Jobs <span class="count" id="pdJobCount"></span></div>
+      <div class="pd-sec-h" style="margin-top:2px">PROPOSALS <span id="pdPropCount" style="font-weight:400;color:#6B7480"></span></div>
+      <div id="pdProps" style="margin-bottom:14px"></div>
       <div id="pdJobs"></div>
 
       <div class="pd-add">
@@ -642,7 +644,7 @@ textarea:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 4px va
       <button class="btn report" id="pdReportStatus" style="flex:1">Status Report</button>
       <button class="btn report" id="pdReportDone" style="flex:1">Completion Report</button>
     </div>
-    <div class="seam">Project edits &amp; new jobs save to this browser now. ▸ Phase&nbsp;2: a Power&nbsp;Automate flow writes them back to the Active List backbone.</div>
+    <div class="seam">Project edits &amp; new jobs save to the Active List backbone. Proposals shown above are read-only here — edit them in the Proposal Builder.</div>
   </div>
 </aside>
 
@@ -1611,7 +1613,7 @@ function openProject(name){
   G("pdNotes").value=meta.notes||"";
   G("pdJobStatus").innerHTML=STATUSES.map(s=>`<option value="${s[0]}">${s[0]}</option>`).join("");
   G("pdJobStatus").value="In Progress";
-  renderProjJobs();
+  renderProjJobs(); renderProjProposals();
   renderProjUpdates();
   G("scrim").classList.add("open");
   G("projDrawer").classList.add("open");
@@ -1641,6 +1643,42 @@ function renderProjUpdates(){
       ${photos}
     </div>`;
   }).join('');
+}
+/* Proposals attached to this project, and which job numbers each one produced.
+   This is the "what has already been included" view — scope and job numbers
+   only, no pricing. */
+async function renderProjProposals(){
+  const box=G("pdProps"); if(!box) return;
+  const j=(JOBS||[]).find(x=>x.engagement===curProj && x.engagement_id);
+  const engId=j?j.engagement_id:null;
+  if(!engId){ box.innerHTML='<div style="color:#6B7480;font-size:13px;padding:6px 2px">No proposals linked yet.</div>';
+              G("pdPropCount").textContent=""; return; }
+  box.innerHTML='<div style="color:#6B7480;font-size:13px;padding:6px 2px">Loading…</div>';
+  try{
+    const r=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/rpc/project_proposals`,{
+      method:"POST",
+      headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+(await pmFresh()),"Content-Type":"application/json"},
+      body:JSON.stringify({p_engagement_id:engId})});
+    if(!r.ok) throw new Error("http "+r.status);
+    const rows=await r.json();
+    G("pdPropCount").textContent = rows.length ? rows.length : "";
+    box.innerHTML = rows.length ? rows.map(p=>{
+      const pushed = p.jobs_created
+        ? `<span class="chip ok"><i></i>${p.jobs_created} job${p.jobs_created>1?'s':''} on the list${p.job_numbers?' \u00b7 '+esc(p.job_numbers):''}</span>`
+        : `<span class="chip warn"><i></i>not pushed to the active list</span>`;
+      const unpushed = (p.scope_lines||0) - (p.jobs_created||0);
+      return `<div class="pd-jobrow">
+        <div class="pj-main"><span class="pj-name">${esc(p.name||"Untitled proposal")}</span>
+          <div style="font-size:12px;color:#6B7480;margin-top:2px">
+            ${esc(p.prepared_by||"—")} \u00b7 ${p.saved_at?new Date(p.saved_at).toLocaleDateString():""}
+            \u00b7 ${p.scope_lines||0} scope line${(p.scope_lines||0)===1?'':'s'}
+            ${unpushed>0?' \u00b7 <b>'+unpushed+' not yet added</b>':''}
+          </div>
+          <div style="margin-top:5px">${pushed}</div>
+        </div>
+      </div>`;}).join("")
+      : '<div style="color:#6B7480;font-size:13px;padding:6px 2px">No proposals linked to this project yet.</div>';
+  }catch(e){ box.innerHTML='<div style="color:#6B7480;font-size:13px;padding:6px 2px">Could not load proposals.</div>'; }
 }
 function renderProjJobs(){
   const jobs=pjobs(curProj);
