@@ -667,7 +667,14 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeLeadModal();cl
 
 // ── Initial load ──
 loadLeads();
-loadJobs();
+loadJobs().then(()=>{
+  // Deep link from the "new job" alert email: .../apb-admin-jobs.html?job=<uuid>
+  // Opens straight to that job instead of dropping you on the board to hunt.
+  try{
+    const id=new URLSearchParams(location.search).get('job');
+    if(id && allJobs.some(j=>j.id===id)){ switchTab('jobs'); showJobDetail(id); }
+  }catch(e){}
+});
 </script>
 </body>
 </html>
