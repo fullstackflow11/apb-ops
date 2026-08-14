@@ -318,13 +318,22 @@ const SUPABASE_URL='https://aanrxyiocxxndkvkeocv.supabase.co';
 const SUPABASE_KEY='sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw';
 let sb=null; try{ sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true } }); }catch(e){}
 // Require a signed-in manager (shared Supabase Auth session from the dashboard).
+// Also captures WHO is signed in, so approvals record a person and not a role label.
+let AUTH_NAME='', AUTH_EMAIL='';
+function approver(){ return AUTH_NAME || AUTH_EMAIL || (window.APBRoles?APBRoles.label():'Manager'); }
 (async()=>{ try{ if(!sb){ location.replace('index.html'); return; }
   await new Promise(r=>setTimeout(r,150));
   const{data:{session}}=await sb.auth.getSession();
   if(!session){ location.replace('index.html'); return; }
   const _em=(session.user&&session.user.email)||'';
-  let _mgr=false; try{ const r=await sb.from('apb_people').select('is_manager').eq('email',_em).maybeSingle(); _mgr=!!(r&&r.data&&r.data.is_manager); }catch(e){}
+  AUTH_EMAIL=_em;
+  let _mgr=false; try{ const r=await sb.from('apb_people').select('name,is_manager').eq('email',_em).maybeSingle();
+    _mgr=!!(r&&r.data&&r.data.is_manager);
+    if(r&&r.data&&r.data.name) AUTH_NAME=r.data.name;
+  }catch(e){}
   if(!_mgr){ location.replace('index.html'); return; }
+  try{ renderWhoAmI(); }catch(e){}
+  try{ document.getElementById('rolePill').textContent = approver(); }catch(e){}
 }catch(e){ location.replace('index.html'); } })();
 const LS_SYNCED='apb_pto_synced';
 function syncedIds(){ try{ return new Set(JSON.parse(localStorage.getItem(LS_SYNCED)||'[]')); }catch(e){ return new Set(); } }
@@ -384,7 +393,7 @@ let tab='cal';
 let viewY=new Date().getFullYear(), viewM=new Date().getMonth();
 
 // boot
-document.getElementById('rolePill').textContent = window.APBRoles?APBRoles.label():'Admin';
+document.getElementById('rolePill').textContent = approver();
 renderWhoAmI();
 render();
 syncPull();
@@ -563,7 +572,7 @@ function saveReq(){
     paid:document.getElementById('rPay').value==='paid',
     start:s, end:e, half,
     notes:document.getElementById('rNotes').value.trim(),
-    status:'pending', submittedBy:(window.APBRoles?APBRoles.label():'')||name, submittedAt:Date.now() };
+    status:'pending', submittedBy:approver()||name, submittedByEmail:AUTH_EMAIL||null, submittedAt:Date.now() };
   // auto-add unknown name to roster so they show up next time
   if(!team().some(m=>m.name.toLowerCase()===name.toLowerCase())){ const t=team(); t.push({name,role:'tech'}); save(LS_TEAM,t); renderWhoAmI(); }
   const all=reqs(); all.push(r); save(LS_PTO,all); ptoUpsert(r);
@@ -576,7 +585,10 @@ function decide(id,status,ev){
   const all=reqs(); const r=all.find(x=>x.id===id); if(!r) return;
   let note='';
   if(status==='denied'){ note=prompt('Reason for denying (optional):')||''; }
-  r.status=status; r.decidedBy=(window.APBRoles?APBRoles.label():'Manager'); r.decidedAt=Date.now(); if(note) r.decisionNote=note;
+  r.status=status;
+  r.decidedBy=approver();
+  r.decidedByEmail=AUTH_EMAIL||null;
+  r.decidedAt=Date.now(); if(note) r.decisionNote=note;
   save(LS_PTO,all); ptoUpsert(r); closeMod('detModal'); render();
   toast(status==='approved'?'Approved ✓ — enjoy!':'Request denied', status==='approved'?'green':'red');
 }
