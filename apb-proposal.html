@@ -70,6 +70,7 @@ textarea{resize:vertical;min-height:74px;line-height:1.5}
 .modal .mh b{font-size:15px}.modal .x{border:none;background:none;font-size:18px;color:var(--ink-3);cursor:pointer}
 .modal .mb{padding:8px 12px;max-height:46vh;overflow:auto}
 .modal .mf{padding:13px 20px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink-3)}.modal .mf span{color:var(--ink-4)}
+.opendraft{font-size:11.5px;font-weight:600;color:var(--accent);background:#EEF4FF;border:1px solid #cdddff;padding:5px 10px;border-radius:20px;white-space:nowrap}
 .draft{display:flex;align-items:center;gap:12px;padding:11px 8px;border-radius:9px}
 .draft:hover{background:#F7F9FF}.draft .dn{font-weight:600;font-size:14px}.draft .dd{font-size:11.5px;color:var(--ink-3);font-family:var(--mono)}
 .draft .sp{flex:1}.draft button{border:1px solid var(--line);background:#fff;border-radius:7px;padding:6px 11px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
@@ -92,8 +93,12 @@ textarea{resize:vertical;min-height:74px;line-height:1.5}
   <div class="sp"></div>
   <button class="tbtn" id="drafts">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Drafts</button>
+  <span id="openDraft" class="opendraft" hidden></span>
   <button class="tbtn" id="save">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>Save for later</button>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg><span id="saveLabel">Save for later</span></button>
+  <button class="tbtn" id="saveNew" hidden>Save as copy</button>
+  <button class="tbtn" id="toActive" title="Create the job numbers on the active list from this proposal's scope">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add to active list</button>
   <button class="btn primary" id="gen">Generate Proposal →</button>
 </header>
 
@@ -371,6 +376,7 @@ const PD_KEY="sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw";
 // Require a signed-in manager (shared Supabase Auth session); use the user's
 // token on the REST calls so they run as 'authenticated' once RLS is on.
 let PD_TOKEN=PD_KEY;
+const PD_ME={name:'',email:''};
 const _pdsb=(window.supabase&&window.supabase.createClient)?window.supabase.createClient(PD_URL,PD_KEY,{auth:{persistSession:true,autoRefreshToken:true}}):null;
 if(_pdsb) _pdsb.auth.onAuthStateChange(function(_e,se){ if(se&&se.access_token) PD_TOKEN=se.access_token; });
 (async()=>{
@@ -379,8 +385,9 @@ if(_pdsb) _pdsb.auth.onAuthStateChange(function(_e,se){ if(se&&se.access_token) 
     const{data:{session}}=await _pdsb.auth.getSession();
     if(!session){ location.replace('index.html'); return; }
     PD_TOKEN=session.access_token;
-    const _em=(session.user&&session.user.email)||'';
-    let _mgr=false; try{ const r=await _pdsb.from('apb_people').select('is_manager').eq('email',_em).maybeSingle(); _mgr=!!(r&&r.data&&r.data.is_manager); }catch(e){}
+    const _em=(session.user&&session.user.email)||''; PD_ME.email=_em;
+    let _mgr=false; try{ const r=await _pdsb.from('apb_people').select('name,role').eq('email',_em.toLowerCase()).maybeSingle();
+      if(r&&r.data){ PD_ME.name=r.data.name||''; _mgr=['admin','pm'].indexOf(r.data.role)>=0; } }catch(e){}
     if(!_mgr){ location.replace('index.html'); return; }
     loadPreparers();   // fill the Prepared-by dropdown once we're authenticated
   }catch(e){ location.replace('index.html'); }
@@ -390,17 +397,62 @@ function localDrafts(){ try{ return JSON.parse(localStorage.getItem(DKEY)||"[]")
 function mirrorLocal(){ try{ localStorage.setItem(DKEY, JSON.stringify(DRAFTS.slice(0,200))); }catch(e){} }
 async function loadDraftsFromCloud(){
   try{
-    const r=await fetch(`${PD_URL}/rest/v1/apb_proposal_drafts?select=id,name,by,lead_id,saved_at,data&order=saved_at.desc`,{headers:{apikey:PD_KEY,Authorization:"Bearer "+PD_TOKEN}});
+    const r=await fetch(`${PD_URL}/rest/v1/apb_proposal_drafts?select=id,name,by,lead_id,saved_at,updated_at,last_edited_by,data&order=saved_at.desc`,{headers:{apikey:PD_KEY,Authorization:"Bearer "+PD_TOKEN}});
     if(!r.ok) throw new Error("http "+r.status);
     const rows=await r.json();
-    DRAFTS=rows.map(d=>({id:d.id,name:d.name,by:d.by,lead_id:d.lead_id,savedAt:d.saved_at,state:d.data}));
+    DRAFTS=rows.map(d=>({id:d.id,name:d.name,by:d.by,lead_id:d.lead_id,savedAt:d.saved_at,updatedAt:d.updated_at,lastBy:d.last_edited_by,state:d.data}));
     mirrorLocal();
   }catch(e){ DRAFTS=localDrafts(); }   // offline fallback
   return DRAFTS;
 }
-async function saveDraft(){
-  const dflt=$("client").value||$("ptitle").value||"Untitled proposal";
-  const name=prompt("Name this draft:", dflt); if(name===null) return;
+/* Which draft is currently open, if any. Saving with one open UPDATES it in
+   place; "Save as copy" always mints a new row. Before this, every save made a
+   new draft, so editing an existing proposal quietly left duplicates behind. */
+let CURR=null;
+function setOpenDraft(d){
+  CURR = d ? {id:d.id, name:d.name, updatedAt:d.updatedAt||d.updated_at||null} : null;
+  const chip=$("openDraft"), lbl=$("saveLabel"), cp=$("saveNew");
+  if(CURR){ chip.hidden=false; chip.textContent="Editing: "+CURR.name;
+            lbl.textContent="Update draft"; cp.hidden=false; }
+  else    { chip.hidden=true;  lbl.textContent="Save for later"; cp.hidden=true; }
+}
+function pdHead(extra){ return Object.assign({apikey:PD_KEY,Authorization:"Bearer "+PD_TOKEN,"Content-Type":"application/json"},extra||{}); }
+/* Conflict check: write only if the row still carries the timestamp we loaded.
+   If someone saved in between, the filter matches nothing and we name them
+   rather than silently overwriting their work. */
+async function updateOpenDraft(name,state,by,now){
+  const payload={ name:name, by:by, data:state, last_edited_by:PD_ME.name||by, last_edited_email:PD_ME.email||null };
+  let url=PD_URL+"/rest/v1/apb_proposal_drafts?id=eq."+encodeURIComponent(CURR.id);
+  if(CURR.updatedAt) url+="&updated_at=eq."+encodeURIComponent(CURR.updatedAt);
+  const r=await fetch(url,{method:"PATCH",headers:pdHead({Prefer:"return=representation"}),body:JSON.stringify(payload)});
+  if(!r.ok) throw new Error("http "+r.status);
+  let back=await r.json();
+  if(!back.length){
+    const cur=(await (await fetch(PD_URL+"/rest/v1/apb_proposal_drafts?select=last_edited_by,by,updated_at&id=eq."+encodeURIComponent(CURR.id),{headers:pdHead()})).json())[0];
+    const who=(cur&&(cur.last_edited_by||cur.by))||"someone else";
+    if(!confirm(who+" saved this draft at "+(cur?new Date(cur.updated_at).toLocaleString():"a later time")
+      +", after you opened it.\n\nOK = overwrite their version with yours.\nCancel = keep theirs, leave yours unsaved.")) throw new Error("kept theirs");
+    const r2=await fetch(PD_URL+"/rest/v1/apb_proposal_drafts?id=eq."+encodeURIComponent(CURR.id),
+      {method:"PATCH",headers:pdHead({Prefer:"return=representation"}),body:JSON.stringify(payload)});
+    if(!r2.ok) throw new Error("http "+r2.status);
+    back=await r2.json();
+  }
+  const i=DRAFTS.findIndex(x=>x.id===CURR.id);
+  if(i>=0) DRAFTS[i]=Object.assign({},DRAFTS[i],{name:name,by:by,state:state,savedAt:now,updatedAt:back[0]&&back[0].updated_at});
+  mirrorLocal();
+  return back[0];
+}
+async function saveDraft(asNew){
+  const updating = CURR && !asNew;
+  const dflt = updating ? CURR.name : ($("client").value||$("ptitle").value||"Untitled proposal");
+  const name=prompt(updating?"Update this draft \u2014 name:":"Name this draft:", dflt); if(name===null) return;
+  if(updating){
+    const nm=name||CURR.name;
+    try{ const row=await updateOpenDraft(nm, formState(), ($("preparer").value.split("|")[0]||"APB"), new Date().toISOString());
+         setOpenDraft({id:CURR.id,name:nm,updatedAt:row&&row.updated_at}); toast("Draft updated \u2014 "+nm); }
+    catch(e){ toast(e.message==="kept theirs" ? "Left their version in place \u2014 yours is not saved" : "Could not save \u2014 "+e.message); }
+    return;
+  }
   const draft={ id:"d"+Date.now()+Math.random().toString(36).slice(2,6), name:name||dflt,
     by:($("preparer").value.split("|")[0]||"APB"), lead_id:(window.__leadId||null),
     savedAt:new Date().toISOString(), state:formState() };
@@ -412,6 +464,7 @@ async function saveDraft(){
       body: JSON.stringify({ id:draft.id, name:draft.name, by:draft.by, lead_id:draft.lead_id, saved_at:draft.savedAt, data:draft.state })
     });
     if(!r.ok) throw new Error("http "+r.status);
+    setOpenDraft(draft);
     toast("Draft saved & shared — “"+draft.name+"”");
   }catch(e){ toast("Saved locally — will share when back online"); }
 }
@@ -426,21 +479,60 @@ function renderDraftsList(){
   const list=$("draftsList");
   list.innerHTML = DRAFTS.length ? DRAFTS.map(d=>`
     <div class="draft" data-id="${d.id}">
-      <div><div class="dn">${esc(d.name)}</div><div class="dd">${d.savedAt?new Date(d.savedAt).toLocaleString():""} · ${esc(d.by||"APB")}</div></div>
+      <div><div class="dn">${esc(d.name)}</div><div class="dd">${d.updatedAt?new Date(d.updatedAt).toLocaleString():(d.savedAt?new Date(d.savedAt).toLocaleString():"")} · ${esc(d.lastBy||d.by||"APB")}</div></div>
       <div class="sp"></div>
       <button class="load" data-load="${d.id}">Load</button>
       <button class="del" data-del="${d.id}">Delete</button>
     </div>`).join("") : '<div class="emptyd">No saved drafts yet. Use “Save for later” to start one.</div>';
-  list.querySelectorAll("[data-load]").forEach(b=>b.onclick=()=>{ const d=DRAFTS.find(x=>x.id===b.dataset.load); if(d){ restoreState(d.state); closeDrafts(); toast("Loaded “"+d.name+"”"); } });
+  list.querySelectorAll("[data-load]").forEach(b=>b.onclick=()=>{ const d=DRAFTS.find(x=>x.id===b.dataset.load); if(d){ restoreState(d.state); setOpenDraft(d); closeDrafts(); toast("Loaded “"+d.name+"”"); } });
   list.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>deleteDraft(b.dataset.del));
 }
 async function deleteDraft(id){
+  if(CURR && CURR.id===id) setOpenDraft(null);
   DRAFTS=DRAFTS.filter(x=>x.id!==id); mirrorLocal(); renderDraftsList();
   try{ await fetch(`${PD_URL}/rest/v1/apb_proposal_drafts?id=eq.${encodeURIComponent(id)}`,{method:"DELETE",headers:{apikey:PD_KEY,Authorization:"Bearer "+PD_TOKEN}}); }catch(e){}
 }
 function closeDrafts(){ $("draftsModal").classList.remove("open"); }
 let toastT=null; function toast(m){ const t=$("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2400); }
-$("save").onclick=saveDraft; $("drafts").onclick=openDrafts; $("draftsClose").onclick=closeDrafts;
+/* ---------- proposal -> active list ----------
+   The scope lines become numbered jobs (1.0, 2.0, ...) under one engagement,
+   which is what the techs then pick from in the portal. The draft has to be
+   saved first: the server reads the scope from the saved row, not the form.
+   proposal_push_to_active is idempotent, so a second press returns the jobs it
+   already made instead of creating duplicates. */
+async function pushToActive(){
+  if(!CURR){ toast("Save this proposal as a draft first"); return; }
+  const lines=jobs.map((j,i)=>({n:jobNumber(i),t:(j.title||"").trim()})).filter(x=>x.t);
+  if(!lines.length){ toast("Add at least one scope line with a title"); return; }
+  const vessel=($("ptitle").value||$("client").value||"").trim();
+  if(!confirm("Create these job numbers on the active list under \u201c"+(vessel||CURR.name)+"\u201d?\n\n"
+      +lines.map(x=>"  "+x.n+"  "+x.t).join("\n")
+      +"\n\nSave the draft first if you have unsaved edits \u2014 the scope is read from the saved copy.")) return;
+  try{
+    const r=await fetch(PD_URL+"/rest/v1/rpc/proposal_push_to_active",{
+      method:"POST", headers:pdHead(),
+      body: JSON.stringify({ p_draft_id:CURR.id, p_vessel:vessel||null, p_by:(PD_ME.name||null) })
+    });
+    if(!r.ok){
+      let m="http "+r.status; try{ const e=await r.json(); if(e&&e.message) m=e.message; }catch(_){}
+      throw new Error(m);
+    }
+    const rows=await r.json();
+    const made=rows.filter(x=>x.created), had=rows.length-made.length;
+    toast(made.length?(made.length+" job"+(made.length===1?"":"s")+" added to the active list"
+                       +(had?" ("+had+" already there)":""))
+                     :"Already on the active list \u2014 nothing new created");
+  }catch(e){
+    const msg=String(e.message||e);
+    toast(msg.indexOf("proposal_has_no_scope_lines")>=0 ? "That draft has no scope lines saved yet"
+        : msg.indexOf("no_vessel_or_client")>=0 ? "Fill in the client or title first"
+        : msg.indexOf("not_authorized")>=0 ? "Your account cannot add jobs"
+        : "Could not add to the active list \u2014 "+msg);
+  }
+}
+$("toActive").onclick=pushToActive;
+$("save").onclick=function(){saveDraft(false);};
+$("saveNew").onclick=function(){saveDraft(true);}; $("drafts").onclick=openDrafts; $("draftsClose").onclick=closeDrafts;
 $("draftsModal").addEventListener("click",e=>{ if(e.target.id==="draftsModal") closeDrafts(); });
 document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeDrafts(); });
 
