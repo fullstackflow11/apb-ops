@@ -245,9 +245,13 @@ const PUNCH={in:'Clock in',out:'Clock out',lunch_out:'Lunch out',lunch_in:'Lunch
 const TZ='America/New_York';
 // Rebuild a UTC instant from the work date plus a shop-local HH:MM
 function atShop(dateStr,hhmm){
-  const guess=new Date(`${dateStr}T${hhmm}:00Z`);
-  const shown=new Date(guess.toLocaleString('en-US',{timeZone:TZ}));
-  return new Date(guess.getTime()+(guess-shown)).toISOString();
+  // Treat the entered time as a shop-local wall clock and find the real instant.
+  // Both toLocaleString calls are parsed the same way by the browser, so the
+  // difference between them is purely the shop's offset from UTC.
+  const naive=new Date(`${dateStr}T${hhmm}:00Z`);
+  const asTZ =new Date(naive.toLocaleString('en-US',{timeZone:TZ}));
+  const asUTC=new Date(naive.toLocaleString('en-US',{timeZone:'UTC'}));
+  return new Date(naive.getTime()+(asUTC-asTZ)).toISOString();
 }
 const hhmm=t=>new Date(t).toLocaleTimeString('en-GB',{timeZone:TZ,hour:'2-digit',minute:'2-digit'});
 
@@ -410,6 +414,7 @@ const EMPTY={
 
 const STATUS={
   'in progress':         ['p-grey', 'On the clock'],
+  'at lunch':            ['p-grey', 'At lunch'],
   'match':               ['p-green','Matches'],
   'submitted over clock':['p-red',  'Over the clock'],
   'submitted under clock':['p-amber','Under the clock'],
@@ -437,7 +442,7 @@ const RENDER={
           <td class="num muted">${clock(r.punch_in)}</td>
           <td class="num muted">${clock(r.punch_out)}</td>
           <td class="num">${hrs(r.lunch_hours)}</td>
-          <td class="num">${r.status==='in progress'?'<span class="muted">running</span>':hrs(r.worked_hours)}</td>
+          <td class="num">${(r.status==='in progress'||r.status==='at lunch')?'<span class="muted">running</span>':hrs(r.worked_hours)}</td>
           <td class="num">${hrs(r.submitted_hours)}</td>
           <td class="num delta ${cls}">${(r.variance_hours==null)?'—':(v?(v>0?'+':'')+v.toFixed(2):'—')}</td>
           <td><span class="pill ${st[0]}">${st[1]}</span></td>
