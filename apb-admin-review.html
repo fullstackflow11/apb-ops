@@ -1383,6 +1383,7 @@ async function frankcrumFill(file){
           if(label==='regh')  col.regh=c;
           if(label==='ot')    col.ot=c;
           if(label==='pto')   col.pto=c;
+          if(label==='salry'||label==='salary') col.salry=c;
           if(label==='hol')   col.hol=c;
         });
         break;
@@ -1431,9 +1432,10 @@ async function frankcrumFill(file){
       if(error){ showToast('Payroll lookup failed: '+error.message); return; }
       (rows||[]).forEach(r=>{
         const k=_fcPad(r.emp_no);
-        const t=tot[k]||(tot[k]={regh:0,ot:0,pto:0,unpaid:0,notes:[]});
+        const t=tot[k]||(tot[k]={regh:0,ot:0,pto:0,unpaid:0,hs:null,notes:[]});
         t.regh+=Number(r.regh||0); t.ot+=Number(r.ot||0);
         t.pto+=Number(r.pto||0);   t.unpaid+=Number(r.unpaid_ti||0);
+        if(r.hs) t.hs=r.hs;
         if(r.notes) t.notes.push(r.notes);
       });
     }
@@ -1455,7 +1457,11 @@ async function frankcrumFill(file){
       const shown=String(((grid[r]||[])[col.emp+1])||'').trim()||emp;
       const t=tot[emp];
       if(!t){ missing.push(shown); continue; }
-      set(r,col.regh,_fcNum(t.regh));
+      // Salaried hours belong in SALRY, hourly in REGH. Their worksheet carries
+      // the H/S flag per row; we trust our roster's pay_type, which is where the
+      // regh figure was calculated from.
+      if(t.hs==='S' && col.salry!=null) set(r,col.salry,_fcNum(t.regh));
+      else                              set(r,col.regh, _fcNum(t.regh));
       set(r,col.ot,  _fcNum(t.ot));
       set(r,col.pto, _fcNum(t.pto));
       if(hol) set(r,col.hol,_fcNum(hol));
