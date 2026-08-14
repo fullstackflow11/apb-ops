@@ -294,6 +294,7 @@ header{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.92);backdr
 const SUPABASE_URL='https://aanrxyiocxxndkvkeocv.supabase.co';
 const SUPABASE_KEY='sb_publishable_DzUy57K8eF8I1HeAYrCz3A_G7aEiyCw';
 const sb=supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+const ME={name:'',email:''};
 
 (async()=>{
   await new Promise(r=>setTimeout(r,300));
@@ -302,7 +303,12 @@ const sb=supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSess
     if(!session){window.location.replace('index.html');return;}
     const email=(session.user&&session.user.email)||'';
     let _mgr=false;
-    try{ const r=await sb.from('apb_people').select('is_manager').eq('email',email).maybeSingle(); _mgr=!!(r&&r.data&&r.data.is_manager); }catch(e){}
+    try{ const r=await sb.from('apb_people').select('is_manager,name').eq('email',email).maybeSingle();
+         _mgr=!!(r&&r.data&&r.data.is_manager);
+         // Stamped onto every job save so the "new job" alert can name a person
+         // instead of saying "someone".
+         ME.name=(r&&r.data&&r.data.name)||email.split('@')[0];
+         ME.email=email; }catch(e){ ME.name=email.split('@')[0]; ME.email=email; }
     if(!_mgr){window.location.replace('index.html');return;}
     const hdr=document.querySelector('header,.topbar');
     if(hdr){
@@ -609,6 +615,7 @@ async function saveJob(){
     vessel_make:v('jf_vessel_make'),vessel_flag:v('jf_vessel_flag'),
     pm_notes:v('jf_scope_of_work'),admin_notes:v('jf_notes'),
     proposal_url:upload.url||null,proposal_filename:upload.filename||null,
+    edited_by:ME.name||null, edited_at:new Date().toISOString(),
   };
   const{error}=editingJobId?await sb.from('apb_jobs').update(payload).eq('id',editingJobId):await sb.from('apb_jobs').insert(payload);
   btn.disabled=false;btn.textContent='Save Job';
