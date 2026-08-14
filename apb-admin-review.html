@@ -1698,11 +1698,15 @@ async function exportQuickBooks(){
   /* QuickBooks matches employees on exact name too, and APB spells a few
      differently. Anything not listed passes through unchanged. Check each of
      these against the QuickBooks employee list before a bulk import. */
-  /* EMPTY ON PURPOSE. Add an entry only when you have confirmed the exact
-     spelling in the QuickBooks employee list — a wrong entry silently books one
-     person's hours to another. Roberto is NOT Robert Ferreira; they are two
-     different people. Format: "APB name": "QuickBooks display name". */
-  var QB_TECH = {};
+  /* QuickBooks spells two people differently from APB. Taken from the 7/22/2026
+     workbook that went into QuickBooks — these two names never existed in the
+     APB database, so they are QuickBooks' own spelling, not ours.
+     Roberto is NOT Robert Ferreira; they are two different people and both
+     names pass through unchanged. */
+  var QB_TECH = {
+    "Brandon Wezkiewicz": "Brandon W",
+    "Joey Zammataro":     "Joey Z."
+  };
   var qbTechMissed = {};
   function qbTechName(n){
     var t=String(n||'').trim();
