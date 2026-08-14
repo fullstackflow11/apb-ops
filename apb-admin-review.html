@@ -1695,6 +1695,21 @@ async function exportQuickBooks(){
     "Pier 66|1.0 Fuel Pump Railings": "Pier 66:1.0 - Fuel Pump Railings",
     "MY Raffaella|1.0 Overboard discharge weld repair": "Raffaella:1.0 - Overboard Discharge Weld Repair"
   };
+  /* QuickBooks matches employees on exact name too, and APB spells a few
+     differently. Anything not listed passes through unchanged. Check each of
+     these against the QuickBooks employee list before a bulk import. */
+  /* EMPTY ON PURPOSE. Add an entry only when you have confirmed the exact
+     spelling in the QuickBooks employee list — a wrong entry silently books one
+     person's hours to another. Roberto is NOT Robert Ferreira; they are two
+     different people. Format: "APB name": "QuickBooks display name". */
+  var QB_TECH = {};
+  var qbTechMissed = {};
+  function qbTechName(n){
+    var t=String(n||'').trim();
+    if(QB_TECH[t]) return QB_TECH[t];
+    if(t) qbTechMissed[t]=true;      // reported before download
+    return t;
+  }
   // Translate an APB timesheet line to QuickBooks' exact "Customer:Project" path.
   // Anything that falls through to the fallback is collected in qbUnmapped so the
   // export can warn before it downloads — QuickBooks matches on exact names, and
@@ -1716,16 +1731,39 @@ async function exportQuickBooks(){
     qbUnmapped[key]=(qbUnmapped[key]||0)+(+r.hours||0);
     return proj ? (qbSafe(cust)+':'+qbSafe(proj)) : (qbSafe(cust)||'—');
   }
-  const header=['Date','Tech','Customer/Project','Hours','Billable','Description'];
-  const rows=[header, ...data.map(r=>[
-    r.work_date||'', r.tech_name||'',
-    qbCustomerProject(r),
-    (+r.hours||0).toFixed(2), (r.billable===false?'N':'Y'), r.work_description||r.invoice_line||''
-  ])];
+  /* QuickBooks Online's Time Activities import template. Thirteen columns in
+     this exact order, M/D/YYYY dates, and hours/minutes as separate whole
+     numbers — 0.50 h is 0 and 30, not "0.50". Employee/Vendor is the literal
+     word Employee on every row. Anything else is rejected on import. */
+  const header=['Post?','Date','Name','Employee/Vendor','Hours','Minutes','Billable',
+                'Billing Rate','Cost Rate','Customer/Project','Location','Class','Description'];
+  function qbDate(d){                       // 2026-08-13 -> 8/13/2026
+    if(!d) return '';
+    const p=String(d).slice(0,10).split('-');
+    return p.length===3 ? (+p[1])+'/'+(+p[2])+'/'+p[0] : String(d);
+  }
+  function qbHM(h){                          // 7.25 -> [7, 15]
+    const t=Math.round((+h||0)*60);
+    return [Math.floor(t/60), t%60];
+  }
+  const rows=[header, ...data.map(r=>{
+    const hm=qbHM(r.hours);
+    return ['', qbDate(r.work_date), qbTechName(r.tech_name), 'Employee',
+            hm[0], hm[1], '', '', '',
+            qbCustomerProject(r), '', '',
+            r.invoice_line || r.work_description || ''];
+  })];
 
   // Pre-flight. Nothing here is fatal, but an unmapped name imports as a NEW
   // QuickBooks customer rather than matching the existing one, and cleaning that
   // up afterwards is far worse than fixing the map now.
+  const techList=Object.keys(qbTechMissed).sort();
+  if(techList.length){
+    if(!confirm('These names go to QuickBooks exactly as APB spells them:\n\n  '
+      +techList.join('\n  ')
+      +'\n\nQuickBooks matches employees on exact name. Any that differ will import'
+      +' against the wrong person or create a new employee record.\n\nContinue?')) return;
+  }
   const un=Object.entries(qbUnmapped).sort((a,b)=>b[1]-a[1]);
   if(un.length){
     const h=un.reduce((a,x)=>a+x[1],0);
@@ -1736,13 +1774,15 @@ async function exportQuickBooks(){
       +'\n\nThese will import as NEW customers/projects instead of matching what is'
       +' already in QuickBooks.\n\nDownload anyway?')) return;
   }
-  const csv=rows.map(r=>r.map(c=>'"'+csvSafe(c).replace(/"/g,'""')+'"').join(',')).join('\n');
-  const blob=new Blob([csv],{type:'text/csv'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download=(qbFrom||qbTo)
-    ? `apb-quickbooks_${qbFrom||'start'}_to_${qbTo||'today'}.csv`
-    : `apb-quickbooks-all_${new Date().toISOString().split('T')[0]}.csv`;
-  a.click();
+  // Written as .xlsx on the "Time Activities" sheet, matching the workbook
+  // QuickBooks accepted before. Hours/Minutes stay numeric so they don't
+  // arrive as text.
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  const wbOut=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wbOut, ws, 'Time Activities');
+  XLSX.writeFile(wbOut, (qbFrom||qbTo)
+    ? `apb-quickbooks_${qbFrom||'start'}_to_${qbTo||'today'}.xlsx`
+    : `apb-quickbooks-all_${new Date().toISOString().split('T')[0]}.xlsx`);
 
   // Stamp only after she confirms it actually went in, so a download she
   // abandons does not quietly mark work as done.
