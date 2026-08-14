@@ -210,16 +210,16 @@ html,body{height:100%;background:var(--bg);color:var(--ink);font-family:Inter,-a
     </div>
     <button class="signout-btn" onclick="logout()">Sign Out</button>
   </div>
-  <div id="punchBar" style="display:none;margin:0 0 14px;background:#fff;border:1px solid #DDE1E8;border-left:3px solid #C7CED9;border-radius:12px;padding:13px 15px">
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <div style="flex:1;min-width:150px">
-        <div id="punchState" style="font-size:14px;font-weight:700;color:#0D1626">Clock</div>
-        <div id="punchSince" style="font-size:12px;color:#6B7A92;margin-top:2px">&nbsp;</div>
+  <div id="punchBar" style="display:none;margin:0 0 18px;background:#fff;border:1px solid #DDE1E8;border-left:5px solid #C7CED9;border-radius:14px;padding:18px 18px 16px;text-align:center">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center">
+      <div style="flex:1 1 100%;min-width:150px">
+        <div id="punchState" style="font-size:19px;font-weight:800;color:#0D1626;letter-spacing:-.01em">Clock</div>
+        <div id="punchSince" style="font-size:13px;color:#6B7A92;margin-top:3px">&nbsp;</div>
       </div>
-      <button id="punchMain" style="border:0;border-radius:10px;padding:12px 20px;font-size:14px;font-weight:700;background:#0B9E6A;color:#fff;font-family:inherit">Punch In</button>
-      <button id="punchLunch" style="display:none;border:1px solid #DDE1E8;border-radius:10px;padding:12px 16px;font-size:14px;font-weight:700;background:#FBF0E2;color:#B86A00;font-family:inherit">Lunch</button>
+      <button id="punchMain" style="border:0;border-radius:12px;padding:16px 34px;font-size:17px;font-weight:800;background:#0B9E6A;color:#fff;font-family:inherit;min-width:190px;box-shadow:0 2px 8px rgba(11,158,106,.28)">Punch In</button>
+      <button id="punchLunch" style="display:none;border:1px solid #E3C79A;border-radius:12px;padding:16px 24px;font-size:16px;font-weight:800;background:#FBF0E2;color:#B86A00;font-family:inherit;min-width:130px">Lunch</button>
     </div>
-    <div id="punchNote" style="display:none;font-size:12.5px;line-height:1.45;margin-top:10px;padding-top:9px;border-top:1px solid #F0F2F6;color:#6B7A92"></div>
+    <div id="punchNote" style="display:none;font-size:13px;line-height:1.45;margin-top:12px;padding-top:11px;border-top:1px solid #F0F2F6;color:#6B7A92;text-align:left"></div>
   </div>
 
   <div class="tabs">
@@ -741,7 +741,7 @@ function jobOptionsHtml(jobs){
     if(j.job_number && j.job_name && !j.job_name.startsWith(j.job_number)) return j.job_number+' — '+j.job_name;
     return j.job_name||j.job_number||'—';
   };
-  return'<option value="">Select job…</option>'+jobs.map(j=>`<option value="${tkEsc(j.id)}" data-job-number="${tkEsc(j.job_number||'')}" data-job-name="${tkEsc(j.job_name||'')}">${tkEsc(label(j))}</option>`).join('');
+  return'<option value="">Select job…</option>'+jobs.map(j=>`<option value="${tkEsc(j.id)}" data-job-number="${tkEsc(j.job_number||'')}" data-job-name="${tkEsc(j.job_name||'')}" data-scope="${tkEsc(j.scope||'')}">${tkEsc(label(j))}</option>`).join('');
 }
 // Match the PM Active List exactly: show a job only if it is NOT a pre-approval
 // lead (Lead / Estimating / Proposal Created / Proposal Sent) and NOT archived —
@@ -762,6 +762,21 @@ async function onLineVesselChange(lineId){
     jobSlot.innerHTML=`<div class="field"><label>Job</label><div class="job-no-warn">⚠ No active jobs for this vessel.<br>Contact management to add jobs.</div><input type="hidden" class="line-job" value="NO_JOBS"></div>`;
   } else {
     jobSlot.innerHTML=`<div class="field"><label>Job <span class="req">*</span></label><select class="form-select line-job">${jobOptionsHtml(jobs)}</select></div>`;
+  }
+  const _js=div.querySelector('.line-job');
+  if(_js){
+    const _wrap=document.createElement('div');
+    _wrap.className='line-scope';
+    _wrap.style.cssText='display:none;margin-top:6px;padding:9px 11px;border-radius:9px;background:#F3F6FB;border:1px solid #E2E8F2;font-size:13px;line-height:1.45;white-space:pre-wrap;color:#3d4854';
+    _js.parentNode.appendChild(_wrap);
+    // Scope of work for the chosen job, so a tech can see what the job covers.
+    // Scope only — no pricing comes down from the server.
+    _js.addEventListener('change',function(){
+      const o=_js.options[_js.selectedIndex];
+      const sc=(o&&o.dataset.scope||'').trim();
+      if(sc){ _wrap.textContent='Scope: '+sc; _wrap.style.display='block'; }
+      else  { _wrap.textContent=''; _wrap.style.display='none'; }
+    });
   }
 }
 function addJobLine(){
