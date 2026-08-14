@@ -126,6 +126,11 @@ textarea{resize:vertical;min-height:74px;line-height:1.5}
       <div class="field"><label>Location / Site</label><input id="loc" placeholder="Marina, yard, address…"></div>
     </div>
     <div class="grid g2">
+      <div class="field" style="grid-column:1/-1">
+        <label>Existing project <span style="font-weight:400;color:var(--ink-3)">— pick one so this proposal attaches to it instead of creating a new customer</span></label>
+        <select id="projSel"><option value="">New customer / project (create on push)</option></select>
+        <div id="projHint" class="jobwarn" style="margin-top:6px"></div>
+      </div>
       <div class="field"><label>Client / Company</label><input id="client" placeholder="Company or owner"></div>
       <div class="field"><label>Project / Job title</label><input id="ptitle" placeholder="e.g. Strut Repair / Vessel name"></div>
     </div>
@@ -201,7 +206,7 @@ $("date").value=new Date().toISOString().slice(0,10);
 
 /* ---------- jobs repeater ---------- */
 let jobs=[];
-function addJob(j){ jobs.push(j||{title:"",tasks:"",labor:"",materials:"",total:""}); renderJobs(); }
+function addJob(j){ jobs.push(j||{num:nextJobNum(),title:"",tasks:"",labor:"",materials:"",total:""}); renderJobs(); }
 function jobNumber(i){ return (i+1)+".0"; }
 function num(v){ const n=parseFloat(String(v).replace(/[^0-9.\-]/g,"")); return isNaN(n)?null:n; }
 function money(n){ return "$"+n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); }
@@ -209,7 +214,9 @@ function calcTotal(j){ const l=num(j.labor),m=num(j.materials); if(j.total&&num(
 function renderJobs(){
   $("jobs").innerHTML=jobs.map((j,i)=>`
     <div class="job">
-      <div class="jh"><span class="num">Job ${jobNumber(i)}</span>
+      <div class="jh"><span class="num">Job</span>
+        <input data-i="${i}" data-f="num" value="${esc(j.num||jobNumber(i))}" placeholder="1.0"
+               title="Job number on the active list" style="width:70px;text-align:center;font-family:var(--mono,monospace)">
         <input data-i="${i}" data-f="title" value="${esc(j.title)}" placeholder="Job title" style="max-width:340px">
         ${jobs.length>1?`<button class="rm" data-rm="${i}">Remove</button>`:""}</div>
       <div class="field"><label>Tasks (one per line → bullets)</label>
@@ -358,13 +365,14 @@ function L(d){ // d = collected data
 const FIELD_IDS=["ptype","preparer","date","rev","pnum","loc","client","ptitle","attn","cphone","cemail","scope","options","taxline","rate","validity","interest","markup","depPct"];
 function formState(){
   const s={}; FIELD_IDS.forEach(id=>s[id]=$(id).value); s.depOn=$("depOn").checked;
-  s.jobs=jobs.map(j=>({title:j.title,tasks:j.tasks,labor:j.labor,materials:j.materials,total:j.total}));
+  s.jobs=jobs.map(j=>({num:j.num||'',title:j.title,tasks:j.tasks,labor:j.labor,materials:j.materials,total:j.total}));
   return s;
 }
 function restoreState(s){
   FIELD_IDS.forEach(id=>{ if(s[id]!=null) $(id).value=s[id]; });
   $("depOn").checked = s.depOn!==false;
-  jobs = (s.jobs&&s.jobs.length)?s.jobs.map(j=>({title:j.title||"",tasks:j.tasks||"",labor:j.labor||"",materials:j.materials||"",total:j.total||""})):[{title:"",tasks:"",labor:"",materials:"",total:""}];
+  if(s.engagement_id){ PROJ_ID=s.engagement_id; const sel=$("projSel"); if(sel){ sel.value=s.engagement_id; projChanged(true); } }
+  jobs = (s.jobs&&s.jobs.length)?s.jobs.map(j=>({num:j.num||"",title:j.title||"",tasks:j.tasks||"",labor:j.labor||"",materials:j.materials||"",total:j.total||""})):[{title:"",tasks:"",labor:"",materials:"",total:""}];
   renderJobs();
 }
 /* Shared, team-wide proposal drafts (Supabase apb_proposal_drafts).
@@ -390,6 +398,7 @@ if(_pdsb) _pdsb.auth.onAuthStateChange(function(_e,se){ if(se&&se.access_token) 
       if(r&&r.data){ PD_ME.name=r.data.name||''; _mgr=['admin','pm'].indexOf(r.data.role)>=0; } }catch(e){}
     if(!_mgr){ location.replace('index.html'); return; }
     loadPreparers();   // fill the Prepared-by dropdown once we're authenticated
+    loadProjects();
   }catch(e){ location.replace('index.html'); }
 })();
 let DRAFTS=[];
@@ -500,28 +509,83 @@ let toastT=null; function toast(m){ const t=$("toast"); t.textContent=m; t.class
    saved first: the server reads the scope from the saved row, not the form.
    proposal_push_to_active is idempotent, so a second press returns the jobs it
    already made instead of creating duplicates. */
+/* ---------- existing projects ----------
+   Associating by engagement id rather than by typed customer name. The old push
+   matched an engagement by lowercased name and created one when it missed, which
+   is how "Charger construction T&M" ended up in the list twice. */
+let PROJECTS=[], PROJ_ID=null;
+function nextJobNum(){
+  const p=PROJECTS.find(x=>x.engagement_id===PROJ_ID);
+  if(p&&p.next_number){
+    // keep counting up as lines are added in this proposal
+    const used=jobs.map(j=>parseFloat(j.num)).filter(n=>!isNaN(n));
+    const base=parseFloat(p.next_number)||1;
+    let n=base; while(used.indexOf(n)>=0) n+=1;
+    return n.toFixed(1);
+  }
+  const used=jobs.map(j=>parseFloat(j.num)).filter(n=>!isNaN(n));
+  let n=1; while(used.indexOf(n)>=0) n+=1;
+  return n.toFixed(1);
+}
+async function loadProjects(){
+  try{
+    const r=await fetch(PD_URL+"/rest/v1/rpc/proposal_projects_list",{method:"POST",headers:pdHead(),body:"{}"});
+    if(!r.ok) return;
+    PROJECTS=await r.json();
+    const sel=$("projSel");
+    sel.innerHTML='<option value="">New customer / project (create on push)</option>'
+      + PROJECTS.map(p=>`<option value="${p.engagement_id}">${esc(p.name)}${p.jobs?' \u00b7 '+p.jobs+' job'+(p.jobs>1?'s':''):''}</option>`).join("");
+    if(PROJ_ID) sel.value=PROJ_ID;
+    projChanged(true);
+  }catch(e){}
+}
+function projChanged(silent){
+  PROJ_ID=$("projSel").value||null;
+  const p=PROJECTS.find(x=>x.engagement_id===PROJ_ID);
+  const h=$("projHint");
+  if(p){
+    h.textContent = p.jobs
+      ? "Already on this project: "+p.used_numbers+" \u2014 next free number is "+p.next_number
+      : "No jobs on this project yet \u2014 starts at 1.0";
+    h.className="jobwarn show";
+    if(!$("ptitle").value) $("ptitle").value=p.name;
+    // renumber any blank lines to continue this project's sequence
+    if(!silent){ jobs.forEach(j=>{ if(!j.num) j.num=nextJobNum(); }); renderJobs(); }
+  } else { h.className="jobwarn"; h.textContent=""; }
+}
+$("projSel").onchange=()=>projChanged(false);
+
 async function pushToActive(){
   if(!CURR){ toast("Save this proposal as a draft first"); return; }
-  const lines=jobs.map((j,i)=>({n:jobNumber(i),t:(j.title||"").trim()})).filter(x=>x.t);
+  const lines=jobs.map((j,i)=>({n:(j.num||jobNumber(i)),t:(j.title||"").trim()})).filter(x=>x.t);
   if(!lines.length){ toast("Add at least one scope line with a title"); return; }
-  const vessel=($("ptitle").value||$("client").value||"").trim();
+  const p=PROJECTS.find(x=>x.engagement_id===PROJ_ID);
+  const vessel=p?p.name:($("ptitle").value||$("client").value||"").trim();
+  if(!PROJ_ID && !confirm("No existing project is selected, so a NEW one called \u201c"+vessel
+      +"\u201d will be created.\n\nPick it from the Existing project list instead if it is already there.\n\nCarry on?")) return;
   if(!confirm("Create these job numbers on the active list under \u201c"+(vessel||CURR.name)+"\u201d?\n\n"
       +lines.map(x=>"  "+x.n+"  "+x.t).join("\n")
       +"\n\nSave the draft first if you have unsaved edits \u2014 the scope is read from the saved copy.")) return;
   try{
     const r=await fetch(PD_URL+"/rest/v1/rpc/proposal_push_to_active",{
       method:"POST", headers:pdHead(),
-      body: JSON.stringify({ p_draft_id:CURR.id, p_vessel:vessel||null, p_by:(PD_ME.name||null) })
+      body: JSON.stringify({ p_draft_id:CURR.id, p_engagement_id:PROJ_ID, p_by:(PD_ME.name||null) })
     });
     if(!r.ok){
       let m="http "+r.status; try{ const e=await r.json(); if(e&&e.message) m=e.message; }catch(_){}
       throw new Error(m);
     }
     const rows=await r.json();
-    const made=rows.filter(x=>x.created), had=rows.length-made.length;
-    toast(made.length?(made.length+" job"+(made.length===1?"":"s")+" added to the active list"
-                       +(had?" ("+had+" already there)":""))
-                     :"Already on the active list \u2014 nothing new created");
+    const made=rows.filter(x=>x.created);
+    const skipped=rows.filter(x=>x.note&&x.note.indexOf("SKIPPED")===0);
+    if(skipped.length){
+      alert("Some job numbers were already in use on this project and were NOT added:\n\n"
+        + skipped.map(x=>"  "+x.note.replace("SKIPPED - ","")).join("\n")
+        + "\n\nChange those numbers on the proposal and push again.");
+    }
+    toast(made.length?(made.length+" job"+(made.length===1?"":"s")+" added to the active list")
+                     :"Nothing new added");
+    loadProjects();
   }catch(e){
     const msg=String(e.message||e);
     toast(msg.indexOf("proposal_has_no_scope_lines")>=0 ? "That draft has no scope lines saved yet"
