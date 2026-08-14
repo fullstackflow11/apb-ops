@@ -1594,7 +1594,29 @@ async function exportQuickBooks(){
     "Shop Work": "Shop Work",
     "Siemens Energy": "Siemens",
     "Ted": "Ted",
-    "Uncle Tony": "Uncle Tony"
+    "Uncle Tony": "Uncle Tony",
+
+    // ── Alternate spellings — same job entered two ways in the timesheet
+    //    portal. Both point at one QuickBooks customer so nothing splits.
+    "APB3 (Redundansea)": "APB3 (Redundansea)",   // missing space
+    "Shop": "Shop Work",                          // short form of Shop Work
+    "MY Raffaella": "Raffaella",
+
+    // ── Customers that had no QuickBooks name at all. Names below are the APB
+    //    spelling — CHECK EACH AGAINST THE QUICKBOOKS CUSTOMER LIST and correct
+    //    here if QuickBooks spells it differently, or the import will create a
+    //    duplicate customer instead of matching the existing one.
+    "Admin": "Admin",
+    "Goodwin House": "Goodwin House",
+    "Raffaella": "Raffaella",
+    "Pier 66": "Pier 66",
+    "Charger construction T&M": "Charger Construction",
+    "Formal Design LLC": "Formal Design LLC",
+    "Premier Surfaces Inc": "Premier Surfaces Inc",
+    "Fred Sage": "Fred Sage",
+    "Stealth": "Stealth",
+    "Merritt": "Merritt",
+    "FCS": "FCS"
   };
   var QB_PROJECT = {
     "APB 1 (Chelsea Rae)|1.0 Maintenance": "APB1 Chelsea Rae:1.0 - Maintenance",
@@ -1626,9 +1648,60 @@ async function exportQuickBooks(){
     "Siemens Energy|5.0 Casting Removal": "Siemens:5.0 - Casting Removal",
     "Ted|1.0 Lay Tank Fabrication": "Ted:1.0 - Lay Tank Fabrication",
     "Uncle Tony|4.0 Rocket launcher": "Uncle Tony:4.0 - Rocket Launcher",
-    "Uncle Tony|5.0 Foot Rest/Grab Rails": "Uncle Tony:5.0 - Foot rest/Grab Rails"
+    "Uncle Tony|5.0 Foot Rest/Grab Rails": "Uncle Tony:5.0 - Foot rest/Grab Rails",
+
+    // ── "APB3 (Redundansea)" — no space. Same projects as the spaced spelling.
+    "APB3 (Redundansea)|1.0 Maintenance": "APB3 (Redundansea):1.0 - Vessel Support",
+    "APB3 (Redundansea)|2.0 Project Management": "APB3 (Redundansea):2.0 - Project Management",
+    "APB3 (Redundansea)|3.0 Mechanical Systems Development (R&D)": "APB3 (Redundansea):3.0 - Mech Syst Devel (R&D)",
+    "APB3 (Redundansea)|4.0 Engineering & Design Development (R&D)": "APB3 (Redundansea):4.0 - Eng + Design Dev R+D",
+    "APB3 (Redundansea)|5.0 Fabrication & Manufacturing Development (R&D)": "APB3 (Redundansea):5.0 - Fab + Mnfg Dev R+D",
+
+    // ── Projects on customers that were already mapped
+    "APB 1 (Chelsea Rae)|3.0 Mechanical Systems Development (R&D)": "APB1 Chelsea Rae:3.0 - Mech Syst Devel (R&D)",
+    "APB 1 (Chelsea Rae)|5.0 Fabrication & Manufacturing Development (R&D)": "APB1 Chelsea Rae:5.0 - Fab/Mnfg Devel (R&D)",
+    "APB 1 (Chelsea Rae)|6.0 Marketing And Content Development": "APB1 Chelsea Rae:6.0 - Marketing/Content Dev",
+    "APB 2 (WYWY)|1.0 Maintenance": "APB2 - Wywy:1.0 - Maintenance",
+    "APB 2 (WYWY)|2.0 Project Management": "APB2 - Wywy:2.0 - Project Management",
+    "Phoenix International|4.0 Clad Welding Clad Welding Repair MV Tiscapa": "Phoenix Intl:4.0 - Clad Welding Repair MV Tiscapa",
+    "Sea Ray 350 Sundancer|2.0 Vessel Transport & Trailer Rental": "Sea Ray 350:2.0 - Vessel Transport/Trailer Rental",
+    "Shop Work|7.0 Mechanical Systems Development (R&D)": "Shop Work:7.0 - Mech Syst Devel (R&D)",
+    "Shop Work|8.0 Fabrication & Manufacturing Development (R&D)": "Shop Work:8.0 - Fab/Mnfg Devel (R&D)",
+    "High Seas|4.0 Steel Bearing Puller Plates": "High Seas:4.0 - Steel Bearing Puller Plates",
+    "Uncle Tony|2.0 Custom Antenna": "Uncle Tony:2.0 - Custom Antenna",
+
+    // ── Admin overhead
+    "Admin|1.0 General Administration & Daily Operations": "Admin:1.0 - General Admin",
+    "Admin|2.0 Planning & Scheduling": "Admin:2.0 - Planning & Scheduling",
+    "Admin|4.0 Staff / Safety Meeting": "Admin:4.0 - Staff/Safety Meeting",
+    "Admin|5.0 Sales, Estimating & Proposals": "Admin:5.0 - Sales/Estimating",
+    "Admin|8.0 R&D Review & Direction": "Admin:8.0 - R&D Review",
+
+    // ── Newly mapped customers. The "zAPB:41" original contains a colon, which
+    //    is QuickBooks' own Customer:Project separator and would break parsing.
+    "Goodwin House|zAPB:41 Goodwin House": "Goodwin House:41 - Goodwin House",
+    "Raffaella|1.0 Overboard discharge weld repair": "Raffaella:1.0 - Overboard Discharge Weld Repair",
+    "Pier 66|2.0 bench refinishing": "Pier 66:2.0 - Bench Refinishing",
+    "Charger construction T&M|1.0 Steel beam cutting & drilling": "Charger Construction:1.0 - Steel Beam Cutting/Drilling",
+    "Formal Design LLC|1.0 Fabrication of Handles": "Formal Design LLC:1.0 - Fabrication of Handles",
+    "Premier Surfaces Inc|1.0 Bow Thruster": "Premier Surfaces Inc:1.0 - Bow Thruster",
+    "Fred Sage|2.0 Trailer Front Left Bunk Repair / Modification Evaluation": "Fred Sage:2.0 - Trailer Bunk Repair",
+    "Stealth|1.0 Fabricate aluminum Hatch": "Stealth:1.0 - Fabricate Aluminum Hatch",
+    "Merritt|1.0 G10 Strips": "Merritt:1.0 - G10 Strips",
+    "FCS|1.0 Coil tray for air handler": "FCS:1.0 - Coil Tray for Air Handler",
+
+    // ── Jobs that surfaced once legacy lines were linked to their job record
+    "Shop|1.0 Shop Maintenance, Cleaning & Organization": "Shop Work:1.0 - Shop Maint, Clean, Org",
+    "Pier 66|1.0 Fuel Pump Railings": "Pier 66:1.0 - Fuel Pump Railings",
+    "MY Raffaella|1.0 Overboard discharge weld repair": "Raffaella:1.0 - Overboard Discharge Weld Repair"
   };
   // Translate an APB timesheet line to QuickBooks' exact "Customer:Project" path.
+  // Anything that falls through to the fallback is collected in qbUnmapped so the
+  // export can warn before it downloads — QuickBooks matches on exact names, and
+  // a near-miss silently creates a duplicate customer rather than failing loudly.
+  var qbUnmapped = {};
+  // A colon inside a name is QuickBooks' own Customer:Project separator.
+  function qbSafe(s){ return String(s||'').replace(/:/g,' -').replace(/\s+/g,' ').trim(); }
   function qbCustomerProject(r){
     var vessel=String(r.vessel_name||'').trim();
     var num=String(r.job_number||'').trim();
@@ -1639,7 +1712,9 @@ async function exportQuickBooks(){
     // fallback: at least route to the right QuickBooks customer
     var cust = QB_CUSTOMER[vessel] || vessel;
     var proj = (num && name) ? (name.indexOf(num)===0 ? name : (num+' - '+name)) : (name||num);
-    return proj ? (cust+':'+proj) : (cust||'—');
+    var key = vessel+' | '+(apbJob||'(no job)')+(QB_CUSTOMER[vessel]?'':'   [customer not in QuickBooks map]');
+    qbUnmapped[key]=(qbUnmapped[key]||0)+(+r.hours||0);
+    return proj ? (qbSafe(cust)+':'+qbSafe(proj)) : (qbSafe(cust)||'—');
   }
   const header=['Date','Tech','Customer/Project','Hours','Billable','Description'];
   const rows=[header, ...data.map(r=>[
@@ -1647,6 +1722,20 @@ async function exportQuickBooks(){
     qbCustomerProject(r),
     (+r.hours||0).toFixed(2), (r.billable===false?'N':'Y'), r.work_description||r.invoice_line||''
   ])];
+
+  // Pre-flight. Nothing here is fatal, but an unmapped name imports as a NEW
+  // QuickBooks customer rather than matching the existing one, and cleaning that
+  // up afterwards is far worse than fixing the map now.
+  const un=Object.entries(qbUnmapped).sort((a,b)=>b[1]-a[1]);
+  if(un.length){
+    const h=un.reduce((a,x)=>a+x[1],0);
+    const list=un.slice(0,15).map(x=>'  '+x[1].toFixed(2)+' h  '+x[0]).join('\n');
+    if(!confirm(un.length+' name(s) in this export have no QuickBooks mapping ('
+      +h.toFixed(2)+' h):\n\n'+list
+      +(un.length>15?'\n  \u2026and '+(un.length-15)+' more':'')
+      +'\n\nThese will import as NEW customers/projects instead of matching what is'
+      +' already in QuickBooks.\n\nDownload anyway?')) return;
+  }
   const csv=rows.map(r=>r.map(c=>'"'+csvSafe(c).replace(/"/g,'""')+'"').join(',')).join('\n');
   const blob=new Blob([csv],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
