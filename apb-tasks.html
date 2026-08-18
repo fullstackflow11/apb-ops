@@ -150,7 +150,8 @@ body{font-family:Inter,-apple-system,"Segoe UI",sans-serif;background:var(--bg);
           <option value="misc">Misc / other</option>
         </select>
       </div>
-      <div class="fg"><label>Assign to *</label><select id="tAssignee"></select></div>
+      <div class="fg"><label>Assign to * <span id="tAssigneeHint" style="font-weight:400;opacity:.65">— hold Ctrl/Cmd to pick more than one</span></label>
+        <select id="tAssignee" multiple size="6" style="min-height:132px"></select></div>
     </div>
     <div class="fg"><label id="tJobLabel">Project / vessel *</label><input id="tJob" type="text" placeholder="e.g. Redundansea 2.0"></div>
     <div class="fg"><label>Message <span style="color:var(--ink-3);font-weight:400;text-transform:none;letter-spacing:0">— optional</span></label><textarea id="tDesc" placeholder="Anything they need to know — scope, where on the boat, parts, deadline…"></textarea></div>
@@ -325,7 +326,8 @@ function card(t,admin){
   const kd=t.kind||'job';
   const kicon={job:'⚓',shop:'🛠',admin:'📋',misc:'📌'}[kd]||'⚓';
   const cat=kd!=='job'?`<span class="tag job">${({shop:'Shop',admin:'Admin',misc:'Misc'}[kd]||kd)}</span>`:'';
-  const who=admin?`<span class="tag who">${esc(t.assignee||'Unassigned')}</span>`:'';
+  const who=admin?`<span class="tag who">${esc(t.assignee||'Unassigned')}</span>`
+      +(t.groupId?`<span class="tag" title="Assigned to several techs">+team</span>`:''):'';
   let actions='';
   if(t.status==='todo') actions=`<button class="ca go" onclick="setStatus('${t.id}','doing')">▸ Start</button><button class="ca done" onclick="setStatus('${t.id}','done')">✓ Done</button>`;
   else if(t.status==='doing') actions=`<button class="ca done" onclick="setStatus('${t.id}','done')">✓ Done</button><button class="ca" onclick="setStatus('${t.id}','todo')">↺ To Do</button>`;
@@ -394,7 +396,11 @@ function delTask(id){
 
 // ── Task modal (admin) ──────────────────────────────────────────────────────
 function fillAssignees(sel){
+  // Keep whatever is already ticked — the team list refreshes in the background
+  // and rebuilding the options would silently clear a half-made selection.
+  const keep=new Set(Array.from(sel.selectedOptions||[]).map(o=>o.value));
   sel.innerHTML = team().map(m=>`<option value="${esc(m.name)}">${esc(m.name)} · ${m.role.toUpperCase()}</option>`).join('');
+  if(keep.size) Array.from(sel.options).forEach(o=>{ if(keep.has(o.value)) o.selected=true; });
 }
 function updateKindUI(){
   const k=document.getElementById('tKind').value;
@@ -418,7 +424,10 @@ function editTask(id){
   document.getElementById('taskModalTitle').textContent='Edit assignment';
   fillAssignees(document.getElementById('tAssignee'));
   document.getElementById('tTitle').value=t.title||'';
-  document.getElementById('tAssignee').value=t.assignee||'';
+  (function(){var sl=document.getElementById('tAssignee');
+     Array.from(sl.options).forEach(function(o){ o.selected = (o.value===(t.assignee||'')); });
+     var hint=document.getElementById('tAssigneeHint');
+     if(hint) hint.textContent='— editing one task; changing this reassigns it';})();
   document.getElementById('tKind').value=t.kind||'job'; updateKindUI();
   document.getElementById('tJob').value=t.job||t.title||'';
   document.getElementById('tPriority').value=t.priority||'normal';
@@ -431,18 +440,42 @@ function saveTask(){
   const kind=document.getElementById('tKind').value||'job';
   const main=document.getElementById('tJob').value.trim();
   if(!main){ toast(kind==='job'?'Add a project / vessel':'Add what needs doing','red'); return; }
-  const assignee=document.getElementById('tAssignee').value;
-  if(!assignee){ toast('Pick who to assign','red'); return; }
-  const m=team().find(x=>x.name===assignee);
-  const data={ title:main, assignee, assigneeRole:m?m.role:'tech', kind:kind,
+  const sel=document.getElementById('tAssignee');
+  const picked=Array.from(sel.selectedOptions||[]).map(o=>o.value).filter(Boolean);
+  if(!picked.length){ toast('Pick who to assign','red'); return; }
+  const base={ title:main, kind:kind,
     job:(kind==='job'?main:''), priority:'normal',
     due:document.getElementById('tDue').value,
     desc:document.getElementById('tDesc').value.trim() };
   const all=tasks();
-  let saved;
-  if(editingId){ const t=all.find(x=>x.id===editingId); Object.assign(t,data); t.updatedAt=Date.now(); saved=t; toast('Updated','green'); }
-  else { saved={ id:uid(), ...data, status:'todo', notes:[], createdBy:APBRoles.label(), createdAt:Date.now(), updatedAt:Date.now() }; all.push(saved); toast(assignee.split(' ')[0]+' assigned'+(kind==='job'?' to '+main:' — '+main),'green'); }
-  save(LS_TASKS,all); taskUpsert(saved); closeTaskModal(); renderAdmin();
+
+  if(editingId){
+    // Editing touches this one task only; reassigning moves it to the first pick.
+    const t=all.find(x=>x.id===editingId);
+    const m=team().find(x=>x.name===picked[0]);
+    Object.assign(t, base, {assignee:picked[0], assigneeRole:m?m.role:'tech'});
+    t.updatedAt=Date.now();
+    save(LS_TASKS,all); taskUpsert(t); closeTaskModal(); renderAdmin();
+    toast('Updated','green'); return;
+  }
+
+  // Several techs on one job = one task each, sharing a groupId. Each person
+  // ticks off their own; nobody's completion wipes out anyone else's.
+  const groupId = picked.length>1 ? uid() : null;
+  const made=[];
+  picked.forEach(function(who){
+    const m=team().find(x=>x.name===who);
+    const t={ id:uid(), ...base, assignee:who, assigneeRole:m?m.role:'tech',
+              groupId:groupId, status:'todo', notes:[],
+              createdBy:APBRoles.label(), createdAt:Date.now(), updatedAt:Date.now() };
+    all.push(t); made.push(t);
+  });
+  save(LS_TASKS,all);
+  made.forEach(taskUpsert);
+  closeTaskModal(); renderAdmin();
+  toast(picked.length===1
+    ? picked[0].split(' ')[0]+' assigned'+(kind==='job'?' to '+main:' — '+main)
+    : picked.length+' techs assigned'+(kind==='job'?' to '+main:' — '+main),'green');
 }
 
 // ── Team modal ──────────────────────────────────────────────────────────────
