@@ -237,6 +237,9 @@ const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+Stri
 const clock=t=>t?new Date(t).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'—';
 const day=t=>t?new Date(t).toLocaleDateString([],{month:'short',day:'numeric'}):'—';
 const hrs=v=>(v==null||v==='')?'—':Number(v).toFixed(2);
+// 0.45 in the Lunch column meant 0.45 HOURS = 27 minutes, and was being read
+// as 45 minutes. Lunch is talked about in minutes, so show minutes.
+const mins=v=>(v==null||v==='')?'—':(Math.round(Number(v)*60)+' min');
 
 let view='all', data={all:[],ex:[],fl:[],rf:[],dv:[],cx:[]};
 let canEdit=false, fixing=null;
@@ -441,7 +444,7 @@ const RENDER={
           <td class="who">${esc(r.tech_name)}${fixBtn(r.tech_name,r.work_date)}</td>
           <td class="num muted">${clock(r.punch_in)}</td>
           <td class="num muted">${clock(r.punch_out)}</td>
-          <td class="num">${hrs(r.lunch_hours)}</td>
+          <td class="num">${mins(r.lunch_hours)}</td>
           <td class="num">${(r.status==='in progress'||r.status==='at lunch')?'<span class="muted">running</span>':hrs(r.worked_hours)}</td>
           <td class="num">${hrs(r.submitted_hours)}</td>
           <td class="num delta ${cls}">${(r.variance_hours==null)?'—':(v?(v>0?'+':'')+v.toFixed(2):'—')}</td>
@@ -451,7 +454,7 @@ const RENDER={
         <h2>${day(d+'T12:00')}<span>${list.length} ${list.length===1?'person':'people'} ·
           ${clocked.toFixed(2)} h clocked · ${logged.toFixed(2)} h logged</span></h2>
         <table><thead><tr>
-          <th>Tech</th><th>In</th><th>Out</th><th>Lunch</th>
+          <th>Tech</th><th>In</th><th>Out</th><th>Lunch (min)</th>
           <th>Clocked</th><th>Logged</th><th>Difference</th><th>Status</th>
         </tr></thead><tbody>${body}</tbody></table>
       </div>`;}).join('');
