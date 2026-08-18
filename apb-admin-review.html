@@ -177,7 +177,23 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
 .save-edit-btn{font-size:11px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:5px 12px;cursor:pointer}
 .cancel-edit-btn{font-size:11px;font-weight:600;background:var(--panel-2);color:var(--ink-3);border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer}
 /* Vessel/Job editor — a clean floating panel so it stops overlapping the description */
-.job-edit-pop{position:absolute;z-index:30;top:100%;left:0;margin-top:6px;width:300px;max-width:82vw;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:14px;white-space:normal}
+/* Was an absolutely positioned popover hanging off the table cell — inside the
+   scrolling review panel it got clipped and there was no way to scroll to the
+   Job select or the Save button. Centred on the screen instead, so it is always
+   fully visible whatever row it belongs to. */
+.job-edit-pop{position:fixed;z-index:400;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:min(440px,94vw);max-height:88vh;overflow:auto;background:var(--panel);
+  border:1px solid var(--line);border-radius:16px;
+  box-shadow:0 24px 70px rgba(13,22,38,.34);padding:20px;white-space:normal}
+.job-edit-pop::before{content:'';position:fixed;inset:0;background:rgba(13,22,38,.42);z-index:-1}
+.job-edit-pop::after{content:'Change vessel / job';position:absolute;top:20px;left:20px;
+  font-size:15px;font-weight:750;color:var(--ink);letter-spacing:-.01em}
+.job-edit-pop > .je-lbl:first-of-type{margin-top:30px}
+.job-edit-pop select.edit-input{font-size:15px;padding:11px 12px;min-height:46px;
+  border-radius:10px;width:100%}
+.job-edit-pop .je-lbl{margin-bottom:7px}
+.job-edit-pop .edit-actions{display:flex;gap:10px;margin-top:18px}
+.job-edit-pop .edit-actions button{flex:1;min-height:46px;font-size:15px;border-radius:10px}
 .job-edit-pop .je-lbl{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-bottom:5px}
 .approved-by{font-size:10px;color:var(--ink-4);margin-top:4px;font-family:var(--mono);line-height:1.3}
 .job-edit-pop select.edit-input{margin-top:0}
@@ -445,7 +461,24 @@ const HOLIDAYS = {
   '2026-11-27':'Day After Thxg','2026-12-25':'Christmas'
 };
 function punchFor(visitId){ return punches.find(p=>p.timesheet_id===visitId) || null; }
-function fmtPunch(t){ if(!t) return ''; const m=String(t).match(/(\d{1,2}):(\d{2})/); if(!m) return String(t); let h=+m[1]; const mm=m[2], ap=h<12?'AM':'PM'; h=h%12||12; return h+':'+mm+' '+ap; }
+/* Two different shapes arrive here and they are NOT interchangeable:
+     - apb_punches.punch_in  is `time without time zone` -> "07:00:00", already
+       shop-local, so reading the digits straight off is right.
+     - punch_day_hours returns timestamptz -> "2026-08-17T10:29:13+00:00", which
+       is UTC. Reading the digits off that printed 6:29 AM as 10:29 AM and
+       3:04 PM as 7:04 PM — every geofenced clock time was four hours fast.
+   Anything carrying a date is converted to shop time; a bare time is left alone. */
+const SHOP_TZ='America/New_York';
+function fmtPunch(t){
+  if(!t) return '';
+  const str=String(t);
+  if(/\d{4}-\d{2}-\d{2}/.test(str) || /T/.test(str) || /[+-]\d{2}:?\d{2}$/.test(str) || /Z$/.test(str)){
+    const d=new Date(str);
+    if(!isNaN(d)) return d.toLocaleTimeString('en-US',{timeZone:SHOP_TZ,hour:'numeric',minute:'2-digit'});
+  }
+  const m=str.match(/(\d{1,2}):(\d{2})/); if(!m) return str;
+  let h=+m[1]; const mm=m[2], ap=h<12?'AM':'PM'; h=h%12||12; return h+':'+mm+' '+ap;
+}
 
 // ── Auth gate ──
 const SYNTHETIC_DOMAIN = 'apb.internal';
@@ -918,7 +951,7 @@ function renderCard(v,vesselF){
     const w=_pc.shift_open?null:Number(_pc.worked_hours||0);
     const submitted=Number(v.total_hours||0);
     if(w!=null){
-      clockTitle='Clocked '+w.toFixed(2)+' h'+(_pc.lunch_hours?' (lunch '+Number(_pc.lunch_hours).toFixed(2)+' h)':'');
+      clockTitle='Clocked '+w.toFixed(2)+' h'+(_pc.lunch_hours?' (lunch '+Math.round(Number(_pc.lunch_hours)*60)+' min)':'');
       const diff=submitted-w;
       if(Math.abs(diff)>0.25) clockNote=(diff>0?'+':'')+diff.toFixed(2)+' h vs clock';
     }
@@ -933,7 +966,7 @@ function renderCard(v,vesselF){
       <thead><tr><th>Job</th><th>Work Description</th><th>Hours</th><th>Billable</th><th>Status</th></tr></thead>
       <tbody>${vLines.map(l=>`
         <tr>
-          <td style="white-space:nowrap;min-width:150px;position:relative">
+          <td style="white-space:nowrap;min-width:150px">
             <span id="job-${l.id}">
               <span class="job-tag">${rvEsc(l.job_number||l.job_no||(l.shop_category?String(l.shop_category).split(' ').slice(0,2).join(' '):'')||'—')}</span>
               <span class="edit-icon" onclick="startEditJob('${l.id}')" title="Change vessel / job">✎</span>
@@ -1791,8 +1824,7 @@ async function exportQuickBooks(offerToMark){
     : `apb-quickbooks-all_${new Date().toISOString().split('T')[0]}.xlsx`);
 
   // Stamp only after she confirms it actually went in, so a download she
-  // abandons does not quietly mark work as done. "Export only" skips this
-  // entirely — a trial run or a second copy should never touch the queue.
+  // abandons does not quietly mark work as done.
   if(!offerToMark){
     showToast(data.length+' line(s) exported \u00b7 '+scope+' \u00b7 NOT marked as entered');
     return;
