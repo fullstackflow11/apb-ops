@@ -255,6 +255,32 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
 /* ── Export ── */
 @media(max-width:900px){.summary-bar{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:600px){.summary-bar{grid-template-columns:repeat(2,1fr)}.controls{gap:6px}}
+/* ── Header menus and the QuickBooks strip ── */
+.hdr-nav{font-size:12px}
+.menu-wrap{position:relative}
+.caret{font-size:9px;opacity:.6}
+.hdr-pill{background:var(--accent,#2F6BFF);color:#fff;border-radius:999px;
+  padding:1px 7px;font-size:11px;font-weight:700;margin-left:2px}
+.menu{display:none;position:absolute;top:calc(100% + 8px);left:0;z-index:300;
+  width:330px;background:#fff;border:1px solid var(--line);border-radius:12px;
+  box-shadow:0 16px 44px rgba(13,22,38,.18);padding:6px;overflow:hidden}
+.menu.menu-right{left:auto;right:0;width:230px}
+.menu.open{display:block}
+.menu-head{font-size:10px;text-transform:uppercase;letter-spacing:.12em;
+  color:var(--ink-3);padding:9px 12px 5px}
+.menu-sep{height:1px;background:var(--line);margin:6px 4px}
+.menu-item{display:block;width:100%;text-align:left;background:none;border:0;
+  font-family:inherit;padding:9px 12px;border-radius:8px;cursor:pointer}
+.menu-item:hover{background:var(--panel-2)}
+.menu-item b{display:block;font-size:13px;font-weight:650;color:var(--ink)}
+.menu-item span{display:block;font-size:11.5px;line-height:1.4;color:var(--ink-3);margin-top:2px}
+.qb-strip{padding:9px 28px;font-size:12.5px;background:#FFF6F5;
+  border-bottom:1px solid #F3D9D6;color:#8A3A32;display:flex;
+  align-items:center;gap:10px;flex-wrap:wrap}
+.qb-strip.calm{background:var(--panel-2);border-bottom-color:var(--line);color:var(--ink-3)}
+.qb-late-btn{background:none;border:0;font:inherit;font-size:12.5px;
+  color:inherit;text-decoration:underline;cursor:pointer;padding:0}
+.qb-late-list{font-family:var(--mono,monospace);font-size:11.5px;opacity:.85}
 </style>
 </head>
 <body>
@@ -267,23 +293,67 @@ select.ctrl-select:focus{outline:none;border-color:var(--accent)}
     </div>
   </div>
   <div class="header-sep"></div>
-  <a href="index.html" class="btn btn-ghost" style="font-size:12px;">⌂ Home</a>
-  <a href="apb-punch-review.html" class="btn btn-ghost" id="punchLink"
-     style="font-size:12px;display:none"
-     title="Clock-in records checked against these timesheets">◷ Punch review</a>
+  <a href="index.html" class="btn btn-ghost hdr-nav">Home</a>
+  <a href="apb-punch-review.html" class="btn btn-ghost hdr-nav" id="punchLink"
+     style="display:none" title="Clock-in records checked against these timesheets">Punch review</a>
+
   <div class="hdr-spacer"></div>
-  <button class="btn btn-export" onclick="exportQuickBooks()" title="Reviewed time not yet keyed into QuickBooks — billable and non-billable">⬇ Export for QuickBooks</button>
-  <button class="btn btn-export" onclick="exportQuickBooks(false)" title="Same file, but never offers to mark anything as entered — for a trial run or a second copy">⬇ Export only (no marking)</button>
-  <span id="qbPending" style="display:none;font-size:12.5px;color:var(--ink-3);align-self:center;margin-left:2px"></span>
-  <button class="btn btn-export" onclick="qbMarkShown(true)" title="Mark every reviewed line currently shown as keyed into QuickBooks">✓ Mark shown as in QB</button>
-  <button class="btn btn-export" onclick="qbMarkShown(false)" title="Undo — put every reviewed line currently shown back on the to-enter list">↺ Undo shown</button>
+
+  <!-- One menu instead of five loose buttons. The old header put Export, Export
+       only, Mark, Undo and FrankCrum side by side with no labels explaining the
+       difference, and the pending-count text overflowed across them. -->
+  <div class="menu-wrap">
+    <button class="btn btn-export" id="qbMenuBtn" onclick="toggleMenu('qbMenu')">
+      QuickBooks <span id="qbCount" class="hdr-pill" style="display:none"></span> <span class="caret">▾</span>
+    </button>
+    <div class="menu" id="qbMenu">
+      <div class="menu-head">Send time to QuickBooks</div>
+      <button class="menu-item" onclick="closeMenus();exportQuickBooks()">
+        <b>Download and mark as entered</b>
+        <span>Downloads the file, then asks whether to tick these lines off the list.</span>
+      </button>
+      <button class="menu-item" onclick="closeMenus();exportQuickBooks(false)">
+        <b>Download a copy only</b>
+        <span>Same file, nothing is ticked off. For a trial run or a second copy.</span>
+      </button>
+      <div class="menu-sep"></div>
+      <div class="menu-head">Fix the list by hand</div>
+      <button class="menu-item" onclick="closeMenus();qbMarkShown(true)">
+        <b>Tick off everything shown</b>
+        <span>Marks the lines currently on screen as already in QuickBooks.</span>
+      </button>
+      <button class="menu-item" onclick="closeMenus();qbMarkShown(false)">
+        <b>Put everything shown back</b>
+        <span>Undo — returns the lines on screen to the to-enter list.</span>
+      </button>
+    </div>
+  </div>
+
   <label class="btn btn-export" id="fcDrop" for="fcFile"
-    title="Drop in the worksheet FrankCrum sent this week. Their layout, their people, their pay period — filled in and handed back.">⬆ FrankCrum worksheet</label>
+    title="Drop in the worksheet FrankCrum sent this week — it comes back filled in.">Payroll worksheet</label>
   <input type="file" id="fcFile" accept=".xlsx,.xls" style="display:none">
-  <button class="btn btn-primary" onclick="batchApproveAll()" id="batchAllBtn" style="display:none">✓ Approve All Pending</button>
-  <span id="userEmail" style="font-size:11px;color:var(--ink-3);font-family:var(--mono);"></span>
-  <button class="btn btn-ghost" id="signOutBtn" style="display:none" onclick="APBAuth.signOut().then(()=>location.reload())">Sign out</button>
+
+  <button class="btn btn-primary" onclick="batchApproveAll()" id="batchAllBtn" style="display:none">Approve all pending</button>
+
+  <div class="header-sep"></div>
+  <div class="menu-wrap">
+    <button class="btn btn-ghost hdr-nav" onclick="toggleMenu('meMenu')"><span id="userInitial">·</span></button>
+    <div class="menu menu-right" id="meMenu">
+      <div class="menu-head" id="userEmail"></div>
+      <button class="menu-item" id="signOutBtn" style="display:none"
+        onclick="APBAuth.signOut().then(()=>location.reload())"><b>Sign out</b></button>
+    </div>
+  </div>
 </header>
+
+<!-- The to-enter count used to sit inline in the header and spill over the
+     buttons. Its own strip, under the header, with the late days tucked behind
+     a toggle instead of printed as a wall of dates. -->
+<div id="qbStrip" class="qb-strip" style="display:none">
+  <span id="qbStripMain"></span>
+  <button id="qbLateBtn" class="qb-late-btn" style="display:none" onclick="toggleLate()"></button>
+  <span id="qbLateList" class="qb-late-list" style="display:none"></span>
+</div>
 
 <main>
   <!-- Summary stats -->
@@ -1907,18 +1977,52 @@ async function qbBadge(){
   try{
     const {data,error}=await sb.rpc('qb_pending_summary');
     if(error) return;
-    const el=document.getElementById('qbPending'); if(!el) return;
+    const strip=document.getElementById('qbStrip');
+    const main=document.getElementById('qbStripMain');
+    const pill=document.getElementById('qbCount');
+    const lateBtn=document.getElementById('qbLateBtn');
+    const lateList=document.getElementById('qbLateList');
+    if(!strip||!main) return;
     const lines=(data||[]).reduce((a,r)=>a+Number(r.lines_pending||0),0);
     const hrs=(data||[]).reduce((a,r)=>a+Number(r.hours_pending||0),0);
     const late=(data||[]).filter(r=>r.arrived_late);
-    if(!lines){ el.textContent=''; el.style.display='none'; return; }
-    el.style.display='';
-    el.textContent=lines+' line'+(lines!==1?'s':'')+' · '+hrs.toFixed(2)+' h to enter'
-      +(late.length?'  —  '+late.length+' day'+(late.length!==1?'s':'')+' came in late: '
-        +late.map(r=>r.work_date).join(', '):'');
-    el.style.color=late.length?'#C43030':'';
+    if(!lines){ strip.style.display='none'; if(pill) pill.style.display='none'; return; }
+    strip.style.display='';
+    strip.className='qb-strip'+(late.length?'':' calm');
+    main.textContent=lines+' line'+(lines!==1?'s':'')+' waiting to go into QuickBooks · '
+      +hrs.toFixed(2)+' hours';
+    if(pill){ pill.style.display=''; pill.textContent=lines; }
+    // The late days were printed in full and ran off the screen. Count first,
+    // dates only when someone asks for them.
+    if(late.length){
+      lateBtn.style.display='';
+      lateBtn.textContent=late.length+' day'+(late.length!==1?'s':'')+' submitted late — show dates';
+      lateList.textContent=late.map(r=>r.work_date).join(' · ');
+      lateList.style.display='none';
+    } else {
+      lateBtn.style.display='none'; lateList.style.display='none';
+    }
   }catch(e){}
 }
+
+// ── Header menus ──
+function closeMenus(){ document.querySelectorAll('.menu.open').forEach(m=>m.classList.remove('open')); }
+function toggleMenu(id){
+  const m=document.getElementById(id); if(!m) return;
+  const wasOpen=m.classList.contains('open');
+  closeMenus(); if(!wasOpen) m.classList.add('open');
+}
+function toggleLate(){
+  const l=document.getElementById('qbLateList'), b=document.getElementById('qbLateBtn');
+  if(!l||!b) return;
+  const show=l.style.display==='none';
+  l.style.display=show?'':'none';
+  b.textContent=b.textContent.replace(show?'show dates':'hide dates', show?'hide dates':'show dates');
+}
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.menu-wrap')) closeMenus();
+});
+document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeMenus(); });
 
 // ── Toast ──
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
@@ -1935,7 +2039,8 @@ Object.assign(window, {
   openReviewModal, saveDesc, saveHours, setFilter, startEditDesc, startEditHours,
   toggleBillable, toggleCard, toggleReviewed, toggleTechSummary, renderVisits,
   startEditJob, cancelEditJob, onRevVesselChange, saveJobLine, startEditDate, saveVisitDate,
-  shiftGridWeek, gridThisWeek, gridPickTech, frankcrumFill, reloadWithPunches, qbBadge, qbDays, qbToggle, qbToggleVisit, qbMarkShown
+  shiftGridWeek, gridThisWeek, gridPickTech, frankcrumFill, reloadWithPunches, qbBadge, qbDays, qbToggle, qbToggleVisit, qbMarkShown,
+  toggleMenu, closeMenus, toggleLate
 });
 })();
 </script>
