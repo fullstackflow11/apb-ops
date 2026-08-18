@@ -866,15 +866,24 @@ async function load(){
 }
 
 /* ---------- write seam: resolve/create the engagement a lead or job belongs to ---------- */
-async function ensureEngagementId(name){
+async function ensureEngagementId(name, from){
   const existing = JOBS.find(j=>j.engagement===name && j.engagement_id);
   if(existing) return existing.engagement_id;
   if(!LIVE || !CONFIG.SUPABASE_ANON_KEY) return null;
   try{
+    // Carry the rep and location across from the lead. Without this the new
+    // project starts blank and the "now active" alert has nothing to report.
+    const seed = {name, status:"Active"};
+    const key  = String(name||"").trim().toLowerCase();
+    const src  = from || (JOBS||[]).find(j=>j.source==="lead" && String(j.engagement||"").trim().toLowerCase()===key);
+    if(src){
+      if(String(src.rep||"").trim())      seed.rep      = String(src.rep).trim();
+      if(String(src.location||"").trim()) seed.location = String(src.location).trim();
+    }
     const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_engagements`,{
       method:"POST",
       headers:{apikey:CONFIG.SUPABASE_ANON_KEY,Authorization:"Bearer "+(await pmFresh()),"Content-Type":"application/json",Prefer:"return=representation"},
-      body: JSON.stringify({name, status:"Active"})
+      body: JSON.stringify(seed)
     });
     if(!r.ok) return null;
     const rows = await r.json();
@@ -1342,7 +1351,7 @@ function openDrawer(id){
   const dArch=document.getElementById("dArchive");
   if(dArch){
     if(current.source==="lead"){ dArch.style.display="none"; }
-    else { dArch.style.display=""; dArch.textContent=current.archived?"↩ Restore to Active":"✓ Complete & archive"; dArch.onclick=()=>toggleArchive(current); }
+    else { dArch.style.display=""; dArch.textContent=current.archived?"↩ Restore to Active":"📦 Archive (remove from Active List)"; dArch.onclick=()=>toggleArchive(current); }
   }
   setPct(draft.pct);
   document.getElementById("dNotes").value=draft.notes;
@@ -1395,6 +1404,16 @@ document.getElementById("dSave").onclick=save;
    the Archive tab (kept + searchable), without inventing a new status. */
 async function toggleArchive(job){
   const to=!job.archived;
+  // Archiving takes a job off the Active List. Doing that to something that
+  // hasn't been invoiced yet is almost always a misread of the button — the
+  // work is finished, but the money isn't in. Ask first.
+  const UNBILLED=["Ready To Be Billed","Invoice In Review","Invoice Sent","In Progress","PO Sent"];
+  if(to && UNBILLED.indexOf(String(job.status||""))>=0){
+    if(!confirm("\u201c"+(job.job_name||job.engagement||"This job")+"\u201d is still "
+      +job.status+" \u2014 it has not been billed and paid yet.\n\n"
+      +"Archiving removes it from the Active List and it will stop showing up for "
+      +"invoicing.\n\nArchive it anyway?")) return;
+  }
   if(LIVE && isRealId(job.id) && job.source!=="lead"){
     try{
       const r=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/apb_jobs?id=eq.${encodeURIComponent(job.id)}`,{
