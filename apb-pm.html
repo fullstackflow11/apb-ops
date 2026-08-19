@@ -827,7 +827,7 @@ async function load(){
   const {SUPABASE_URL:u, SUPABASE_ANON_KEY:k} = CONFIG;
   if(k){
     try{
-      const sel = "select=id,engagement_id,job_number,job_name,status,job_status_pct,archived,edited_by,edited_at,pm_notes,ms_list_item_id,updated_at,apb_engagements(name,rep)&order=updated_at.desc";
+      const sel = "select=id,engagement_id,job_number,job_name,status,job_status_pct,archived,edited_by,edited_at,pm_notes,ms_list_item_id,updated_at,apb_engagements(name,rep)&order=updated_at.desc&limit=500";
       const r = await fetch(`${u}/rest/v1/apb_jobs?${sel}`,{headers:{apikey:k,Authorization:"Bearer "+(await pmFresh())}});
       if(!r.ok) throw new Error('jobs '+r.status);
       const data = await r.json();
@@ -840,7 +840,7 @@ async function load(){
       }));
       // Brand-new, not-yet-a-client prospects live in apb_leads until approved/converted.
       try{
-        const lsel = "select=id,name,rep,lead_source,description,notes,status,contact_name,contact_email,contact_phone,ms_list_item_id,updated_at&converted=eq.false&order=updated_at.desc";
+        const lsel = "select=id,name,rep,lead_source,description,notes,status,contact_name,contact_email,contact_phone,ms_list_item_id,updated_at&converted=eq.false&order=updated_at.desc&limit=500";
         const lr = await fetch(`${u}/rest/v1/apb_leads?${lsel}`,{headers:{apikey:k,Authorization:"Bearer "+(await pmFresh())}});
         const ldata = await lr.json();
         if(Array.isArray(ldata)){
@@ -1213,10 +1213,19 @@ function startAutoRefresh(){
   if(refreshTimer) clearInterval(refreshTimer);
   if(!CONFIG.SUPABASE_ANON_KEY) return;             // demo mode: nothing to poll
   refreshTimer=setInterval(()=>{
+    // Background/minimized tabs don't need live data — this is what was
+    // running up cached egress: tabs left open for hours kept polling
+    // every 45s with nobody looking at them.
+    if(document.hidden) return;
     // don't yank data out from under a PM mid-edit
     if(!document.getElementById("drawer").classList.contains("open")) load();
   }, 45000);
 }
+// Catch up immediately when a backgrounded tab becomes active again,
+// instead of waiting up to 45s for the next tick.
+document.addEventListener("visibilitychange", ()=>{
+  if(!document.hidden && refreshTimer && !document.getElementById("drawer").classList.contains("open")) load();
+});
 
 /* ---------- readout ---------- */
 function readout(){
