@@ -51,8 +51,11 @@ textarea{resize:vertical;min-height:74px;line-height:1.5}
 .pill{display:inline-flex;gap:6px;align-items:center;font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-soft);padding:3px 10px;border-radius:99px}
 .depctl{display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:9px;padding:8px 11px;background:#fff}
 .depctl input[type=number]{width:60px;padding:6px 8px}
-.depctl .chk{display:flex;align-items:center;gap:6px;margin:0;font-size:12.5px;text-transform:none;letter-spacing:0;color:var(--ink-2);white-space:nowrap;font-weight:600}
-.depctl .chk input{width:auto}
+.chk{display:flex;align-items:center;gap:6px;margin:0;font-size:12.5px;text-transform:none;letter-spacing:0;color:var(--ink-2);white-space:nowrap;font-weight:600}
+.chkwide{display:flex;align-items:flex-start;gap:10px;margin-bottom:13px;font-size:13px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.chkwide input{width:17px;height:17px;flex:none;margin-top:2px;cursor:pointer}
+.chkwide .muted2{font-weight:400;color:var(--ink-3,#8A93A3)}
+.chk input{width:auto;flex:none}
 .depctl .pctsign{font-size:12px;color:var(--ink-3);white-space:nowrap}
 .depctl .depamt{margin-left:auto;font-weight:600;font-size:15px}
 .depctl.off{opacity:.5}
@@ -149,7 +152,7 @@ textarea{resize:vertical;min-height:74px;line-height:1.5}
   <div class="card">
     <h2>Jobs</h2>
     <p class="hint" style="margin:-4px 0 13px">Keep it to <b>1–2 jobs</b> — list the individual steps as <b>tasks</b> under each job, not as separate job numbers. One deliverable = one job.</p>
-    <label class="chk" style="margin-bottom:13px;font-size:13px"><input type="checkbox" id="showMats" checked> Show materials cost breakdown to the client <span style="font-weight:400;color:var(--ink-2)">— on by default; turn off to show only job totals, labor and materials still counted in the price either way</span></label>
+    <label class="chkwide"><input type="checkbox" id="showMats" checked><span>Show materials cost breakdown to the client <span class="muted2">— on by default; turn off to show only job totals, labor and materials still counted in the price either way</span></span></label>
     <div id="jobs"></div>
     <div class="jobadd">
       <button class="addbtn" id="addJob">+ Add blank job</button>
@@ -179,7 +182,13 @@ textarea{resize:vertical;min-height:74px;line-height:1.5}
           <input id="depAmt" type="text" class="depamt mono" value="$0.00" title="Calculated automatically — type here anytime to override, e.g. if materials exceed the job cost" style="width:110px;text-align:right;border:1px solid var(--line);border-radius:7px;padding:5px 8px">
           <button type="button" id="depReset" class="rm" title="Recalculate from the formula, discarding any manual override" style="margin-left:2px">↻ Recalc</button>
         </div></div>
-      <div class="field"><label>Labor rate (extra hours)</label><input id="rate" value="$150 / technician-hour"></div>
+      <div class="field"><label>Labor rate (extra hours)</label>
+        <select id="ratePreset" style="width:100%;margin-bottom:6px;padding:6px 8px;font:inherit;font-size:13px">
+          <option value="">Quick pick…</option>
+          <option value="$150 / technician-hour">Standard — $150 / technician-hour</option>
+          <option value="$250 / technician-hour">Waterjet — $250 / technician-hour</option>
+        </select>
+        <input id="rate" value="$150 / technician-hour"></div>
     </div>
   </div>
 
@@ -303,6 +312,7 @@ $("depOn").addEventListener("change",updateSub);
 $("depMode").addEventListener("change",()=>{ depManual=false; updateSub(); });
 $("depAmt").addEventListener("input",()=>{ depManual=true; });
 $("depReset").addEventListener("click",()=>{ depManual=false; updateSub(); });
+$("ratePreset").addEventListener("change",e=>{ if(e.target.value) $("rate").value=e.target.value; });
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 
 // ── "Prepared by" list — loaded from apb_proposal_preparers so managers can
