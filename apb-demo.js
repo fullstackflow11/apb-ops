@@ -51,7 +51,7 @@
     "apb-used-parts.html": { area: "Surplus parts", need: "Saved to this browser only — goes company-wide once connected to the shared database." },
     "apb-sop.html":        { area: "Procedures & videos", need: "Videos stream from the SharePoint library once it's linked." },
     "apb-estimate.html":   { area: "Quick estimates", need: "The math is live; saved estimates stay in this browser until connected to the shared database." },
-    "apb-proposal.html":   { area: "Proposals", need: "Generation is live; saved drafts stay in this browser until connected to the shared database." },
+    "apb-proposal.html":   { supabase: true, liveSrc: "Supabase", area: "Proposals", need: "Generation is live; saved drafts stay in this browser until connected to the shared database." },
     "apb-dealer.html":     { area: "Dealer assets", need: "Logos, photos & videos load from the dealer SharePoint library once it's connected." },
     "apb-portals.html":    { area: "Partner & supplier links", need: "These are live links — no connection needed." },
     "index.html":          { area: "Command center", supabase: true, liveSrc: "Supabase", need: "Mirrors each tool's data — fully live once Supabase & QuickBooks are connected. Open the Project Console once to load jobs here." }
