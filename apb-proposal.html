@@ -206,6 +206,7 @@ $("date").value=new Date().toISOString().slice(0,10);
 
 /* ---------- jobs repeater ---------- */
 let jobs=[];
+let PROJECTS=[], PROJ_ID=null;
 function addJob(j){ jobs.push(j||{num:nextJobNum(),title:"",tasks:"",labor:"",materials:"",total:""}); renderJobs(); }
 function jobNumber(i){ return (i+1)+".0"; }
 function num(v){ const n=parseFloat(String(v).replace(/[^0-9.\-]/g,"")); return isNaN(n)?null:n; }
@@ -513,7 +514,6 @@ let toastT=null; function toast(m){ const t=$("toast"); t.textContent=m; t.class
    Associating by engagement id rather than by typed customer name. The old push
    matched an engagement by lowercased name and created one when it missed, which
    is how "Charger construction T&M" ended up in the list twice. */
-let PROJECTS=[], PROJ_ID=null;
 function nextJobNum(){
   const p=PROJECTS.find(x=>x.engagement_id===PROJ_ID);
   if(p&&p.next_number){
