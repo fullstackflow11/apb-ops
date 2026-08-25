@@ -549,6 +549,7 @@ function showLeadDetail(id){
       <div class="detail-field"><div class="detail-label">Added</div><div class="detail-value">${fmtDate(l.created_at)}</div></div>
     </div>
     ${l.description?`<div class="detail-section">RFQ Notes</div><div class="detail-value" style="white-space:pre-wrap">${esc(l.description)}</div>`:''}
+    ${l.attachment_url?`<div class="detail-section">Attachment</div><a href="${esc(l.attachment_url)}" target="_blank" rel="noopener"><img src="${esc(l.attachment_url)}" alt="Lead attachment" style="max-width:240px;max-height:240px;border-radius:8px;border:1px solid var(--line);display:block;margin-top:4px" onerror="this.replaceWith(Object.assign(document.createElement('div'),{textContent:'View Attachment',style:'color:var(--accent)'}))"></a>`:''}
     ${l.notes?`<div class="detail-section">Internal Notes</div><div class="detail-value" style="white-space:pre-wrap">${esc(l.notes)}</div>`:''}`;
   document.getElementById('detailFooter').innerHTML=`
     <button class="btn btn-cancel" onclick="closeDetail()">Close</button>
