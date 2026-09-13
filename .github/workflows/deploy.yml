@@ -1,0 +1,16 @@
+name: CI + Deploy
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: HTML lint
+        run: npx --yes htmlhint "**/*.html"
+      - name: Link check
+        run: npx --yes linkinator . --recurse --silent || true
+  # Deploy step: if using Cloudflare Pages / Vercel / Netlify, connect the
+  # repo in their dashboard and they auto-deploy on push to main. Keep this
+  # workflow as the required status check for branch protection.
